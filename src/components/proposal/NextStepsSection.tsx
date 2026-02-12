@@ -10,7 +10,7 @@ const steps = [
 
 const NextStepsSection = () => {
   return (
-    <section className="section-padding bg-background">
+    <section id="pasos" className="section-padding bg-background">
       <div className="max-w-4xl mx-auto">
         <SectionHeader
           number="05 — Siguientes Pasos"

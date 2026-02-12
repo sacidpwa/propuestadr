@@ -28,11 +28,19 @@ const deliverables = [
       { name: "Manuales de operación por unidad", price: "$30,000" },
     ],
   },
+  {
+    category: "Relaciones & Contenido",
+    items: [
+      { name: "Redes de colaboración con consultorios médicos", price: "$25,000" },
+      { name: "Videopodcast y cápsulas informativas de salud mental", price: "$35,000" },
+      { name: "Relaciones comerciales con institutos de prevención", price: "$30,000" },
+    ],
+  },
 ];
 
 const PricingSection = () => {
   return (
-    <section className="section-padding bg-navy">
+    <section id="inversion" className="section-padding bg-navy">
       <div className="max-w-6xl mx-auto">
         <SectionHeader
           number="04 — Inversión"
@@ -65,7 +73,7 @@ const PricingSection = () => {
         <div className="mt-12 bg-gold/10 border border-gold/20 rounded-lg p-8 flex flex-col md:flex-row items-center justify-between">
           <div>
             <p className="text-white/50 font-sans text-sm uppercase tracking-wider">Inversión Total Estimada</p>
-            <p className="text-4xl font-serif font-bold text-gold mt-1">$450,000 MXN</p>
+            <p className="text-4xl font-serif font-bold text-gold mt-1">$540,000 MXN</p>
             <p className="text-white/40 font-sans text-xs mt-1">+ IVA | Sujeto a ajustes tras diagnóstico detallado</p>
           </div>
           <div className="mt-6 md:mt-0 text-right">

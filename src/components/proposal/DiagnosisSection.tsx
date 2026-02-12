@@ -34,7 +34,7 @@ const problems = [
 
 const DiagnosisSection = () => {
   return (
-    <section className="section-padding bg-navy">
+    <section id="diagnostico" className="section-padding bg-navy">
       <div className="max-w-6xl mx-auto">
         <SectionHeader
           number="02 — Hallazgos"
