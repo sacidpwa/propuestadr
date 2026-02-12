@@ -54,7 +54,7 @@ const phases = [
 
 const WorkPlanSection = () => {
   return (
-    <section className="section-padding bg-background">
+    <section id="plan" className="section-padding bg-background">
       <div className="max-w-6xl mx-auto">
         <SectionHeader
           number="03 — Plan de Trabajo"

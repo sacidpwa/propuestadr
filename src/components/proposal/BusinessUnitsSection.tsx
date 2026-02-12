@@ -63,7 +63,7 @@ const units = [
 
 const BusinessUnitsSection = () => {
   return (
-    <section className="section-padding bg-background">
+    <section id="ecosistema" className="section-padding bg-background">
       <div className="max-w-6xl mx-auto">
         <SectionHeader
           number="01 — Diagnóstico"
