@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import logoImage from "@/assets/logo-dranur.svg";
 
 const links = [
   { label: "Inicio", href: "#inicio" },
@@ -33,7 +34,7 @@ const Navbar = () => {
       }`}
     >
       <div className="max-w-6xl mx-auto px-6 flex items-center justify-between">
-        <span className="font-serif font-bold text-gold text-lg tracking-wide">RM</span>
+        <img src={logoImage} alt="Dranur Logo" className="h-12 w-auto" />
         <div className="hidden md:flex items-center gap-8">
           {links.map((link) => (
             <a
