@@ -28,13 +28,11 @@ const Navbar = () => {
   return (
     <nav
       className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ${
-        scrolled
-          ? "bg-navy/95 backdrop-blur-md shadow-lg shadow-black/20 py-3"
-          : "bg-transparent py-5"
+        scrolled ? "bg-navy/95 backdrop-blur-md shadow-lg shadow-black/20 py-3" : "bg-transparent py-5"
       }`}
     >
       <div className="max-w-6xl mx-auto px-6 flex items-center justify-between">
-        <img src={logoImage} alt="Dranur Logo" className="h-48 w-auto" />
+        <img src={logoImage} alt="Dranur Logo" className="h-24 w-auto" />
         <div className="hidden md:flex items-center gap-8">
           {links.map((link) => (
             <a
