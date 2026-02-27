@@ -3,7 +3,7 @@ const Contratos = () => {
 
   return (
     <div className="bg-background min-h-screen py-12 px-6 md:px-20 print:px-12 print:py-6">
-      <div className="max-w-4xl mx-auto space-y-16 font-sans text-foreground text-sm leading-relaxed">
+      <div className="max-w-4xl mx-auto space-y-16 font-sans text-foreground text-sm leading-relaxed text-justify">
 
         {/* ========== CONTRATO 1: PRESTACIÓN DE SERVICIOS ========== */}
         <article className="space-y-6">
