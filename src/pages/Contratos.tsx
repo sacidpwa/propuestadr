@@ -129,14 +129,14 @@ const Contratos = () => {
                   </thead>
                   <tbody>
                     {[
-                      ["1ª", "5 de abril de 2026"],
-                      ["2ª", "5 de mayo de 2026"],
-                      ["3ª", "5 de junio de 2026"],
-                      ["4ª", "5 de julio de 2026"],
-                      ["5ª", "5 de agosto de 2026"],
-                      ["6ª", "5 de septiembre de 2026"],
-                      ["7ª", "5 de octubre de 2026"],
-                      ["8ª", "5 de noviembre de 2026"],
+                      ["1ª", "9 de marzo de 2026"],
+                      ["2ª", "9 de abril de 2026"],
+                      ["3ª", "9 de mayo de 2026"],
+                      ["4ª", "9 de junio de 2026"],
+                      ["5ª", "9 de julio de 2026"],
+                      ["6ª", "9 de agosto de 2026"],
+                      ["7ª", "9 de septiembre de 2026"],
+                      ["8ª", "9 de octubre de 2026"],
                     ].map(([num, fecha]) => (
                       <tr key={num} className="border-t border-border">
                         <td className="px-4 py-2">{num}</td>
