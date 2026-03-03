@@ -1,5 +1,5 @@
 const Contratos = () => {
-  const fechaActual = "27 de febrero de 2026";
+  const fechaActual = "4 de marzo de 2026";
 
   return (
     <div className="bg-background min-h-screen py-12 px-6 md:px-20 print:px-12 print:py-6">
@@ -14,7 +14,7 @@ const Contratos = () => {
           <p>
             Contrato de prestación de servicios profesionales que celebran, por una parte, el{" "}
             <strong>C. Rafael Runard Rueda de León Contreras</strong>, en su carácter de prestador de servicios, a quien en lo sucesivo se le denominará <strong>"EL CONSULTOR"</strong>; por otra parte, el{" "}
-            <strong>Dr. Rodrigo Márquez de la Serna</strong>, en su carácter de contratante, a quien en lo sucesivo se le denominará <strong>"EL CLIENTE"</strong>; y por otra parte, el{" "}
+            <strong>C. Rodrigo Márquez de la Serna</strong>, en su carácter de contratante, a quien en lo sucesivo se le denominará <strong>"EL CLIENTE"</strong>; y por otra parte, el{" "}
             <strong>C. Octavio Márquez Mendoza</strong>, en su carácter de propietario del consultorio <strong>Synapsia</strong>, a quien en lo sucesivo se le denominará <strong>"EL PROPIETARIO DE SYNAPSIA"</strong>; al tenor de las siguientes declaraciones y cláusulas:
           </p>
 
@@ -39,7 +39,7 @@ const Contratos = () => {
             <div>
               <h3 className="font-bold">II. Declara EL CLIENTE:</h3>
               <ol className="list-[lower-alpha] pl-6 space-y-1">
-                <li>Llamarse <strong>Dr. Rodrigo Márquez de la Serna</strong>, de nacionalidad mexicana, mayor de edad, con domicilio en Calle Parque Los Laureles 3800, 402, MZ14 LT11, Residencial Foresta Crystal Lagoons, C.P. 52144, Metepec, Estado de México.</li>
+                <li>Llamarse <strong>Rodrigo Márquez de la Serna</strong>, de nacionalidad mexicana, mayor de edad, con domicilio en Calle Parque Los Laureles 3800, 402, MZ14 LT11, Residencial Foresta Crystal Lagoons, C.P. 52144, Metepec, Estado de México.</li>
                 <li>CURP: <strong>MASR761003HDFRRD07</strong>.</li>
                 <li>Clave de Elector: <strong>MRSRRD76100309H000</strong>.</li>
                 <li>Que es titular y/o socio mayoritario de las unidades de negocio denominadas <strong>Clínica Alcatraces</strong>, <strong>Benesse</strong> y <strong>Alcatraces Senior Living</strong>.</li>
@@ -71,7 +71,7 @@ const Contratos = () => {
                 <li>Diagnóstico integral de las cuatro unidades de negocio (Synapsia, Clínica Alcatraces, Benesse y Alcatraces Senior Living).</li>
                 <li>Diseño de gobierno corporativo y organigrama funcional.</li>
                 <li>Estrategia de retiro de socios para Benesse.</li>
-                <li>Plan de sucesión del Dr. Márquez.</li>
+                <li>Plan de sucesión del C. Márquez.</li>
                 <li>Desarrollo e implementación de sistemas de recepción y expediente digital, plataforma de cobro y facturación, y dashboard de KPIs centralizado.</li>
                 <li>Integración operativa entre unidades de negocio.</li>
                 <li>Diseño de marca Benesse (logo, luminoso, identidad visual).</li>
@@ -104,9 +104,9 @@ const Contratos = () => {
               </p>
               <ul className="list-disc pl-6 space-y-1 mt-2">
                 <li><strong>5% (cinco por ciento)</strong> de participación accionaria en <strong>Synapsia</strong>, otorgado por <strong>EL PROPIETARIO DE SYNAPSIA (C. Octavio Márquez Mendoza)</strong>.</li>
-                <li><strong>10% (diez por ciento)</strong> de participación accionaria en <strong>Clínica Alcatraces</strong>, otorgado por <strong>EL CLIENTE (Dr. Rodrigo Márquez de la Serna)</strong>.</li>
-                <li><strong>10% (diez por ciento)</strong> de participación accionaria en <strong>Benesse</strong>, otorgado por <strong>EL CLIENTE (Dr. Rodrigo Márquez de la Serna)</strong>.</li>
-                <li><strong>5% (cinco por ciento)</strong> de participación accionaria en <strong>Alcatraces Senior Living</strong>, otorgado por <strong>EL CLIENTE (Dr. Rodrigo Márquez de la Serna)</strong>.</li>
+                <li><strong>10% (diez por ciento)</strong> de participación accionaria en <strong>Clínica Alcatraces</strong>, otorgado por <strong>EL CLIENTE (C. Rodrigo Márquez de la Serna)</strong>.</li>
+                <li><strong>10% (diez por ciento)</strong> de participación accionaria en <strong>Benesse</strong>, otorgado por <strong>EL CLIENTE (C. Rodrigo Márquez de la Serna)</strong>.</li>
+                <li><strong>5% (cinco por ciento)</strong> de participación accionaria en <strong>Alcatraces Senior Living</strong>, otorgado por <strong>EL CLIENTE (C. Rodrigo Márquez de la Serna)</strong>.</li>
               </ul>
               <p className="mt-2">
                 Dicha participación se formalizará mediante el Contrato de Asociación en Participación y Promesa de Contrato para la Constitución de Sociedades Mercantiles que las partes suscriben de manera simultánea al presente instrumento.
@@ -129,14 +129,14 @@ const Contratos = () => {
                   </thead>
                   <tbody>
                     {[
-                      ["1ª", "5 de marzo de 2026"],
-                      ["2ª", "5 de abril de 2026"],
-                      ["3ª", "5 de mayo de 2026"],
-                      ["4ª", "5 de junio de 2026"],
-                      ["5ª", "5 de julio de 2026"],
-                      ["6ª", "5 de agosto de 2026"],
-                      ["7ª", "5 de septiembre de 2026"],
-                      ["8ª", "5 de octubre de 2026"],
+                      ["1ª", "5 de abril de 2026"],
+                      ["2ª", "5 de mayo de 2026"],
+                      ["3ª", "5 de junio de 2026"],
+                      ["4ª", "5 de julio de 2026"],
+                      ["5ª", "5 de agosto de 2026"],
+                      ["6ª", "5 de septiembre de 2026"],
+                      ["7ª", "5 de octubre de 2026"],
+                      ["8ª", "5 de noviembre de 2026"],
                     ].map(([num, fecha]) => (
                       <tr key={num} className="border-t border-border">
                         <td className="px-4 py-2">{num}</td>
@@ -249,7 +249,7 @@ const Contratos = () => {
             <div className="text-center">
               <div className="border-t border-foreground/30 pt-4 mx-4">
                 <p className="font-bold">EL CLIENTE</p>
-                <p>Dr. Rodrigo Márquez de la Serna</p>
+                <p>C. Rodrigo Márquez de la Serna</p>
               </div>
             </div>
             <div className="text-center">
@@ -287,7 +287,7 @@ const Contratos = () => {
 
           <p>
             Contrato de asociación en participación y promesa de contrato para la constitución de sociedades mercantiles que celebran, por una parte, el{" "}
-            <strong>Dr. Rodrigo Márquez de la Serna</strong>, a quien en lo sucesivo se le denominará <strong>"EL ASOCIANTE"</strong> (y para efectos de la promesa de contrato, <strong>"EL PROMITENTE SOCIO ASOCIANTE"</strong>), respecto de las unidades de negocio <strong>Clínica Alcatraces</strong>, <strong>Benesse</strong> y <strong>Alcatraces Senior Living</strong>; por otra parte, el{" "}
+            <strong>C. Rodrigo Márquez de la Serna</strong>, a quien en lo sucesivo se le denominará <strong>"EL ASOCIANTE"</strong> (y para efectos de la promesa de contrato, <strong>"EL PROMITENTE SOCIO ASOCIANTE"</strong>), respecto de las unidades de negocio <strong>Clínica Alcatraces</strong>, <strong>Benesse</strong> y <strong>Alcatraces Senior Living</strong>; por otra parte, el{" "}
             <strong>C. Octavio Márquez Mendoza</strong>, en su carácter de propietario de <strong>Synapsia</strong>, a quien en lo sucesivo se le denominará <strong>"EL ASOCIANTE DE SYNAPSIA"</strong> (y para efectos de la promesa de contrato, <strong>"EL PROMITENTE SOCIO ASOCIANTE DE SYNAPSIA"</strong>); y por otra parte, el{" "}
             <strong>C. Rafael Runard Rueda de León Contreras</strong>, a quien en lo sucesivo se le denominará <strong>"EL ASOCIADO"</strong> (y para efectos de la promesa de contrato, <strong>"EL PROMITENTE SOCIO ASOCIADO"</strong>); al tenor de las siguientes declaraciones y cláusulas:
           </p>
@@ -302,7 +302,7 @@ const Contratos = () => {
             <div>
               <h3 className="font-bold">I. Declara EL ASOCIANTE:</h3>
               <ol className="list-[lower-alpha] pl-6 space-y-1">
-                <li>Llamarse <strong>Dr. Rodrigo Márquez de la Serna</strong>, de nacionalidad mexicana, mayor de edad, con CURP: <strong>MASR761003HDFRRD07</strong>, con domicilio en Calle Parque Los Laureles 3800, 402, MZ14 LT11, Residencial Foresta Crystal Lagoons, C.P. 52144, Metepec, Estado de México.</li>
+                <li>Llamarse <strong>Rodrigo Márquez de la Serna</strong>, de nacionalidad mexicana, mayor de edad, con CURP: <strong>MASR761003HDFRRD07</strong>, con domicilio en Calle Parque Los Laureles 3800, 402, MZ14 LT11, Residencial Foresta Crystal Lagoons, C.P. 52144, Metepec, Estado de México.</li>
                 <li>Que es titular y/o socio mayoritario de las unidades de negocio: <strong>Clínica Alcatraces</strong>, <strong>Benesse</strong> y <strong>Alcatraces Senior Living</strong>.</li>
                 <li>Que tiene plena capacidad jurídica y facultades suficientes para obligarse en los términos del presente contrato y otorgar la participación aquí pactada respecto de las unidades de negocio de su propiedad.</li>
                 <li>Que es su libre voluntad celebrar el presente contrato.</li>
@@ -370,17 +370,17 @@ const Contratos = () => {
                     <tr className="border-t border-border">
                       <td className="px-4 py-3">Clínica Alcatraces</td>
                       <td className="text-center px-4 py-3 font-bold">10%</td>
-                      <td className="px-4 py-3">Dr. Rodrigo Márquez de la Serna</td>
+                      <td className="px-4 py-3">C. Rodrigo Márquez de la Serna</td>
                     </tr>
                     <tr className="border-t border-border">
                       <td className="px-4 py-3">Benesse</td>
                       <td className="text-center px-4 py-3 font-bold">10%</td>
-                      <td className="px-4 py-3">Dr. Rodrigo Márquez de la Serna</td>
+                      <td className="px-4 py-3">C. Rodrigo Márquez de la Serna</td>
                     </tr>
                     <tr className="border-t border-border">
                       <td className="px-4 py-3">Alcatraces Senior Living</td>
                       <td className="text-center px-4 py-3 font-bold">5%</td>
-                      <td className="px-4 py-3">Dr. Rodrigo Márquez de la Serna</td>
+                      <td className="px-4 py-3">C. Rodrigo Márquez de la Serna</td>
                     </tr>
                   </tbody>
                 </table>
@@ -523,7 +523,7 @@ const Contratos = () => {
             <div className="text-center">
               <div className="border-t border-foreground/30 pt-4 mx-4">
                 <p className="font-bold text-xs">EL ASOCIANTE / PROMITENTE SOCIO ASOCIANTE</p>
-                <p className="mt-1">Dr. Rodrigo Márquez de la Serna</p>
+                <p className="mt-1">C. Rodrigo Márquez de la Serna</p>
               </div>
             </div>
             <div className="text-center">
