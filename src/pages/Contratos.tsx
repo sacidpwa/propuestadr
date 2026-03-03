@@ -13,8 +13,9 @@ const Contratos = () => {
 
           <p>
             Contrato de prestación de servicios profesionales que celebran, por una parte, el{" "}
-            <strong>C. Rafael Runard Rueda de León Contreras</strong>, en su carácter de prestador de servicios, a quien en lo sucesivo se le denominará <strong>"EL CONSULTOR"</strong>; y por la otra, el{" "}
-            <strong>Dr. Rodrigo Márquez de la Serna</strong>, en su carácter de contratante, a quien en lo sucesivo se le denominará <strong>"EL CLIENTE"</strong>; al tenor de las siguientes declaraciones y cláusulas:
+            <strong>C. Rafael Runard Rueda de León Contreras</strong>, en su carácter de prestador de servicios, a quien en lo sucesivo se le denominará <strong>"EL CONSULTOR"</strong>; por otra parte, el{" "}
+            <strong>Dr. Rodrigo Márquez de la Serna</strong>, en su carácter de contratante, a quien en lo sucesivo se le denominará <strong>"EL CLIENTE"</strong>; y por otra parte, el{" "}
+            <strong>C. Octavio Márquez Mendoza</strong>, en su carácter de propietario del consultorio <strong>Synapsia</strong>, a quien en lo sucesivo se le denominará <strong>"EL PROPIETARIO DE SYNAPSIA"</strong>; al tenor de las siguientes declaraciones y cláusulas:
           </p>
 
           <p className="text-xs italic text-muted-foreground">
@@ -41,8 +42,20 @@ const Contratos = () => {
                 <li>Llamarse <strong>Dr. Rodrigo Márquez de la Serna</strong>, de nacionalidad mexicana, mayor de edad, con domicilio en Calle Parque Los Laureles 3800, 402, MZ14 LT11, Residencial Foresta Crystal Lagoons, C.P. 52144, Metepec, Estado de México.</li>
                 <li>CURP: <strong>MASR761003HDFRRD07</strong>.</li>
                 <li>Clave de Elector: <strong>MRSRRD76100309H000</strong>.</li>
-                <li>Que es titular y/o socio mayoritario de las unidades de negocio denominadas <strong>Synapsia</strong>, <strong>Clínica Alcatraces</strong>, <strong>Benesse</strong> y <strong>Alcatraces Senior Living</strong>.</li>
-                <li>Que requiere los servicios profesionales de consultoría para la reingeniería, digitalización y reestructuración de las unidades de negocio antes mencionadas.</li>
+                <li>Que es titular y/o socio mayoritario de las unidades de negocio denominadas <strong>Clínica Alcatraces</strong>, <strong>Benesse</strong> y <strong>Alcatraces Senior Living</strong>.</li>
+                <li>Que requiere los servicios profesionales de consultoría para la reingeniería, digitalización y reestructuración de las unidades de negocio antes mencionadas, así como de <strong>Synapsia</strong>, propiedad de EL PROPIETARIO DE SYNAPSIA.</li>
+                <li>Que es su voluntad celebrar el presente contrato.</li>
+              </ol>
+            </div>
+
+            <div>
+              <h3 className="font-bold">III. Declara EL PROPIETARIO DE SYNAPSIA:</h3>
+              <ol className="list-[lower-alpha] pl-6 space-y-1">
+                <li>Llamarse <strong>Octavio Márquez Mendoza</strong>, de nacionalidad mexicana, mayor de edad, con domicilio en C. Paseo Santa Teresa 108, Fraccionamiento San Carlos, C.P. 52159, Metepec, Estado de México.</li>
+                <li>CURP: <strong>MXMO390902HDFRNC08</strong>.</li>
+                <li>Clave de Elector: <strong>MXMOC39090209H000</strong>.</li>
+                <li>Que es propietario y titular del consultorio denominado <strong>Synapsia</strong>.</li>
+                <li>Que tiene plena capacidad jurídica y facultades suficientes para obligarse en los términos del presente contrato, particularmente en lo que respecta a la participación accionaria del 5% de Synapsia que otorgará a EL CONSULTOR.</li>
                 <li>Que es su voluntad celebrar el presente contrato.</li>
               </ol>
             </div>
@@ -53,7 +66,7 @@ const Contratos = () => {
           <div className="space-y-4">
             <div>
               <h3 className="font-bold">PRIMERA. — Objeto del contrato.</h3>
-              <p>EL CONSULTOR se obliga a prestar a EL CLIENTE los siguientes servicios profesionales de consultoría:</p>
+              <p>EL CONSULTOR se obliga a prestar a EL CLIENTE y EL PROPIETARIO DE SYNAPSIA los siguientes servicios profesionales de consultoría:</p>
               <ol className="list-decimal pl-6 space-y-1 mt-2">
                 <li>Diagnóstico integral de las cuatro unidades de negocio (Synapsia, Clínica Alcatraces, Benesse y Alcatraces Senior Living).</li>
                 <li>Diseño de gobierno corporativo y organigrama funcional.</li>
@@ -87,13 +100,13 @@ const Contratos = () => {
             <div>
               <h3 className="font-bold">TERCERA. — Contraprestación complementaria (participación accionaria).</h3>
               <p>
-                Como contraprestación por el descuento otorgado conforme a la cláusula segunda, EL CLIENTE se obliga a otorgar a EL CONSULTOR participación accionaria en sus unidades de negocio conforme a lo siguiente:
+                Como contraprestación por el descuento otorgado conforme a la cláusula segunda, las partes se obligan a otorgar a EL CONSULTOR participación accionaria en las unidades de negocio conforme a lo siguiente:
               </p>
               <ul className="list-disc pl-6 space-y-1 mt-2">
-                <li><strong>10% (diez por ciento)</strong> de participación accionaria en <strong>Synapsia</strong>.</li>
-                <li><strong>10% (diez por ciento)</strong> de participación accionaria en <strong>Clínica Alcatraces</strong>.</li>
-                <li><strong>10% (diez por ciento)</strong> de participación accionaria en <strong>Benesse</strong>.</li>
-                <li><strong>5% (cinco por ciento)</strong> de participación accionaria en <strong>Alcatraces Senior Living</strong>.</li>
+                <li><strong>5% (cinco por ciento)</strong> de participación accionaria en <strong>Synapsia</strong>, otorgado por <strong>EL PROPIETARIO DE SYNAPSIA (C. Octavio Márquez Mendoza)</strong>.</li>
+                <li><strong>10% (diez por ciento)</strong> de participación accionaria en <strong>Clínica Alcatraces</strong>, otorgado por <strong>EL CLIENTE (Dr. Rodrigo Márquez de la Serna)</strong>.</li>
+                <li><strong>10% (diez por ciento)</strong> de participación accionaria en <strong>Benesse</strong>, otorgado por <strong>EL CLIENTE (Dr. Rodrigo Márquez de la Serna)</strong>.</li>
+                <li><strong>5% (cinco por ciento)</strong> de participación accionaria en <strong>Alcatraces Senior Living</strong>, otorgado por <strong>EL CLIENTE (Dr. Rodrigo Márquez de la Serna)</strong>.</li>
               </ul>
               <p className="mt-2">
                 Dicha participación se formalizará mediante el Contrato de Asociación en Participación y Promesa de Contrato para la Constitución de Sociedades Mercantiles que las partes suscriben de manera simultánea al presente instrumento.
@@ -171,11 +184,11 @@ const Contratos = () => {
             </div>
 
             <div>
-              <h3 className="font-bold">NOVENA. — Obligaciones de EL CLIENTE.</h3>
+              <h3 className="font-bold">NOVENA. — Obligaciones de EL CLIENTE y EL PROPIETARIO DE SYNAPSIA.</h3>
               <ol className="list-[lower-alpha] pl-6 space-y-1">
                 <li>Proporcionar a EL CONSULTOR la información y acceso necesarios para la ejecución de los servicios.</li>
                 <li>Realizar los pagos en los términos y fechas pactados en la cláusula cuarta.</li>
-                <li>Formalizar la participación accionaria conforme a la cláusula tercera.</li>
+                <li>Formalizar la participación accionaria conforme a la cláusula tercera, cada uno respecto de las unidades de negocio de su propiedad.</li>
                 <li>Designar un punto de contacto para la coordinación de los trabajos.</li>
               </ol>
             </div>
@@ -183,7 +196,7 @@ const Contratos = () => {
             <div>
               <h3 className="font-bold">DÉCIMA. — Confidencialidad.</h3>
               <p>
-                Ambas partes se obligan a mantener en estricta confidencialidad toda la información intercambiada con motivo del presente contrato, incluyendo pero no limitándose a información financiera, operativa, estratégica y de pacientes. Esta obligación subsistirá por un periodo de 5 (cinco) años posteriores a la terminación del contrato.
+                Todas las partes se obligan a mantener en estricta confidencialidad toda la información intercambiada con motivo del presente contrato, incluyendo pero no limitándose a información financiera, operativa, estratégica y de pacientes. Esta obligación subsistirá por un periodo de 5 (cinco) años posteriores a la terminación del contrato.
               </p>
             </div>
 
@@ -223,20 +236,26 @@ const Contratos = () => {
           </div>
 
           <p className="mt-8">
-            Leído que fue el presente contrato y enteradas las partes de su contenido y alcance legal, lo firman por duplicado en la ciudad de Metepec, Estado de México, a {fechaActual}.
+            Leído que fue el presente contrato y enteradas las partes de su contenido y alcance legal, lo firman por triplicado en la ciudad de Metepec, Estado de México, a {fechaActual}.
           </p>
 
-          <div className="grid grid-cols-2 gap-12 mt-16 pt-8">
-            <div className="text-center space-y-16">
-              <div className="border-t border-foreground/30 pt-4 mx-8">
+          <div className="grid grid-cols-3 gap-8 mt-16 pt-8">
+            <div className="text-center">
+              <div className="border-t border-foreground/30 pt-4 mx-4">
                 <p className="font-bold">EL CONSULTOR</p>
                 <p>C. Rafael Runard Rueda de León Contreras</p>
               </div>
             </div>
-            <div className="text-center space-y-16">
-              <div className="border-t border-foreground/30 pt-4 mx-8">
+            <div className="text-center">
+              <div className="border-t border-foreground/30 pt-4 mx-4">
                 <p className="font-bold">EL CLIENTE</p>
                 <p>Dr. Rodrigo Márquez de la Serna</p>
+              </div>
+            </div>
+            <div className="text-center">
+              <div className="border-t border-foreground/30 pt-4 mx-4">
+                <p className="font-bold">EL PROPIETARIO DE SYNAPSIA</p>
+                <p>C. Octavio Márquez Mendoza</p>
               </div>
             </div>
           </div>
@@ -268,7 +287,8 @@ const Contratos = () => {
 
           <p>
             Contrato de asociación en participación y promesa de contrato para la constitución de sociedades mercantiles que celebran, por una parte, el{" "}
-            <strong>Dr. Rodrigo Márquez de la Serna</strong>, a quien en lo sucesivo se le denominará <strong>"EL ASOCIANTE"</strong> (y para efectos de la promesa de contrato, <strong>"EL PROMITENTE SOCIO ASOCIANTE"</strong>); y por la otra, el{" "}
+            <strong>Dr. Rodrigo Márquez de la Serna</strong>, a quien en lo sucesivo se le denominará <strong>"EL ASOCIANTE"</strong> (y para efectos de la promesa de contrato, <strong>"EL PROMITENTE SOCIO ASOCIANTE"</strong>), respecto de las unidades de negocio <strong>Clínica Alcatraces</strong>, <strong>Benesse</strong> y <strong>Alcatraces Senior Living</strong>; por otra parte, el{" "}
+            <strong>C. Octavio Márquez Mendoza</strong>, en su carácter de propietario de <strong>Synapsia</strong>, a quien en lo sucesivo se le denominará <strong>"EL ASOCIANTE DE SYNAPSIA"</strong> (y para efectos de la promesa de contrato, <strong>"EL PROMITENTE SOCIO ASOCIANTE DE SYNAPSIA"</strong>); y por otra parte, el{" "}
             <strong>C. Rafael Runard Rueda de León Contreras</strong>, a quien en lo sucesivo se le denominará <strong>"EL ASOCIADO"</strong> (y para efectos de la promesa de contrato, <strong>"EL PROMITENTE SOCIO ASOCIADO"</strong>); al tenor de las siguientes declaraciones y cláusulas:
           </p>
 
@@ -283,14 +303,24 @@ const Contratos = () => {
               <h3 className="font-bold">I. Declara EL ASOCIANTE:</h3>
               <ol className="list-[lower-alpha] pl-6 space-y-1">
                 <li>Llamarse <strong>Dr. Rodrigo Márquez de la Serna</strong>, de nacionalidad mexicana, mayor de edad, con CURP: <strong>MASR761003HDFRRD07</strong>, con domicilio en Calle Parque Los Laureles 3800, 402, MZ14 LT11, Residencial Foresta Crystal Lagoons, C.P. 52144, Metepec, Estado de México.</li>
-                <li>Que es titular y/o socio mayoritario de las unidades de negocio: <strong>Synapsia</strong>, <strong>Clínica Alcatraces</strong>, <strong>Benesse</strong> y <strong>Alcatraces Senior Living</strong>.</li>
-                <li>Que tiene plena capacidad jurídica y facultades suficientes para obligarse en los términos del presente contrato y otorgar la participación aquí pactada.</li>
+                <li>Que es titular y/o socio mayoritario de las unidades de negocio: <strong>Clínica Alcatraces</strong>, <strong>Benesse</strong> y <strong>Alcatraces Senior Living</strong>.</li>
+                <li>Que tiene plena capacidad jurídica y facultades suficientes para obligarse en los términos del presente contrato y otorgar la participación aquí pactada respecto de las unidades de negocio de su propiedad.</li>
                 <li>Que es su libre voluntad celebrar el presente contrato.</li>
               </ol>
             </div>
 
             <div>
-              <h3 className="font-bold">II. Declara EL ASOCIADO:</h3>
+              <h3 className="font-bold">II. Declara EL ASOCIANTE DE SYNAPSIA:</h3>
+              <ol className="list-[lower-alpha] pl-6 space-y-1">
+                <li>Llamarse <strong>Octavio Márquez Mendoza</strong>, de nacionalidad mexicana, mayor de edad, con CURP: <strong>MXMO390902HDFRNC08</strong>, con domicilio en C. Paseo Santa Teresa 108, Fraccionamiento San Carlos, C.P. 52159, Metepec, Estado de México.</li>
+                <li>Que es propietario y titular del consultorio denominado <strong>Synapsia</strong>.</li>
+                <li>Que tiene plena capacidad jurídica y facultades suficientes para obligarse en los términos del presente contrato y otorgar la participación del 5% de Synapsia aquí pactada.</li>
+                <li>Que es su libre voluntad celebrar el presente contrato.</li>
+              </ol>
+            </div>
+
+            <div>
+              <h3 className="font-bold">III. Declara EL ASOCIADO:</h3>
               <ol className="list-[lower-alpha] pl-6 space-y-1">
                 <li>Llamarse <strong>C. Rafael Runard Rueda de León Contreras</strong>, de nacionalidad mexicana, mayor de edad, con CURP: <strong>RUCR840927HDFDNF02</strong>, con domicilio en Calle Hacienda Santa Rosa 62, Fraccionamiento Santa Elena, C.P. 52105, San Mateo Atenco, Estado de México.</li>
                 <li>Que aporta como contribución a la asociación en participación un descuento de $120,000.00 M.N. sobre sus honorarios de consultoría, así como sus conocimientos y experiencia profesional.</li>
@@ -299,10 +329,10 @@ const Contratos = () => {
             </div>
 
             <div>
-              <h3 className="font-bold">III. Declaran ambas partes:</h3>
+              <h3 className="font-bold">IV. Declaran todas las partes:</h3>
               <ol className="list-[lower-alpha] pl-6 space-y-1">
                 <li>Que de manera simultánea al presente instrumento han suscrito un Contrato de Prestación de Servicios Profesionales de Consultoría.</li>
-                <li>Que como parte de la negociación de dicho contrato, acordaron que EL ASOCIADO otorgaría un descuento de $120,000.00 M.N. a cambio de participación en las utilidades de las negociaciones de EL ASOCIANTE y la posterior formalización como socio.</li>
+                <li>Que como parte de la negociación de dicho contrato, acordaron que EL ASOCIADO otorgaría un descuento de $120,000.00 M.N. a cambio de participación en las utilidades de las negociaciones de EL ASOCIANTE y EL ASOCIANTE DE SYNAPSIA, y la posterior formalización como socio.</li>
                 <li>Que reconocen la validez y obligatoriedad del presente contrato conforme a los artículos 252 a 259 de la LGSM y los artículos 7.524 y siguientes del CCEM.</li>
                 <li>Que el presente instrumento contiene dos figuras jurídicas complementarias: (i) un contrato de asociación en participación, y (ii) una promesa de contrato para la constitución de sociedades mercantiles, conforme al artículo 7.524 del CCEM.</li>
               </ol>
@@ -315,43 +345,48 @@ const Contratos = () => {
             <div>
               <h3 className="font-bold">PRIMERA. — Objeto de la asociación en participación.</h3>
               <p>
-                El presente contrato tiene por objeto establecer los términos y condiciones de la asociación en participación mediante la cual EL ASOCIANTE otorga a EL ASOCIADO una participación en las utilidades de sus unidades de negocio, a cambio de la aportación descrita en la cláusula tercera. EL ASOCIANTE actuará en nombre propio conforme al artículo 253 de la LGSM, careciendo la asociación en participación de personalidad jurídica propia.
+                El presente contrato tiene por objeto establecer los términos y condiciones de la asociación en participación mediante la cual EL ASOCIANTE y EL ASOCIANTE DE SYNAPSIA otorgan a EL ASOCIADO una participación en las utilidades de sus respectivas unidades de negocio, a cambio de la aportación descrita en la cláusula tercera. EL ASOCIANTE y EL ASOCIANTE DE SYNAPSIA actuarán en nombre propio conforme al artículo 253 de la LGSM, careciendo la asociación en participación de personalidad jurídica propia.
               </p>
             </div>
 
             <div>
               <h3 className="font-bold">SEGUNDA. — Participación en utilidades.</h3>
-              <p>EL ASOCIADO tendrá derecho a participar en las utilidades de las negociaciones de EL ASOCIANTE conforme a los siguientes porcentajes:</p>
+              <p>EL ASOCIADO tendrá derecho a participar en las utilidades de las negociaciones conforme a los siguientes porcentajes:</p>
               <div className="mt-3 border border-border rounded-lg overflow-hidden">
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="bg-muted">
                       <th className="text-left px-4 py-3 font-bold">Unidad de Negocio</th>
-                      <th className="text-center px-4 py-3 font-bold">% de Participación en Utilidades</th>
+                      <th className="text-center px-4 py-3 font-bold">% de Participación</th>
+                      <th className="text-left px-4 py-3 font-bold">Otorgado por</th>
                     </tr>
                   </thead>
                   <tbody>
                     <tr className="border-t border-border">
                       <td className="px-4 py-3">Synapsia</td>
-                      <td className="text-center px-4 py-3 font-bold">10%</td>
+                      <td className="text-center px-4 py-3 font-bold">5%</td>
+                      <td className="px-4 py-3">C. Octavio Márquez Mendoza</td>
                     </tr>
                     <tr className="border-t border-border">
                       <td className="px-4 py-3">Clínica Alcatraces</td>
                       <td className="text-center px-4 py-3 font-bold">10%</td>
+                      <td className="px-4 py-3">Dr. Rodrigo Márquez de la Serna</td>
                     </tr>
                     <tr className="border-t border-border">
                       <td className="px-4 py-3">Benesse</td>
                       <td className="text-center px-4 py-3 font-bold">10%</td>
+                      <td className="px-4 py-3">Dr. Rodrigo Márquez de la Serna</td>
                     </tr>
                     <tr className="border-t border-border">
                       <td className="px-4 py-3">Alcatraces Senior Living</td>
                       <td className="text-center px-4 py-3 font-bold">5%</td>
+                      <td className="px-4 py-3">Dr. Rodrigo Márquez de la Serna</td>
                     </tr>
                   </tbody>
                 </table>
               </div>
               <p className="mt-2">
-                EL ASOCIADO comenzará a gozar de la participación en las utilidades de las negociaciones de EL ASOCIANTE <strong>a partir de la fecha de entrada en vigor del presente contrato</strong>, es decir, desde su firma.
+                EL ASOCIADO comenzará a gozar de la participación en las utilidades de las negociaciones <strong>a partir de la fecha de entrada en vigor del presente contrato</strong>, es decir, desde su firma.
               </p>
             </div>
 
@@ -367,14 +402,14 @@ const Contratos = () => {
             <div>
               <h3 className="font-bold">CUARTA. — Límite de pérdidas del ASOCIADO.</h3>
               <p>
-                De conformidad con el artículo 258 de la Ley General de Sociedades Mercantiles, las pérdidas de EL ASOCIADO en ningún caso podrán ser superiores al valor de su aportación, la cual asciende a <strong>$120,000.00 (ciento veinte mil pesos 00/100 M.N.)</strong>. En consecuencia, en caso de pérdidas en las negociaciones de EL ASOCIANTE, EL ASOCIADO <strong>solamente responderá hasta el monto de su aportación</strong>, sin que se pueda afectar su patrimonio personal por cantidades superiores a dicho monto.
+                De conformidad con el artículo 258 de la Ley General de Sociedades Mercantiles, las pérdidas de EL ASOCIADO en ningún caso podrán ser superiores al valor de su aportación, la cual asciende a <strong>$120,000.00 (ciento veinte mil pesos 00/100 M.N.)</strong>. En consecuencia, en caso de pérdidas en las negociaciones de EL ASOCIANTE o EL ASOCIANTE DE SYNAPSIA, EL ASOCIADO <strong>solamente responderá hasta el monto de su aportación</strong>, sin que se pueda afectar su patrimonio personal por cantidades superiores a dicho monto.
               </p>
             </div>
 
             <div>
               <h3 className="font-bold">QUINTA. — Derecho de auditoría.</h3>
               <p>
-                De conformidad con el artículo 255 de la LGSM, EL ASOCIADO tendrá la facultad contractual de <strong>revisar los estados financieros de cada una de las unidades de negocio de manera mensual</strong>, con el propósito de asegurar que el reparto de utilidades sea veraz y oportuno. EL ASOCIANTE se obliga a proporcionar dicha información dentro de los primeros 10 (diez) días hábiles del mes siguiente al que corresponda el periodo reportado.
+                De conformidad con el artículo 255 de la LGSM, EL ASOCIADO tendrá la facultad contractual de <strong>revisar los estados financieros de cada una de las unidades de negocio de manera mensual</strong>, con el propósito de asegurar que el reparto de utilidades sea veraz y oportuno. EL ASOCIANTE y EL ASOCIANTE DE SYNAPSIA se obligan a proporcionar dicha información dentro de los primeros 10 (diez) días hábiles del mes siguiente al que corresponda el periodo reportado.
               </p>
             </div>
 
@@ -396,23 +431,23 @@ const Contratos = () => {
             <div>
               <h3 className="font-bold">SÉPTIMA. — Promesa de contrato definitivo y formalización notarial.</h3>
               <p>
-                De conformidad con los artículos 7.524, 7.525 y 7.527 del Código Civil del Estado de México, las partes celebran en este acto una promesa de contrato mediante la cual se obligan recíprocamente a formalizar la participación accionaria definitiva de EL ASOCIADO, quien dejará de serlo para convertirse en socio de EL ASOCIANTE.
+                De conformidad con los artículos 7.524, 7.525 y 7.527 del Código Civil del Estado de México, las partes celebran en este acto una promesa de contrato mediante la cual se obligan recíprocamente a formalizar la participación accionaria definitiva de EL ASOCIADO, quien dejará de serlo para convertirse en socio de EL PROMITENTE SOCIO ASOCIANTE y de EL PROMITENTE SOCIO ASOCIANTE DE SYNAPSIA, según corresponda.
               </p>
               <p className="mt-2">Para tal efecto, las partes se obligan a acudir ante Notario Público del Estado de México, dentro del plazo señalado en la cláusula octava, para realizar los siguientes actos de ejecución de la promesa:</p>
               <ol className="list-[lower-alpha] pl-6 space-y-1 mt-2">
                 <li>Protocolizar la constitución formal de las sociedades mercantiles (S.A. o S. de R.L.) correspondientes a cada unidad de negocio, observando los requisitos de los artículos 6 y 91 de la Ley General de Sociedades Mercantiles.</li>
-                <li>Formalizar e inscribir la titularidad de las acciones o partes sociales a favor de EL ASOCIADO en los libros de registro de socios, conforme a los artículos 73 y 128 de la LGSM.</li>
+                <li>Formalizar e inscribir la titularidad de las acciones o partes sociales a favor de EL ASOCIADO en los libros de registro de socios, conforme a los artículos 73 y 128 de la LGSM, a saber: 5% en Synapsia (otorgado por EL PROMITENTE SOCIO ASOCIANTE DE SYNAPSIA), 10% en Clínica Alcatraces, 10% en Benesse y 5% en Alcatraces Senior Living (otorgados por EL PROMITENTE SOCIO ASOCIANTE).</li>
                 <li>Inscribir dichos actos ante el Registro Público de Comercio.</li>
               </ol>
               <p className="mt-2">
-                Los gastos notariales y de registro serán cubiertos en partes iguales por ambas partes, salvo pacto en contrario.
+                Los gastos notariales y de registro serán cubiertos en partes iguales entre las tres partes, salvo pacto en contrario.
               </p>
               <p className="mt-2">
-                En términos del artículo 7.530 del CCEM, en caso de que EL PROMITENTE SOCIO ASOCIANTE se rehúse a firmar los documentos necesarios para cumplir esta promesa, EL PROMITENTE SOCIO ASOCIADO podrá optar entre:
+                En términos del artículo 7.530 del CCEM, en caso de que EL PROMITENTE SOCIO ASOCIANTE o EL PROMITENTE SOCIO ASOCIANTE DE SYNAPSIA se rehúse a firmar los documentos necesarios para cumplir esta promesa, EL PROMITENTE SOCIO ASOCIADO podrá optar entre:
               </p>
               <ol className="list-[lower-roman] pl-6 space-y-1 mt-2">
                 <li><strong>Demandar el cumplimiento forzoso</strong> del contrato de promesa de constitución de las sociedades mercantiles; o</li>
-                <li><strong>Cobrar los $120,000.00 (ciento veinte mil pesos 00/100 M.N.)</strong> aportados como descuento, los cuales se convertirán en una <strong>deuda líquida y exigible de manera inmediata</strong>, con intereses del <strong>10% (diez por ciento) mensual</strong> a cargo de EL PROMITENTE SOCIO ASOCIANTE, hasta su total liquidación.</li>
+                <li><strong>Cobrar los $120,000.00 (ciento veinte mil pesos 00/100 M.N.)</strong> aportados como descuento, los cuales se convertirán en una <strong>deuda líquida y exigible de manera inmediata</strong>, con intereses del <strong>10% (diez por ciento) mensual</strong> a cargo del promitente incumplidor, hasta su total liquidación.</li>
               </ol>
             </div>
 
@@ -437,7 +472,7 @@ const Contratos = () => {
             <div>
               <h3 className="font-bold">DÉCIMA. — Obligaciones del PROMITENTE SOCIO ASOCIADO una vez materializada la promesa.</h3>
               <ol className="list-[lower-alpha] pl-6 space-y-1">
-                <li>No competir directa ni indirectamente con las unidades de negocio de EL PROMITENTE SOCIO ASOCIANTE durante la vigencia de su participación accionaria.</li>
+                <li>No competir directa ni indirectamente con las unidades de negocio de EL PROMITENTE SOCIO ASOCIANTE y EL PROMITENTE SOCIO ASOCIANTE DE SYNAPSIA durante la vigencia de su participación accionaria.</li>
                 <li>Guardar confidencialidad respecto de toda información privilegiada a la que tenga acceso.</li>
                 <li>Contribuir con su experiencia profesional al desarrollo y crecimiento de las unidades de negocio.</li>
               </ol>
@@ -446,7 +481,7 @@ const Contratos = () => {
             <div>
               <h3 className="font-bold">DÉCIMA PRIMERA. — Restricciones a la transmisión de acciones o partes sociales.</h3>
               <p>
-                Una vez materializada la promesa, EL PROMITENTE SOCIO ASOCIADO no podrá ceder, transmitir, gravar o enajenar su participación accionaria sin el consentimiento previo y por escrito de EL PROMITENTE SOCIO ASOCIANTE. En caso de que desee vender su participación, EL PROMITENTE SOCIO ASOCIANTE tendrá derecho de preferencia para adquirirla en las mismas condiciones ofrecidas por terceros.
+                Una vez materializada la promesa, EL PROMITENTE SOCIO ASOCIADO no podrá ceder, transmitir, gravar o enajenar su participación accionaria sin el consentimiento previo y por escrito de EL PROMITENTE SOCIO ASOCIANTE y, en el caso de Synapsia, de EL PROMITENTE SOCIO ASOCIANTE DE SYNAPSIA. En caso de que desee vender su participación, el propietario correspondiente de cada unidad de negocio tendrá derecho de preferencia para adquirirla en las mismas condiciones ofrecidas por terceros.
               </p>
             </div>
           </div>
@@ -481,20 +516,26 @@ const Contratos = () => {
           </div>
 
           <p className="mt-8">
-            Leído que fue el presente contrato y enteradas las partes de su contenido y alcance legal, lo firman por duplicado en la ciudad de Metepec, Estado de México, a {fechaActual}.
+            Leído que fue el presente contrato y enteradas las partes de su contenido y alcance legal, lo firman por triplicado en la ciudad de Metepec, Estado de México, a {fechaActual}.
           </p>
 
-          <div className="grid grid-cols-2 gap-12 mt-16 pt-8">
+          <div className="grid grid-cols-3 gap-8 mt-16 pt-8">
             <div className="text-center">
-              <div className="border-t border-foreground/30 pt-4 mx-8">
-                <p className="font-bold">EL ASOCIANTE / PROMITENTE SOCIO ASOCIANTE</p>
-                <p>Dr. Rodrigo Márquez de la Serna</p>
+              <div className="border-t border-foreground/30 pt-4 mx-4">
+                <p className="font-bold text-xs">EL ASOCIANTE / PROMITENTE SOCIO ASOCIANTE</p>
+                <p className="mt-1">Dr. Rodrigo Márquez de la Serna</p>
               </div>
             </div>
             <div className="text-center">
-              <div className="border-t border-foreground/30 pt-4 mx-8">
-                <p className="font-bold">EL ASOCIADO / PROMITENTE SOCIO ASOCIADO</p>
-                <p>C. Rafael Runard Rueda de León Contreras</p>
+              <div className="border-t border-foreground/30 pt-4 mx-4">
+                <p className="font-bold text-xs">EL ASOCIANTE DE SYNAPSIA / PROMITENTE SOCIO ASOCIANTE DE SYNAPSIA</p>
+                <p className="mt-1">C. Octavio Márquez Mendoza</p>
+              </div>
+            </div>
+            <div className="text-center">
+              <div className="border-t border-foreground/30 pt-4 mx-4">
+                <p className="font-bold text-xs">EL ASOCIADO / PROMITENTE SOCIO ASOCIADO</p>
+                <p className="mt-1">C. Rafael Runard Rueda de León Contreras</p>
               </div>
             </div>
           </div>
@@ -516,12 +557,12 @@ const Contratos = () => {
         </article>
 
         {/* Botón de impresión */}
-        <div className="text-center print:hidden mt-12">
+        <div className="text-center mt-12 print:hidden">
           <button
             onClick={() => window.print()}
-            className="bg-primary text-primary-foreground px-8 py-3 rounded-lg font-sans font-semibold hover:opacity-90 transition-opacity"
+            className="bg-primary text-primary-foreground px-8 py-3 rounded-lg font-medium hover:opacity-90 transition-opacity"
           >
-            Imprimir contratos
+            Imprimir Contratos
           </button>
         </div>
       </div>
