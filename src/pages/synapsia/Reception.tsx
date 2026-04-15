@@ -69,9 +69,11 @@ export default function Reception() {
   const [isNewPatientOpen, setIsNewPatientOpen] = useState(false);
   const [isNewVisitOpen, setIsNewVisitOpen] = useState(false);
   const [isPaymentOpen, setIsPaymentOpen] = useState(false);
+  const [isSpecialistsOpen, setIsSpecialistsOpen] = useState(false);
   const [selectedVisit, setSelectedVisit] = useState<Visit | null>(null);
   const [loading, setLoading] = useState(false);
   const [patients, setPatients] = useState<Patient[]>([]);
+  const [userRole, setUserRole] = useState<string | null>(null);
 
   // New patient form
   const [newPatient, setNewPatient] = useState({ full_name: "", phone: "", email: "", date_of_birth: "", notes: "" });
@@ -79,6 +81,8 @@ export default function Reception() {
   const [newVisit, setNewVisit] = useState({ patient_id: "", specialist_id: "", notes: "" });
   // Payment form
   const [payment, setPayment] = useState({ amount: "", payment_method: "", notes: "" });
+  // New specialist form
+  const [newSpecialist, setNewSpecialist] = useState({ full_name: "", specialty: "", consultation_fee: "", phone: "", email: "" });
 
   useEffect(() => {
     fetchSpecialists();
