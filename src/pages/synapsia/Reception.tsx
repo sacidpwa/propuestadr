@@ -15,8 +15,9 @@ import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import {
   UserPlus, LogOut, Clock, CreditCard, Users, Brain, Search,
-  CheckCircle2, Loader2, DollarSign
+  CheckCircle2, Loader2, DollarSign, Stethoscope, Plus, Trash2
 } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
 
 interface Specialist {
   id: string;
@@ -68,9 +69,11 @@ export default function Reception() {
   const [isNewPatientOpen, setIsNewPatientOpen] = useState(false);
   const [isNewVisitOpen, setIsNewVisitOpen] = useState(false);
   const [isPaymentOpen, setIsPaymentOpen] = useState(false);
+  const [isSpecialistsOpen, setIsSpecialistsOpen] = useState(false);
   const [selectedVisit, setSelectedVisit] = useState<Visit | null>(null);
   const [loading, setLoading] = useState(false);
   const [patients, setPatients] = useState<Patient[]>([]);
+  const [userRole, setUserRole] = useState<string | null>(null);
 
   // New patient form
   const [newPatient, setNewPatient] = useState({ full_name: "", phone: "", email: "", date_of_birth: "", notes: "" });
@@ -78,12 +81,26 @@ export default function Reception() {
   const [newVisit, setNewVisit] = useState({ patient_id: "", specialist_id: "", notes: "" });
   // Payment form
   const [payment, setPayment] = useState({ amount: "", payment_method: "", notes: "" });
+  // New specialist form
+  const [newSpecialist, setNewSpecialist] = useState({ full_name: "", specialty: "", consultation_fee: "", phone: "", email: "" });
 
   useEffect(() => {
     fetchSpecialists();
     fetchTodayVisits();
     fetchPatients();
+    fetchUserRole();
   }, []);
+
+  const fetchUserRole = async () => {
+    if (!user) return;
+    const { data } = await supabase.from("user_roles").select("role").eq("user_id", user.id).single();
+    setUserRole(data?.role || null);
+  };
+
+  const fetchAllSpecialists = async () => {
+    const { data } = await supabase.from("specialists").select("*").order("full_name");
+    setSpecialists((data as any[]) || []);
+  };
 
   const fetchSpecialists = async () => {
     const { data } = await supabase.from("specialists").select("*").eq("is_active", true);
@@ -305,6 +322,11 @@ export default function Reception() {
             />
           </div>
           <div className="flex gap-2">
+            {userRole === "admin" && (
+              <Button variant="outline" size="sm" onClick={() => setIsSpecialistsOpen(true)}>
+                <Stethoscope className="w-4 h-4 mr-1" /> Especialistas
+              </Button>
+            )}
             <Dialog open={isNewPatientOpen} onOpenChange={setIsNewPatientOpen}>
               <DialogTrigger asChild>
                 <Button variant="outline" size="sm">
@@ -522,6 +544,100 @@ export default function Reception() {
               )}
             </Button>
           </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Specialists Management Dialog */}
+      <Dialog open={isSpecialistsOpen} onOpenChange={(open) => { setIsSpecialistsOpen(open); if (open) fetchAllSpecialists(); }}>
+        <DialogContent className="max-w-lg max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Stethoscope className="w-5 h-5" /> Gestión de Especialistas
+            </DialogTitle>
+          </DialogHeader>
+
+          {/* Existing specialists list */}
+          <div className="space-y-2 mb-4">
+            {specialists.map(s => (
+              <div key={s.id} className="flex items-center justify-between p-3 rounded-lg border">
+                <div>
+                  <p className="font-medium text-sm">{s.full_name}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {s.specialty === "psiquiatra" ? "Psiquiatra" : "Psicólogo"} — ${s.consultation_fee}
+                  </p>
+                </div>
+                <Badge variant={s.is_active ? "default" : "secondary"}>
+                  {s.is_active ? "Activo" : "Inactivo"}
+                </Badge>
+              </div>
+            ))}
+            {specialists.length === 0 && (
+              <p className="text-sm text-muted-foreground text-center py-4">No hay especialistas registrados</p>
+            )}
+          </div>
+
+          {/* Add new specialist form */}
+          <div className="border-t pt-4">
+            <h4 className="text-sm font-semibold mb-3">Agregar Especialista</h4>
+            <form onSubmit={async (e) => {
+              e.preventDefault();
+              setLoading(true);
+              const { error } = await supabase.from("specialists").insert({
+                full_name: newSpecialist.full_name,
+                specialty: newSpecialist.specialty as any,
+                consultation_fee: parseFloat(newSpecialist.consultation_fee),
+                phone: newSpecialist.phone || null,
+                email: newSpecialist.email || null,
+              });
+              if (error) {
+                toast({ variant: "destructive", title: "Error", description: error.message });
+              } else {
+                toast({ title: "Especialista registrado" });
+                setNewSpecialist({ full_name: "", specialty: "", consultation_fee: "", phone: "", email: "" });
+                fetchAllSpecialists();
+                fetchSpecialists();
+              }
+              setLoading(false);
+            }} className="space-y-3">
+              <div className="space-y-2">
+                <Label>Nombre completo *</Label>
+                <Input required value={newSpecialist.full_name} onChange={e => setNewSpecialist(p => ({ ...p, full_name: e.target.value }))} />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-2">
+                  <Label>Especialidad *</Label>
+                  <Select value={newSpecialist.specialty} onValueChange={v => setNewSpecialist(p => ({ ...p, specialty: v }))}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Seleccionar" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="psiquiatra">Psiquiatra</SelectItem>
+                      <SelectItem value="psicologo">Psicólogo</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label>Tarifa por consulta *</Label>
+                  <Input type="number" min="0" step="0.01" required value={newSpecialist.consultation_fee} onChange={e => setNewSpecialist(p => ({ ...p, consultation_fee: e.target.value }))} placeholder="0.00" />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-2">
+                  <Label>Teléfono</Label>
+                  <Input value={newSpecialist.phone} onChange={e => setNewSpecialist(p => ({ ...p, phone: e.target.value }))} />
+                </div>
+                <div className="space-y-2">
+                  <Label>Email</Label>
+                  <Input type="email" value={newSpecialist.email} onChange={e => setNewSpecialist(p => ({ ...p, email: e.target.value }))} />
+                </div>
+              </div>
+              <Button type="submit" className="w-full" disabled={loading || !newSpecialist.full_name || !newSpecialist.specialty || !newSpecialist.consultation_fee}>
+                {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : (
+                  <><Plus className="w-4 h-4 mr-1" /> Agregar Especialista</>
+                )}
+              </Button>
+            </form>
+          </div>
         </DialogContent>
       </Dialog>
     </div>
