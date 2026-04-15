@@ -15,8 +15,9 @@ import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import {
   UserPlus, LogOut, Clock, CreditCard, Users, Brain, Search,
-  CheckCircle2, Loader2, DollarSign
+  CheckCircle2, Loader2, DollarSign, Stethoscope, Plus, Trash2
 } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
 
 interface Specialist {
   id: string;
