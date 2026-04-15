@@ -327,6 +327,8 @@ export default function Reception() {
                 <Stethoscope className="w-4 h-4 mr-1" /> Especialistas
               </Button>
             )}
+            <Dialog open={isNewPatientOpen} onOpenChange={setIsNewPatientOpen}>
+              <DialogTrigger asChild>
                 <Button variant="outline" size="sm">
                   <UserPlus className="w-4 h-4 mr-1" /> Nuevo Paciente
                 </Button>
