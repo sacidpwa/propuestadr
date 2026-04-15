@@ -322,8 +322,11 @@ export default function Reception() {
             />
           </div>
           <div className="flex gap-2">
-            <Dialog open={isNewPatientOpen} onOpenChange={setIsNewPatientOpen}>
-              <DialogTrigger asChild>
+            {userRole === "admin" && (
+              <Button variant="outline" size="sm" onClick={() => setIsSpecialistsOpen(true)}>
+                <Stethoscope className="w-4 h-4 mr-1" /> Especialistas
+              </Button>
+            )}
                 <Button variant="outline" size="sm">
                   <UserPlus className="w-4 h-4 mr-1" /> Nuevo Paciente
                 </Button>
