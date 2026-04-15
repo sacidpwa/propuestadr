@@ -88,7 +88,19 @@ export default function Reception() {
     fetchSpecialists();
     fetchTodayVisits();
     fetchPatients();
+    fetchUserRole();
   }, []);
+
+  const fetchUserRole = async () => {
+    if (!user) return;
+    const { data } = await supabase.from("user_roles").select("role").eq("user_id", user.id).single();
+    setUserRole(data?.role || null);
+  };
+
+  const fetchAllSpecialists = async () => {
+    const { data } = await supabase.from("specialists").select("*").order("full_name");
+    setSpecialists((data as any[]) || []);
+  };
 
   const fetchSpecialists = async () => {
     const { data } = await supabase.from("specialists").select("*").eq("is_active", true);
