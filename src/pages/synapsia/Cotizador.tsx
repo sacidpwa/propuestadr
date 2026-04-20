@@ -110,7 +110,7 @@ const formatCurrency = (n: number) =>
   new Intl.NumberFormat("es-MX", { style: "currency", currency: "MXN", minimumFractionDigits: 0 }).format(n);
 
 export default function Cotizador() {
-  const { user, signOut } = useAuth();
+  const { user, signOut, hasRole } = useAuth();
   const { toast } = useToast();
   const [quotes, setQuotes] = useState<Quote[]>([]);
   const [loading, setLoading] = useState(false);
