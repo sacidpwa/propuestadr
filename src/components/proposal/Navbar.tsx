@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
-import logoImage from "@/assets/logo-dranur.svg";
+import { Link } from "react-router-dom";
+import { LogIn } from "lucide-react";
 
 const links = [
   { label: "Inicio", href: "#inicio" },
@@ -33,17 +34,27 @@ const Navbar = () => {
     >
       <div className="max-w-6xl mx-auto px-6 flex items-center justify-between">
         <div />
-        <div className="hidden md:flex items-center gap-8">
-          {links.map((link) => (
-            <a
-              key={link.href}
-              href={link.href}
-              onClick={(e) => handleClick(e, link.href)}
-              className="font-sans text-xs tracking-[0.15em] uppercase text-white/60 hover:text-gold transition-colors duration-300"
-            >
-              {link.label}
-            </a>
-          ))}
+        <div className="flex items-center gap-6 md:gap-8">
+          <div className="hidden md:flex items-center gap-8">
+            {links.map((link) => (
+              <a
+                key={link.href}
+                href={link.href}
+                onClick={(e) => handleClick(e, link.href)}
+                className="font-sans text-xs tracking-[0.15em] uppercase text-white/60 hover:text-gold transition-colors duration-300"
+              >
+                {link.label}
+              </a>
+            ))}
+          </div>
+          <Link
+            to="/synapsia/login"
+            className="flex items-center gap-1.5 font-sans text-xs tracking-[0.15em] uppercase text-white/60 hover:text-gold transition-colors duration-300 border border-white/20 hover:border-gold/60 rounded-full px-3 py-1.5"
+            aria-label="Acceso"
+          >
+            <LogIn className="w-3 h-3" />
+            <span className="hidden sm:inline">Acceso</span>
+          </Link>
         </div>
       </div>
     </nav>
