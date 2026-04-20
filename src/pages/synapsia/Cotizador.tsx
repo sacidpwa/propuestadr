@@ -55,8 +55,8 @@ const SERVICE_LABELS: Record<ServiceType, string> = {
 // Precios base extraídos del Excel Costos_2026_General
 // Benesse no tiene habitación individual en el Excel: usamos propuesta de $85,000
 const SERVICE_PRICES: Record<ServiceType, Record<RoomType, number>> = {
-  senior_living: { compartida: 50000, individual: 65000 },
-  centro_benesse: { compartida: 60000, individual: 85000 }, // individual = propuesta a revisar
+  senior_living: { compartida: 35000, individual: 50000 },
+  centro_benesse: { compartida: 65000, individual: 85000 }, // individual = propuesta a revisar
 };
 
 // Catálogos por defecto basados en el Excel del cliente.
