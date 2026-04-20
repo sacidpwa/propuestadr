@@ -4,7 +4,8 @@ import { Loader2 } from "lucide-react";
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
-  requiredRole?: string;
+  /** Un solo rol o lista de roles permitidos. Admin siempre tiene acceso. */
+  requiredRole?: string | string[];
 }
 
 export default function ProtectedRoute({ children, requiredRole }: ProtectedRouteProps) {
@@ -22,12 +23,16 @@ export default function ProtectedRoute({ children, requiredRole }: ProtectedRout
     return <Navigate to="/synapsia/login" replace />;
   }
 
-  if (requiredRole && !hasRole(requiredRole) && !hasRole("admin")) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <p className="text-muted-foreground">No tienes permisos para acceder a esta sección.</p>
-      </div>
-    );
+  if (requiredRole) {
+    const allowed = Array.isArray(requiredRole) ? requiredRole : [requiredRole];
+    const ok = allowed.some((r) => hasRole(r)) || hasRole("admin");
+    if (!ok) {
+      return (
+        <div className="min-h-screen flex items-center justify-center">
+          <p className="text-muted-foreground">No tienes permisos para acceder a esta sección.</p>
+        </div>
+      );
+    }
   }
 
   return <>{children}</>;
