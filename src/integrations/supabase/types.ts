@@ -115,6 +115,63 @@ export type Database = {
         }
         Relationships: []
       }
+      quotes: {
+        Row: {
+          additional_costs: Json
+          base_monthly_price: number
+          client_email: string | null
+          client_name: string
+          client_phone: string | null
+          created_at: string
+          created_by: string | null
+          estimated_admission_date: string | null
+          id: string
+          notes: string | null
+          other_to_quote: Json
+          quote_number: string
+          resident_age: number | null
+          resident_name: string | null
+          service_type: string
+          updated_at: string
+        }
+        Insert: {
+          additional_costs?: Json
+          base_monthly_price: number
+          client_email?: string | null
+          client_name: string
+          client_phone?: string | null
+          created_at?: string
+          created_by?: string | null
+          estimated_admission_date?: string | null
+          id?: string
+          notes?: string | null
+          other_to_quote?: Json
+          quote_number: string
+          resident_age?: number | null
+          resident_name?: string | null
+          service_type: string
+          updated_at?: string
+        }
+        Update: {
+          additional_costs?: Json
+          base_monthly_price?: number
+          client_email?: string | null
+          client_name?: string
+          client_phone?: string | null
+          created_at?: string
+          created_by?: string | null
+          estimated_admission_date?: string | null
+          id?: string
+          notes?: string | null
+          other_to_quote?: Json
+          quote_number?: string
+          resident_age?: number | null
+          resident_name?: string | null
+          service_type?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       specialists: {
         Row: {
           consultation_fee: number
