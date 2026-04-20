@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
+import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -8,6 +9,13 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { Brain, Loader2 } from "lucide-react";
+
+const routeForRoles = (roles: string[]): string => {
+  if (roles.includes("admin")) return "/synapsia";
+  if (roles.includes("recepcion") || roles.includes("especialista")) return "/synapsia";
+  if (roles.includes("administrativo")) return "/synapsia/admin";
+  return "/synapsia";
+};
 
 export default function SynapsiaLogin() {
   const [email, setEmail] = useState("");
@@ -17,6 +25,17 @@ export default function SynapsiaLogin() {
   const { signIn, signUp } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
+
+  const redirectByRole = async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      navigate("/synapsia");
+      return;
+    }
+    const { data } = await supabase.from("user_roles").select("role").eq("user_id", user.id);
+    const roles = (data || []).map((r) => r.role as string);
+    navigate(routeForRoles(roles));
+  };
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -31,7 +50,7 @@ export default function SynapsiaLogin() {
           : error.message,
       });
     } else {
-      navigate("/synapsia");
+      await redirectByRole();
     }
     setIsLoading(false);
   };
@@ -51,7 +70,7 @@ export default function SynapsiaLogin() {
         title: "Cuenta creada",
         description: "Tu cuenta ha sido creada exitosamente. Ya puedes iniciar sesión.",
       });
-      navigate("/synapsia");
+      await redirectByRole();
     }
     setIsLoading(false);
   };
