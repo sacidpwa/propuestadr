@@ -119,6 +119,7 @@ export default function Cotizador() {
   const [form, setForm] = useState({
     service_type: "senior_living" as ServiceType,
     room_type: "compartida" as RoomType,
+    base_monthly_price: SERVICE_PRICES.senior_living.compartida,
     client_name: "",
     client_phone: "",
     client_email: "",
@@ -134,14 +135,23 @@ export default function Cotizador() {
     fetchQuotes();
   }, []);
 
-  // Al cambiar de servicio, recarga el catálogo correspondiente
+  // Al cambiar de servicio o tipo de habitación, sugiere el precio del catálogo y recarga conceptos
   useEffect(() => {
     setForm((prev) => ({
       ...prev,
+      base_monthly_price: SERVICE_PRICES[prev.service_type][prev.room_type],
       additional_costs: [...DEFAULT_COSTS[prev.service_type]],
     }));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [form.service_type]);
+
+  useEffect(() => {
+    setForm((prev) => ({
+      ...prev,
+      base_monthly_price: SERVICE_PRICES[prev.service_type][prev.room_type],
+    }));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [form.room_type]);
 
   const fetchQuotes = async () => {
     const { data, error } = await supabase
@@ -159,6 +169,7 @@ export default function Cotizador() {
     setForm({
       service_type: "senior_living",
       room_type: "compartida",
+      base_monthly_price: SERVICE_PRICES.senior_living.compartida,
       client_name: "",
       client_phone: "",
       client_email: "",
@@ -217,7 +228,7 @@ export default function Cotizador() {
     setLoading(true);
 
     const quote_number = generateQuoteNumber();
-    const base_monthly_price = SERVICE_PRICES[form.service_type][form.room_type];
+    const base_monthly_price = form.base_monthly_price;
 
     const payload: any = {
       quote_number,
@@ -258,7 +269,7 @@ export default function Cotizador() {
     generateQuotePDF(q);
   };
 
-  const currentBasePrice = SERVICE_PRICES[form.service_type][form.room_type];
+  const suggestedBasePrice = SERVICE_PRICES[form.service_type][form.room_type];
 
   return (
     <div className="min-h-screen bg-background">
@@ -356,8 +367,22 @@ export default function Cotizador() {
                     </Select>
                   </div>
                   <div className="space-y-2">
-                    <Label>Mensual base</Label>
-                    <Input value={formatCurrency(currentBasePrice)} disabled className="font-semibold" />
+                    <Label>Cuota mensual (MXN) *</Label>
+                    <Input
+                      type="number"
+                      min={0}
+                      step={500}
+                      required
+                      value={form.base_monthly_price}
+                      onChange={(e) =>
+                        setForm((p) => ({ ...p, base_monthly_price: parseFloat(e.target.value) || 0 }))
+                      }
+                      className="font-semibold"
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      Sugerido: {formatCurrency(suggestedBasePrice)}
+                      {form.base_monthly_price !== suggestedBasePrice && " (editado)"}
+                    </p>
                   </div>
                 </div>
 
