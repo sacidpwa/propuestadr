@@ -13,6 +13,7 @@ interface QuoteData {
   quote_number: string;
   service_type: "senior_living" | "centro_benesse";
   base_monthly_price: number;
+  room_type?: "compartida" | "individual" | null;
   client_name: string;
   client_phone: string | null;
   client_email: string | null;
@@ -154,7 +155,10 @@ export function generateQuotePDF(quote: QuoteData) {
   doc.setTextColor(...NAVY);
   doc.setFont("helvetica", "normal");
   doc.setFontSize(10);
-  doc.text("Cuota mensual base", margin + 16, y + 22);
+  const roomLabel = quote.room_type
+    ? `Cuota mensual base · Habitación ${quote.room_type === "compartida" ? "compartida" : "individual"}`
+    : "Cuota mensual base";
+  doc.text(roomLabel, margin + 16, y + 22);
   doc.setFont("helvetica", "bold");
   doc.setFontSize(20);
   doc.setTextColor(...GOLD);
