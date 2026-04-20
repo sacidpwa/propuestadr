@@ -75,7 +75,7 @@ const DEFAULT_COSTS: Record<ServiceType, CostItem[]> = {
     { concept: "Acompañante terapéutico (fuera de la institución)", unit: "por hora", price: 170 },
     { concept: "Consulta de emergencia", unit: "por evento", price: 2500 },
     { concept: "Consulta psiquiátrica", unit: "por consulta", price: 2000 },
-    { concept: "Consulta Dr. Rodrigo Márquez de la Serna", unit: "por consulta", price: 1500 },
+    { concept: "Consulta Dr. Rodrigo Márquez de la Serna", unit: "por consulta", price: 2500, proposed: true },
   ],
   centro_benesse: [
     { concept: "Inscripción", unit: "pago único", price: 50000, proposed: true },
