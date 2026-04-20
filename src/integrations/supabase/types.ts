@@ -294,7 +294,7 @@ export type Database = {
       }
     }
     Enums: {
-      app_role: "admin" | "recepcion" | "especialista"
+      app_role: "admin" | "recepcion" | "especialista" | "administrativo"
       payment_method: "efectivo" | "transferencia" | "tarjeta"
       specialty_type: "psiquiatra" | "psicologo"
       visit_status: "en_espera" | "en_consulta" | "atendido" | "cancelado"
@@ -425,7 +425,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      app_role: ["admin", "recepcion", "especialista"],
+      app_role: ["admin", "recepcion", "especialista", "administrativo"],
       payment_method: ["efectivo", "transferencia", "tarjeta"],
       specialty_type: ["psiquiatra", "psicologo"],
       visit_status: ["en_espera", "en_consulta", "atendido", "cancelado"],
