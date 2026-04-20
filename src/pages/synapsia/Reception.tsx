@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
@@ -15,7 +16,7 @@ import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import {
   UserPlus, LogOut, Clock, CreditCard, Users, Brain, Search,
-  CheckCircle2, Loader2, DollarSign, Stethoscope, Plus, Trash2
+  CheckCircle2, Loader2, DollarSign, Stethoscope, Plus, Trash2, Calculator
 } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 
@@ -323,9 +324,16 @@ export default function Reception() {
           </div>
           <div className="flex gap-2">
             {userRole === "admin" && (
-              <Button variant="outline" size="sm" onClick={() => setIsSpecialistsOpen(true)}>
-                <Stethoscope className="w-4 h-4 mr-1" /> Especialistas
-              </Button>
+              <>
+                <Link to="/synapsia/cotizador">
+                  <Button variant="outline" size="sm">
+                    <Calculator className="w-4 h-4 mr-1" /> Cotizador
+                  </Button>
+                </Link>
+                <Button variant="outline" size="sm" onClick={() => setIsSpecialistsOpen(true)}>
+                  <Stethoscope className="w-4 h-4 mr-1" /> Especialistas
+                </Button>
+              </>
             )}
             <Dialog open={isNewPatientOpen} onOpenChange={setIsNewPatientOpen}>
               <DialogTrigger asChild>

@@ -8,6 +8,7 @@ import Contratos from "./pages/Contratos";
 import NotFound from "./pages/NotFound";
 import SynapsiaLogin from "./pages/synapsia/Login";
 import Reception from "./pages/synapsia/Reception";
+import Cotizador from "./pages/synapsia/Cotizador";
 import ProtectedRoute from "./components/synapsia/ProtectedRoute";
 import { AuthProvider } from "./hooks/useAuth";
 
@@ -29,6 +30,14 @@ const App = () => (
               element={
                 <ProtectedRoute>
                   <Reception />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/synapsia/cotizador"
+              element={
+                <ProtectedRoute requiredRole="admin">
+                  <Cotizador />
                 </ProtectedRoute>
               }
             />
