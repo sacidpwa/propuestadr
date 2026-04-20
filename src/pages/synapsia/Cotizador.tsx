@@ -91,7 +91,7 @@ const DEFAULT_COSTS: Record<ServiceType, CostItem[]> = {
     { concept: "Consulta psicológica individual", unit: "por consulta", price: 1200, proposed: true },
     { concept: "Consulta psicológica grupal (por persona)", unit: "por sesión", price: 700, proposed: true },
     { concept: "Consulta psiquiátrica", unit: "por consulta", price: 2000 },
-    { concept: "Consulta Dr. Rodrigo Márquez de la Serna", unit: "por consulta", price: 1500 },
+    { concept: "Consulta Dr. Rodrigo Márquez de la Serna", unit: "por consulta", price: 2500, proposed: true },
   ],
 };
 
