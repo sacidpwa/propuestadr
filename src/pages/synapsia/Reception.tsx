@@ -331,7 +331,7 @@ export default function Reception() {
                   </Button>
                 </Link>
                 <Button variant="outline" size="sm" onClick={() => setIsSpecialistsOpen(true)}>
-                  <Stephoscope className="w-4 h-4 mr-1" /> Especialistas
+                  <Stethoscope className="w-4 h-4 mr-1" /> Especialistas
                 </Button>
               </>
             )}
