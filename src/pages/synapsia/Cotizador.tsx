@@ -119,6 +119,7 @@ export default function Cotizador() {
   const [form, setForm] = useState({
     service_type: "senior_living" as ServiceType,
     room_type: "compartida" as RoomType,
+    base_monthly_price: SERVICE_PRICES.senior_living.compartida,
     client_name: "",
     client_phone: "",
     client_email: "",
