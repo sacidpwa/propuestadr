@@ -65,7 +65,7 @@ const DEFAULT_COSTS: Record<ServiceType, CostItem[]> = {
   senior_living: [
     { concept: "Inscripción", unit: "pago único", price: 40000 },
     { concept: "Estancia por día", unit: "por día", price: 1624 },
-    { concept: "Estancia de día (8 hrs / 3 alimentos)", unit: "por día", price: 700 },
+    { concept: "Estancia de día (8 hrs / 3 alimentos)", unit: "por día", price: 1200, proposed: true },
     { concept: "Kit de ingreso", unit: "pago único", price: 2100 },
     { concept: "Cuidador particular (dentro de la institución)", unit: "por hora", price: 120 },
     { concept: "Enfermera particular (dentro de la institución)", unit: "por hora", price: 130 },
