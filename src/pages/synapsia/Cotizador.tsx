@@ -367,8 +367,22 @@ export default function Cotizador() {
                     </Select>
                   </div>
                   <div className="space-y-2">
-                    <Label>Mensual base</Label>
-                    <Input value={formatCurrency(currentBasePrice)} disabled className="font-semibold" />
+                    <Label>Cuota mensual (MXN) *</Label>
+                    <Input
+                      type="number"
+                      min={0}
+                      step={500}
+                      required
+                      value={form.base_monthly_price}
+                      onChange={(e) =>
+                        setForm((p) => ({ ...p, base_monthly_price: parseFloat(e.target.value) || 0 }))
+                      }
+                      className="font-semibold"
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      Sugerido: {formatCurrency(suggestedBasePrice)}
+                      {form.base_monthly_price !== suggestedBasePrice && " (editado)"}
+                    </p>
                   </div>
                 </div>
 
