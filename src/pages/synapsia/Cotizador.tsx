@@ -303,7 +303,7 @@ export default function Cotizador() {
               <div>
                 <p className="text-xs text-muted-foreground">Senior Living</p>
                 <p className="text-sm">
-                  Compartida <span className="font-bold">{formatCurrency(50000)}</span> · Individual <span className="font-bold">{formatCurrency(65000)}</span>
+                  Compartida <span className="font-bold">{formatCurrency(35000)}</span> · Individual <span className="font-bold">{formatCurrency(50000)}</span>
                 </p>
               </div>
             </CardContent>
@@ -314,7 +314,7 @@ export default function Cotizador() {
               <div>
                 <p className="text-xs text-muted-foreground">Centro Benesse</p>
                 <p className="text-sm">
-                  Compartida <span className="font-bold">{formatCurrency(60000)}</span> · Individual <span className="font-bold">{formatCurrency(85000)}</span>
+                  Compartida <span className="font-bold">{formatCurrency(65000)}</span> · Individual <span className="font-bold">{formatCurrency(85000)}</span>
                   <Badge variant="outline" className="ml-2 text-[10px]">Individual: propuesta</Badge>
                 </p>
               </div>
