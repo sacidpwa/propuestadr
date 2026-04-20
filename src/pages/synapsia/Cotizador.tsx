@@ -5,7 +5,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
@@ -23,13 +23,18 @@ interface CostItem {
   concept: string;
   unit: string;
   price: number | null;
+  proposed?: boolean; // Marca conceptos cuyo precio fue propuesto y debe revisarse
 }
+
+type ServiceType = "senior_living" | "centro_benesse";
+type RoomType = "compartida" | "individual";
 
 interface Quote {
   id: string;
   quote_number: string;
-  service_type: "senior_living" | "centro_benesse";
+  service_type: ServiceType;
   base_monthly_price: number;
+  room_type?: RoomType | null;
   client_name: string;
   client_phone: string | null;
   client_email: string | null;
@@ -42,23 +47,53 @@ interface Quote {
   created_at: string;
 }
 
-const SERVICE_LABELS: Record<string, string> = {
+const SERVICE_LABELS: Record<ServiceType, string> = {
   senior_living: "Senior Living",
   centro_benesse: "Centro Benesse",
 };
 
-const SERVICE_PRICES: Record<string, number> = {
-  senior_living: 30000,
-  centro_benesse: 65000,
+// Precios base extraídos del Excel Costos_2026_General
+// Benesse no tiene habitación individual en el Excel: usamos propuesta de $85,000
+const SERVICE_PRICES: Record<ServiceType, Record<RoomType, number>> = {
+  senior_living: { compartida: 50000, individual: 65000 },
+  centro_benesse: { compartida: 60000, individual: 85000 }, // individual = propuesta a revisar
 };
 
-const DEFAULT_ADDITIONAL_COSTS: CostItem[] = [
-  { concept: "Enfermero por hora", unit: "por hora", price: 250 },
-  { concept: "Cuidado terapéutico por hora", unit: "por hora", price: 350 },
-  { concept: "Traslado a hospital / ambulancia", unit: "por servicio", price: 1800 },
-  { concept: "Lavandería personal", unit: "por mes", price: 1500 },
-  { concept: "Alimentación de invitado", unit: "por comida", price: 250 },
-];
+// Catálogos por defecto basados en el Excel del cliente.
+// proposed: true marca valores propuestos por el asistente que el cliente debe revisar.
+const DEFAULT_COSTS: Record<ServiceType, CostItem[]> = {
+  senior_living: [
+    { concept: "Inscripción", unit: "pago único", price: 40000 },
+    { concept: "Estancia por día", unit: "por día", price: 1624 },
+    { concept: "Estancia de día (8 hrs / 3 alimentos)", unit: "por día", price: 700 },
+    { concept: "Kit de ingreso", unit: "pago único", price: 2100 },
+    { concept: "Cuidador particular (dentro de la institución)", unit: "por hora", price: 120 },
+    { concept: "Enfermera particular (dentro de la institución)", unit: "por hora", price: 130 },
+    { concept: "Acompañante terapéutico (dentro de la institución)", unit: "por hora", price: 150 },
+    { concept: "Cuidador particular (fuera de la institución)", unit: "por hora", price: 130 },
+    { concept: "Enfermera particular (fuera de la institución)", unit: "por hora", price: 150 },
+    { concept: "Acompañante terapéutico (fuera de la institución)", unit: "por hora", price: 170 },
+    { concept: "Consulta de emergencia", unit: "por evento", price: 2500 },
+    { concept: "Consulta psiquiátrica", unit: "por consulta", price: 2000 },
+    { concept: "Consulta Dr. Rodrigo Márquez de la Serna", unit: "por consulta", price: 1500 },
+  ],
+  centro_benesse: [
+    { concept: "Inscripción", unit: "pago único", price: 50000, proposed: true },
+    { concept: "Kit de ingreso", unit: "pago único", price: 3500, proposed: true },
+    { concept: "Cuidador particular (dentro de la institución)", unit: "por hora", price: 120 },
+    { concept: "Enfermera particular (dentro de la institución)", unit: "por hora", price: 130 },
+    { concept: "Acompañante terapéutico (dentro de la institución)", unit: "por hora", price: 150 },
+    { concept: "Cuidador particular (fuera de la institución)", unit: "por hora", price: 130 },
+    { concept: "Enfermera particular (fuera de la institución)", unit: "por hora", price: 150 },
+    { concept: "Acompañante terapéutico (fuera de la institución)", unit: "por hora", price: 170 },
+    { concept: "Terapia ocupacional (cuota semestral)", unit: "semestral", price: 1200, proposed: true },
+    { concept: "Consulta de emergencia", unit: "por evento", price: 2500 },
+    { concept: "Consulta psicológica individual", unit: "por consulta", price: 1200, proposed: true },
+    { concept: "Consulta psicológica grupal (por persona)", unit: "por sesión", price: 700, proposed: true },
+    { concept: "Consulta psiquiátrica", unit: "por consulta", price: 2000 },
+    { concept: "Consulta Dr. Rodrigo Márquez de la Serna", unit: "por consulta", price: 1500 },
+  ],
+};
 
 const DEFAULT_OTHER_TO_QUOTE: CostItem[] = [
   { concept: "5 alimentos al día", unit: "incluido en cotización a medida", price: null },
@@ -67,6 +102,8 @@ const DEFAULT_OTHER_TO_QUOTE: CostItem[] = [
   { concept: "Terapia ocupacional", unit: "por sesión", price: null },
   { concept: "Instalaciones y esparcimiento", unit: "incluido", price: null },
   { concept: "Acompañamiento médico a citas externas", unit: "por evento", price: null },
+  { concept: "Traslados especializados / ambulancia", unit: "por servicio", price: null },
+  { concept: "Lavandería personal", unit: "por mes", price: null },
 ];
 
 const formatCurrency = (n: number) =>
@@ -80,7 +117,8 @@ export default function Cotizador() {
   const [isOpen, setIsOpen] = useState(false);
 
   const [form, setForm] = useState({
-    service_type: "senior_living" as "senior_living" | "centro_benesse",
+    service_type: "senior_living" as ServiceType,
+    room_type: "compartida" as RoomType,
     client_name: "",
     client_phone: "",
     client_email: "",
@@ -88,13 +126,22 @@ export default function Cotizador() {
     resident_age: "",
     estimated_admission_date: "",
     notes: "",
-    additional_costs: [...DEFAULT_ADDITIONAL_COSTS],
+    additional_costs: [...DEFAULT_COSTS.senior_living],
     other_to_quote: [...DEFAULT_OTHER_TO_QUOTE],
   });
 
   useEffect(() => {
     fetchQuotes();
   }, []);
+
+  // Al cambiar de servicio, recarga el catálogo correspondiente
+  useEffect(() => {
+    setForm((prev) => ({
+      ...prev,
+      additional_costs: [...DEFAULT_COSTS[prev.service_type]],
+    }));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [form.service_type]);
 
   const fetchQuotes = async () => {
     const { data, error } = await supabase
@@ -111,6 +158,7 @@ export default function Cotizador() {
   const resetForm = () => {
     setForm({
       service_type: "senior_living",
+      room_type: "compartida",
       client_name: "",
       client_phone: "",
       client_email: "",
@@ -118,7 +166,7 @@ export default function Cotizador() {
       resident_age: "",
       estimated_admission_date: "",
       notes: "",
-      additional_costs: [...DEFAULT_ADDITIONAL_COSTS],
+      additional_costs: [...DEFAULT_COSTS.senior_living],
       other_to_quote: [...DEFAULT_OTHER_TO_QUOTE],
     });
   };
@@ -134,8 +182,10 @@ export default function Cotizador() {
       const item = { ...items[index] };
       if (field === "price") {
         item.price = value === "" ? null : parseFloat(value);
+        // Al editar el precio, deja de ser "propuesto"
+        item.proposed = false;
       } else {
-        item[field] = value as any;
+        (item as any)[field] = value;
       }
       items[index] = item;
       return { ...prev, [section]: items };
@@ -156,10 +206,7 @@ export default function Cotizador() {
     }));
   };
 
-  const generateQuoteNumber = async () => {
-    const { data, error } = await supabase.rpc("nextval" as any, { sequence: "quotes_folio_seq" } as any);
-    if (!error && data) return `COT-${data}`;
-    // fallback if rpc not exposed
+  const generateQuoteNumber = () => {
     const yy = new Date().getFullYear().toString().slice(-2);
     const ts = Date.now().toString().slice(-6);
     return `COT-${yy}${ts}`;
@@ -169,10 +216,10 @@ export default function Cotizador() {
     e.preventDefault();
     setLoading(true);
 
-    const quote_number = await generateQuoteNumber();
-    const base_monthly_price = SERVICE_PRICES[form.service_type];
+    const quote_number = generateQuoteNumber();
+    const base_monthly_price = SERVICE_PRICES[form.service_type][form.room_type];
 
-    const payload = {
+    const payload: any = {
       quote_number,
       service_type: form.service_type,
       base_monthly_price,
@@ -182,9 +229,12 @@ export default function Cotizador() {
       resident_name: form.resident_name || null,
       resident_age: form.resident_age ? parseInt(form.resident_age) : null,
       estimated_admission_date: form.estimated_admission_date || null,
-      notes: form.notes || null,
-      additional_costs: form.additional_costs as any,
-      other_to_quote: form.other_to_quote as any,
+      notes: [
+        form.notes,
+        `Tipo de habitación: ${form.room_type === "compartida" ? "Compartida" : "Individual"}`,
+      ].filter(Boolean).join("\n"),
+      additional_costs: form.additional_costs,
+      other_to_quote: form.other_to_quote,
       created_by: user?.id,
     };
 
@@ -197,7 +247,7 @@ export default function Cotizador() {
     }
 
     toast({ title: "Cotización guardada", description: `Folio ${quote_number}` });
-    generateQuotePDF(data as any);
+    generateQuotePDF({ ...(data as any), room_type: form.room_type });
     resetForm();
     setIsOpen(false);
     fetchQuotes();
@@ -207,6 +257,8 @@ export default function Cotizador() {
   const handleDownload = (q: Quote) => {
     generateQuotePDF(q);
   };
+
+  const currentBasePrice = SERVICE_PRICES[form.service_type][form.room_type];
 
   return (
     <div className="min-h-screen bg-background">
@@ -239,7 +291,9 @@ export default function Cotizador() {
               <Building2 className="w-8 h-8 text-primary" />
               <div>
                 <p className="text-xs text-muted-foreground">Senior Living</p>
-                <p className="text-2xl font-bold">{formatCurrency(30000)}<span className="text-sm font-normal text-muted-foreground"> / mes</span></p>
+                <p className="text-sm">
+                  Compartida <span className="font-bold">{formatCurrency(50000)}</span> · Individual <span className="font-bold">{formatCurrency(65000)}</span>
+                </p>
               </div>
             </CardContent>
           </Card>
@@ -248,7 +302,10 @@ export default function Cotizador() {
               <Building2 className="w-8 h-8 text-primary" />
               <div>
                 <p className="text-xs text-muted-foreground">Centro Benesse</p>
-                <p className="text-2xl font-bold">{formatCurrency(65000)}<span className="text-sm font-normal text-muted-foreground"> / mes</span></p>
+                <p className="text-sm">
+                  Compartida <span className="font-bold">{formatCurrency(60000)}</span> · Individual <span className="font-bold">{formatCurrency(85000)}</span>
+                  <Badge variant="outline" className="ml-2 text-[10px]">Individual: propuesta</Badge>
+                </p>
               </div>
             </CardContent>
           </Card>
@@ -267,25 +324,40 @@ export default function Cotizador() {
                 <DialogTitle>Nueva Cotización</DialogTitle>
               </DialogHeader>
               <form onSubmit={handleSubmit} className="space-y-5">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div className="space-y-2">
                     <Label>Servicio *</Label>
                     <Select
                       value={form.service_type}
-                      onValueChange={(v) => setForm((p) => ({ ...p, service_type: v as any }))}
+                      onValueChange={(v) => setForm((p) => ({ ...p, service_type: v as ServiceType }))}
                     >
                       <SelectTrigger>
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="senior_living">Senior Living — {formatCurrency(30000)}/mes</SelectItem>
-                        <SelectItem value="centro_benesse">Centro Benesse — {formatCurrency(65000)}/mes</SelectItem>
+                        <SelectItem value="senior_living">Senior Living</SelectItem>
+                        <SelectItem value="centro_benesse">Centro Benesse</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
                   <div className="space-y-2">
-                    <Label>Precio mensual base</Label>
-                    <Input value={formatCurrency(SERVICE_PRICES[form.service_type])} disabled />
+                    <Label>Habitación *</Label>
+                    <Select
+                      value={form.room_type}
+                      onValueChange={(v) => setForm((p) => ({ ...p, room_type: v as RoomType }))}
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="compartida">Compartida</SelectItem>
+                        <SelectItem value="individual">Individual</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Mensual base</Label>
+                    <Input value={formatCurrency(currentBasePrice)} disabled className="font-semibold" />
                   </div>
                 </div>
 
@@ -331,7 +403,7 @@ export default function Cotizador() {
 
                 <CostsEditor
                   title="Costos adicionales"
-                  hint="Conceptos con precio definido. Edítalos según el caso."
+                  hint="Catálogo precargado con tarifas oficiales 2026. Los marcados con 💡 son propuestas a revisar."
                   items={form.additional_costs}
                   onAdd={() => addCostItem("additional_costs")}
                   onRemove={(i) => removeCostItem("additional_costs", i)}
@@ -432,14 +504,16 @@ function CostsEditor({ title, hint, items, showPrice, onAdd, onRemove, onChange 
       <div className="space-y-2">
         {items.map((item, i) => (
           <div key={i} className="grid grid-cols-12 gap-2 items-center">
+            <div className={`${showPrice ? "col-span-5" : "col-span-6"} flex items-center gap-1`}>
+              {item.proposed && <span title="Valor propuesto, revisar">💡</span>}
+              <Input
+                placeholder="Concepto"
+                value={item.concept}
+                onChange={(e) => onChange(i, "concept", e.target.value)}
+              />
+            </div>
             <Input
-              className="col-span-5"
-              placeholder="Concepto"
-              value={item.concept}
-              onChange={(e) => onChange(i, "concept", e.target.value)}
-            />
-            <Input
-              className={showPrice ? "col-span-3" : "col-span-6"}
+              className={showPrice ? "col-span-3" : "col-span-5"}
               placeholder="Unidad (ej. por hora)"
               value={item.unit}
               onChange={(e) => onChange(i, "unit", e.target.value)}
