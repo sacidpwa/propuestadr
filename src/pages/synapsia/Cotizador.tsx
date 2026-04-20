@@ -55,8 +55,8 @@ const SERVICE_LABELS: Record<ServiceType, string> = {
 // Precios base extraídos del Excel Costos_2026_General
 // Benesse no tiene habitación individual en el Excel: usamos propuesta de $85,000
 const SERVICE_PRICES: Record<ServiceType, Record<RoomType, number>> = {
-  senior_living: { compartida: 50000, individual: 65000 },
-  centro_benesse: { compartida: 60000, individual: 85000 }, // individual = propuesta a revisar
+  senior_living: { compartida: 35000, individual: 50000 },
+  centro_benesse: { compartida: 65000, individual: 85000 }, // individual = propuesta a revisar
 };
 
 // Catálogos por defecto basados en el Excel del cliente.
@@ -65,7 +65,7 @@ const DEFAULT_COSTS: Record<ServiceType, CostItem[]> = {
   senior_living: [
     { concept: "Inscripción", unit: "pago único", price: 40000 },
     { concept: "Estancia por día", unit: "por día", price: 1624 },
-    { concept: "Estancia de día (8 hrs / 3 alimentos)", unit: "por día", price: 700 },
+    { concept: "Estancia de día (8 hrs / 3 alimentos)", unit: "por día", price: 1200, proposed: true },
     { concept: "Kit de ingreso", unit: "pago único", price: 2100 },
     { concept: "Cuidador particular (dentro de la institución)", unit: "por hora", price: 120 },
     { concept: "Enfermera particular (dentro de la institución)", unit: "por hora", price: 130 },
@@ -303,7 +303,7 @@ export default function Cotizador() {
               <div>
                 <p className="text-xs text-muted-foreground">Senior Living</p>
                 <p className="text-sm">
-                  Compartida <span className="font-bold">{formatCurrency(50000)}</span> · Individual <span className="font-bold">{formatCurrency(65000)}</span>
+                  Compartida <span className="font-bold">{formatCurrency(35000)}</span> · Individual <span className="font-bold">{formatCurrency(50000)}</span>
                 </p>
               </div>
             </CardContent>
@@ -314,7 +314,7 @@ export default function Cotizador() {
               <div>
                 <p className="text-xs text-muted-foreground">Centro Benesse</p>
                 <p className="text-sm">
-                  Compartida <span className="font-bold">{formatCurrency(60000)}</span> · Individual <span className="font-bold">{formatCurrency(85000)}</span>
+                  Compartida <span className="font-bold">{formatCurrency(65000)}</span> · Individual <span className="font-bold">{formatCurrency(85000)}</span>
                   <Badge variant="outline" className="ml-2 text-[10px]">Individual: propuesta</Badge>
                 </p>
               </div>
