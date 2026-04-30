@@ -48,7 +48,8 @@ export default function UsersAdmin() {
 
   const linkUser = async (specialistId: string, userId: string) => {
     setLoading(true);
-    const { error } = await supabase.from("specialists").update({ user_id: userId || null }).eq("id", specialistId);
+    const finalId = userId === "__none__" ? null : userId;
+    const { error } = await supabase.from("specialists").update({ user_id: finalId }).eq("id", specialistId);
     if (error) toast({ variant: "destructive", title: "Error", description: error.message });
     else toast({ title: "Vinculación actualizada" });
     fetchAll();
