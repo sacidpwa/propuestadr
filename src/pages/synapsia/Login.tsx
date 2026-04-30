@@ -8,7 +8,9 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
-import { Brain, Loader2 } from "lucide-react";
+import { Loader2 } from "lucide-react";
+import synapsiaLogo from "@/assets/synapsia-logo.svg";
+import WelcomeOverlay from "@/components/synapsia/WelcomeOverlay";
 
 const routeForRoles = (roles: string[]): string => {
   if (roles.includes("admin")) return "/synapsia";
@@ -25,6 +27,7 @@ export default function SynapsiaLogin() {
   const { signIn, signUp } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const [welcome, setWelcome] = useState<{ name: string; target: string } | null>(null);
 
   const redirectByRole = async () => {
     const { data: { user } } = await supabase.auth.getUser();
@@ -34,7 +37,11 @@ export default function SynapsiaLogin() {
     }
     const { data } = await supabase.from("user_roles").select("role").eq("user_id", user.id);
     const roles = (data || []).map((r) => r.role as string);
-    navigate(routeForRoles(roles));
+    const target = routeForRoles(roles);
+    const displayName =
+      (user.user_metadata as any)?.full_name ||
+      (user.email ? user.email.split("@")[0] : "Usuario");
+    setWelcome({ name: displayName, target });
   };
 
   const handleLogin = async (e: React.FormEvent) => {
