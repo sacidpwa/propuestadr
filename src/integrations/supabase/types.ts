@@ -71,6 +71,36 @@ export type Database = {
           },
         ]
       }
+      audit_log: {
+        Row: {
+          action: string
+          created_at: string
+          entity: string
+          entity_id: string | null
+          id: string
+          metadata: Json | null
+          user_id: string | null
+        }
+        Insert: {
+          action: string
+          created_at?: string
+          entity: string
+          entity_id?: string | null
+          id?: string
+          metadata?: Json | null
+          user_id?: string | null
+        }
+        Update: {
+          action?: string
+          created_at?: string
+          entity?: string
+          entity_id?: string | null
+          id?: string
+          metadata?: Json | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       expense_entries: {
         Row: {
           amount: number
@@ -157,6 +187,42 @@ export type Database = {
         }
         Relationships: []
       }
+      informed_consents: {
+        Row: {
+          consent_type: string
+          content: string
+          created_at: string
+          created_by: string | null
+          id: string
+          patient_id: string
+          signed_at: string
+          signed_by_name: string | null
+          witness_name: string | null
+        }
+        Insert: {
+          consent_type: string
+          content: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          patient_id: string
+          signed_at?: string
+          signed_by_name?: string | null
+          witness_name?: string | null
+        }
+        Update: {
+          consent_type?: string
+          content?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          patient_id?: string
+          signed_at?: string
+          signed_by_name?: string | null
+          witness_name?: string | null
+        }
+        Relationships: []
+      }
       medical_notes: {
         Row: {
           afecto: string | null
@@ -166,6 +232,7 @@ export type Database = {
           created_at: string
           diagnostico_sesion: string | null
           id: string
+          is_locked: boolean
           juicio: string | null
           medicamentos: string | null
           motivo_consulta: string | null
@@ -188,6 +255,7 @@ export type Database = {
           created_at?: string
           diagnostico_sesion?: string | null
           id?: string
+          is_locked?: boolean
           juicio?: string | null
           medicamentos?: string | null
           motivo_consulta?: string | null
@@ -210,6 +278,7 @@ export type Database = {
           created_at?: string
           diagnostico_sesion?: string | null
           id?: string
+          is_locked?: boolean
           juicio?: string | null
           medicamentos?: string | null
           motivo_consulta?: string | null
@@ -395,6 +464,92 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      prescription_items: {
+        Row: {
+          created_at: string
+          dosis: string | null
+          duracion: string | null
+          frecuencia: string | null
+          id: string
+          indicaciones: string | null
+          medicamento: string
+          prescription_id: string
+          presentacion: string | null
+          via: string | null
+        }
+        Insert: {
+          created_at?: string
+          dosis?: string | null
+          duracion?: string | null
+          frecuencia?: string | null
+          id?: string
+          indicaciones?: string | null
+          medicamento: string
+          prescription_id: string
+          presentacion?: string | null
+          via?: string | null
+        }
+        Update: {
+          created_at?: string
+          dosis?: string | null
+          duracion?: string | null
+          frecuencia?: string | null
+          id?: string
+          indicaciones?: string | null
+          medicamento?: string
+          prescription_id?: string
+          presentacion?: string | null
+          via?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "prescription_items_prescription_id_fkey"
+            columns: ["prescription_id"]
+            isOneToOne: false
+            referencedRelation: "prescriptions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      prescriptions: {
+        Row: {
+          created_at: string
+          diagnostico: string | null
+          id: string
+          indicaciones: string | null
+          is_locked: boolean
+          issued_at: string
+          note_id: string | null
+          patient_id: string
+          specialist_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          diagnostico?: string | null
+          id?: string
+          indicaciones?: string | null
+          is_locked?: boolean
+          issued_at?: string
+          note_id?: string | null
+          patient_id: string
+          specialist_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          diagnostico?: string | null
+          id?: string
+          indicaciones?: string | null
+          is_locked?: boolean
+          issued_at?: string
+          note_id?: string | null
+          patient_id?: string
+          specialist_id?: string
+          updated_at?: string
+        }
+        Relationships: []
       }
       profiles: {
         Row: {
@@ -596,6 +751,63 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      vital_signs: {
+        Row: {
+          bmi: number | null
+          created_at: string
+          created_by: string | null
+          diastolic_bp: number | null
+          heart_rate: number | null
+          height_cm: number | null
+          id: string
+          measured_at: string
+          note_id: string | null
+          notes: string | null
+          oxygen_saturation: number | null
+          patient_id: string
+          resp_rate: number | null
+          systolic_bp: number | null
+          temperature: number | null
+          weight_kg: number | null
+        }
+        Insert: {
+          bmi?: number | null
+          created_at?: string
+          created_by?: string | null
+          diastolic_bp?: number | null
+          heart_rate?: number | null
+          height_cm?: number | null
+          id?: string
+          measured_at?: string
+          note_id?: string | null
+          notes?: string | null
+          oxygen_saturation?: number | null
+          patient_id: string
+          resp_rate?: number | null
+          systolic_bp?: number | null
+          temperature?: number | null
+          weight_kg?: number | null
+        }
+        Update: {
+          bmi?: number | null
+          created_at?: string
+          created_by?: string | null
+          diastolic_bp?: number | null
+          heart_rate?: number | null
+          height_cm?: number | null
+          id?: string
+          measured_at?: string
+          note_id?: string | null
+          notes?: string | null
+          oxygen_saturation?: number | null
+          patient_id?: string
+          resp_rate?: number | null
+          systolic_bp?: number | null
+          temperature?: number | null
+          weight_kg?: number | null
+        }
+        Relationships: []
       }
     }
     Views: {
