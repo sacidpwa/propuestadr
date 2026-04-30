@@ -83,18 +83,17 @@ export default function SynapsiaLogin() {
   };
 
   return (
+    <>
+      {welcome && (
+        <WelcomeOverlay name={welcome.name} onDone={() => navigate(welcome.target)} />
+      )}
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[hsl(220,40%,13%)] via-[hsl(220,30%,18%)] to-[hsl(220,25%,22%)] p-4">
       <Card className="w-full max-w-md border-none shadow-2xl bg-card/95 backdrop-blur">
         <CardHeader className="text-center space-y-4 pb-2">
-          <div className="mx-auto w-16 h-16 rounded-2xl bg-primary flex items-center justify-center">
-            <Brain className="w-8 h-8 text-primary-foreground" />
-          </div>
-          <div>
-            <CardTitle className="text-2xl font-bold tracking-tight">Synapsia</CardTitle>
-            <CardDescription className="text-muted-foreground mt-1">
-              Sistema de Gestión Clínica
-            </CardDescription>
-          </div>
+          <img src={synapsiaLogo} alt="Synapsia" className="mx-auto h-20 w-auto" />
+          <CardDescription className="text-muted-foreground">
+            Sistema de Gestión Clínica
+          </CardDescription>
         </CardHeader>
         <CardContent className="pt-4">
           <Tabs defaultValue="login" className="w-full">
@@ -142,5 +141,6 @@ export default function SynapsiaLogin() {
         </CardContent>
       </Card>
     </div>
+    </>
   );
 }
