@@ -1,12 +1,11 @@
 import { Link } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Calculator, LogOut, Brain, Wallet, Users } from "lucide-react";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Brain, Calendar, FileText, LogOut, Users } from "lucide-react";
 
-export default function AdminHome() {
-  const { signOut, user, hasRole } = useAuth();
-
+export default function SpecialistHome() {
+  const { user, signOut } = useAuth();
   return (
     <div className="min-h-screen bg-background">
       <header className="border-b bg-card shadow-sm">
@@ -16,28 +15,22 @@ export default function AdminHome() {
               <Brain className="w-5 h-5 text-primary-foreground" />
             </div>
             <div>
-              <h1 className="text-lg font-bold text-foreground">Synapsia · Administración</h1>
+              <h1 className="text-lg font-bold">Synapsia · Especialista</h1>
               <p className="text-xs text-muted-foreground">{user?.email}</p>
             </div>
           </div>
-          <Button variant="ghost" size="icon" onClick={signOut}>
-            <LogOut className="w-4 h-4" />
-          </Button>
+          <Button variant="ghost" size="icon" onClick={signOut}><LogOut className="w-4 h-4" /></Button>
         </div>
       </header>
-
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
         <div>
-          <h2 className="text-2xl font-bold tracking-tight">Herramientas administrativas</h2>
-          <p className="text-sm text-muted-foreground mt-1">Selecciona la herramienta con la que quieres trabajar.</p>
+          <h2 className="text-2xl font-bold tracking-tight">Bienvenido</h2>
+          <p className="text-sm text-muted-foreground mt-1">Gestiona tu agenda, pacientes y expedientes.</p>
         </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          <Tool to="/synapsia/cotizador" icon={<Calculator className="w-6 h-6 text-primary" />} title="Cotizador" desc="Genera cotizaciones para Senior Living y Centro Benesse." />
-          <Tool to="/synapsia/expenses" icon={<Wallet className="w-6 h-6 text-primary" />} title="Gastos & Reporte de socios" desc="Registra gastos fijos, aplica el mes y revisa el estado de resultados por socio." />
-          {hasRole("admin") && (
-            <Tool to="/synapsia/users" icon={<Users className="w-6 h-6 text-primary" />} title="Especialistas y Socios" desc="Marca quién es socio, vincula cuentas de usuario y asigna roles." />
-          )}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <Tool to="/synapsia/calendar" icon={<Calendar className="w-6 h-6 text-primary" />} title="Mi agenda" desc="Visualiza y agenda tus consultas." />
+          <Tool to="/synapsia/patients" icon={<Users className="w-6 h-6 text-primary" />} title="Pacientes" desc="Registra pacientes y abre expedientes." />
+          <Tool to="/synapsia/records" icon={<FileText className="w-6 h-6 text-primary" />} title="Expedientes" desc="Consulta y agrega notas de evolución." />
         </div>
       </main>
     </div>

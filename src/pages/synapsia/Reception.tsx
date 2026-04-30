@@ -322,13 +322,20 @@ export default function Reception() {
               className="pl-10"
             />
           </div>
-          <div className="flex gap-2">
+          <div className="flex gap-2 flex-wrap">
+            <Link to="/synapsia/calendar">
+              <Button variant="outline" size="sm"><Clock className="w-4 h-4 mr-1" /> Agenda</Button>
+            </Link>
+            <Link to="/synapsia/patients">
+              <Button variant="outline" size="sm"><Users className="w-4 h-4 mr-1" /> Pacientes</Button>
+            </Link>
             {userRole === "admin" && (
               <>
                 <Link to="/synapsia/cotizador">
-                  <Button variant="outline" size="sm">
-                    <Calculator className="w-4 h-4 mr-1" /> Cotizador
-                  </Button>
+                  <Button variant="outline" size="sm"><Calculator className="w-4 h-4 mr-1" /> Cotizador</Button>
+                </Link>
+                <Link to="/synapsia/admin">
+                  <Button variant="outline" size="sm"><DollarSign className="w-4 h-4 mr-1" /> Admin</Button>
                 </Link>
                 <Button variant="outline" size="sm" onClick={() => setIsSpecialistsOpen(true)}>
                   <Stethoscope className="w-4 h-4 mr-1" /> Especialistas
