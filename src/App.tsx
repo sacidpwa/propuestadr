@@ -18,7 +18,6 @@ import Expenses from "./pages/synapsia/Expenses";
 import UsersAdmin from "./pages/synapsia/UsersAdmin";
 import ProtectedRoute from "./components/synapsia/ProtectedRoute";
 import OwnerOnlyRoute from "./components/synapsia/OwnerOnlyRoute";
-import SynapsiaLogin from "./pages/synapsia/Login";
 import { AuthProvider, useAuth } from "./hooks/useAuth";
 
 const queryClient = new QueryClient();
