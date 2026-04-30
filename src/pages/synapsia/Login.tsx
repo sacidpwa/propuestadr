@@ -8,7 +8,9 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
-import { Brain, Loader2 } from "lucide-react";
+import { Loader2 } from "lucide-react";
+import synapsiaLogo from "@/assets/synapsia-logo.svg";
+import WelcomeOverlay from "@/components/synapsia/WelcomeOverlay";
 
 const routeForRoles = (roles: string[]): string => {
   if (roles.includes("admin")) return "/synapsia";
@@ -25,6 +27,7 @@ export default function SynapsiaLogin() {
   const { signIn, signUp } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const [welcome, setWelcome] = useState<{ name: string; target: string } | null>(null);
 
   const redirectByRole = async () => {
     const { data: { user } } = await supabase.auth.getUser();
@@ -34,7 +37,11 @@ export default function SynapsiaLogin() {
     }
     const { data } = await supabase.from("user_roles").select("role").eq("user_id", user.id);
     const roles = (data || []).map((r) => r.role as string);
-    navigate(routeForRoles(roles));
+    const target = routeForRoles(roles);
+    const displayName =
+      (user.user_metadata as any)?.full_name ||
+      (user.email ? user.email.split("@")[0] : "Usuario");
+    setWelcome({ name: displayName, target });
   };
 
   const handleLogin = async (e: React.FormEvent) => {
@@ -76,18 +83,17 @@ export default function SynapsiaLogin() {
   };
 
   return (
+    <>
+      {welcome && (
+        <WelcomeOverlay name={welcome.name} onDone={() => navigate(welcome.target)} />
+      )}
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[hsl(220,40%,13%)] via-[hsl(220,30%,18%)] to-[hsl(220,25%,22%)] p-4">
       <Card className="w-full max-w-md border-none shadow-2xl bg-card/95 backdrop-blur">
         <CardHeader className="text-center space-y-4 pb-2">
-          <div className="mx-auto w-16 h-16 rounded-2xl bg-primary flex items-center justify-center">
-            <Brain className="w-8 h-8 text-primary-foreground" />
-          </div>
-          <div>
-            <CardTitle className="text-2xl font-bold tracking-tight">Synapsia</CardTitle>
-            <CardDescription className="text-muted-foreground mt-1">
-              Sistema de Gestión Clínica
-            </CardDescription>
-          </div>
+          <img src={synapsiaLogo} alt="Synapsia" className="mx-auto h-20 w-auto" />
+          <CardDescription className="text-muted-foreground">
+            Sistema de Gestión Clínica
+          </CardDescription>
         </CardHeader>
         <CardContent className="pt-4">
           <Tabs defaultValue="login" className="w-full">
@@ -135,5 +141,6 @@ export default function SynapsiaLogin() {
         </CardContent>
       </Card>
     </div>
+    </>
   );
 }
