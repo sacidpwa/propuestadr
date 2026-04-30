@@ -14,6 +14,317 @@ export type Database = {
   }
   public: {
     Tables: {
+      appointments: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          duration_minutes: number
+          id: string
+          notes: string | null
+          patient_id: string
+          reason: string | null
+          scheduled_at: string
+          specialist_id: string
+          status: Database["public"]["Enums"]["appointment_status"]
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          duration_minutes?: number
+          id?: string
+          notes?: string | null
+          patient_id: string
+          reason?: string | null
+          scheduled_at: string
+          specialist_id: string
+          status?: Database["public"]["Enums"]["appointment_status"]
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          duration_minutes?: number
+          id?: string
+          notes?: string | null
+          patient_id?: string
+          reason?: string | null
+          scheduled_at?: string
+          specialist_id?: string
+          status?: Database["public"]["Enums"]["appointment_status"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "appointments_patient_id_fkey"
+            columns: ["patient_id"]
+            isOneToOne: false
+            referencedRelation: "patients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "appointments_specialist_id_fkey"
+            columns: ["specialist_id"]
+            isOneToOne: false
+            referencedRelation: "specialists"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      expense_entries: {
+        Row: {
+          amount: number
+          category: string | null
+          created_at: string
+          created_by: string | null
+          description: string
+          expense_date: string
+          fixed_expense_id: string | null
+          id: string
+          notes: string | null
+          period_month: number
+          period_year: number
+          updated_at: string
+        }
+        Insert: {
+          amount: number
+          category?: string | null
+          created_at?: string
+          created_by?: string | null
+          description: string
+          expense_date?: string
+          fixed_expense_id?: string | null
+          id?: string
+          notes?: string | null
+          period_month: number
+          period_year: number
+          updated_at?: string
+        }
+        Update: {
+          amount?: number
+          category?: string | null
+          created_at?: string
+          created_by?: string | null
+          description?: string
+          expense_date?: string
+          fixed_expense_id?: string | null
+          id?: string
+          notes?: string | null
+          period_month?: number
+          period_year?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "expense_entries_fixed_expense_id_fkey"
+            columns: ["fixed_expense_id"]
+            isOneToOne: false
+            referencedRelation: "fixed_expenses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      fixed_expenses: {
+        Row: {
+          category: string | null
+          created_at: string
+          default_amount: number
+          id: string
+          is_active: boolean
+          name: string
+          notes: string | null
+          updated_at: string
+        }
+        Insert: {
+          category?: string | null
+          created_at?: string
+          default_amount?: number
+          id?: string
+          is_active?: boolean
+          name: string
+          notes?: string | null
+          updated_at?: string
+        }
+        Update: {
+          category?: string | null
+          created_at?: string
+          default_amount?: number
+          id?: string
+          is_active?: boolean
+          name?: string
+          notes?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      medical_notes: {
+        Row: {
+          afecto: string | null
+          apariencia: string | null
+          appointment_id: string | null
+          conciencia: string | null
+          created_at: string
+          diagnostico_sesion: string | null
+          id: string
+          juicio: string | null
+          medicamentos: string | null
+          motivo_consulta: string | null
+          notas_libres: string | null
+          orientacion: string | null
+          padecimiento_actual: string | null
+          patient_id: string
+          pensamiento: string | null
+          plan_sesion: string | null
+          proxima_cita: string | null
+          session_date: string
+          specialist_id: string
+          updated_at: string
+        }
+        Insert: {
+          afecto?: string | null
+          apariencia?: string | null
+          appointment_id?: string | null
+          conciencia?: string | null
+          created_at?: string
+          diagnostico_sesion?: string | null
+          id?: string
+          juicio?: string | null
+          medicamentos?: string | null
+          motivo_consulta?: string | null
+          notas_libres?: string | null
+          orientacion?: string | null
+          padecimiento_actual?: string | null
+          patient_id: string
+          pensamiento?: string | null
+          plan_sesion?: string | null
+          proxima_cita?: string | null
+          session_date?: string
+          specialist_id: string
+          updated_at?: string
+        }
+        Update: {
+          afecto?: string | null
+          apariencia?: string | null
+          appointment_id?: string | null
+          conciencia?: string | null
+          created_at?: string
+          diagnostico_sesion?: string | null
+          id?: string
+          juicio?: string | null
+          medicamentos?: string | null
+          motivo_consulta?: string | null
+          notas_libres?: string | null
+          orientacion?: string | null
+          padecimiento_actual?: string | null
+          patient_id?: string
+          pensamiento?: string | null
+          plan_sesion?: string | null
+          proxima_cita?: string | null
+          session_date?: string
+          specialist_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "medical_notes_appointment_id_fkey"
+            columns: ["appointment_id"]
+            isOneToOne: false
+            referencedRelation: "appointments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "medical_notes_patient_id_fkey"
+            columns: ["patient_id"]
+            isOneToOne: false
+            referencedRelation: "patients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "medical_notes_specialist_id_fkey"
+            columns: ["specialist_id"]
+            isOneToOne: false
+            referencedRelation: "specialists"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      medical_records: {
+        Row: {
+          address: string | null
+          alergias: string | null
+          created_at: string
+          created_by: string | null
+          diagnostico_cie10: string | null
+          diagnostico_descripcion: string | null
+          emergency_contact_name: string | null
+          emergency_contact_phone: string | null
+          gender: string | null
+          heredofamiliares: string | null
+          id: string
+          marital_status: string | null
+          medicamentos_actuales: string | null
+          observaciones: string | null
+          occupation: string | null
+          patient_id: string
+          personales_no_patologicos: string | null
+          personales_patologicos: string | null
+          plan_terapeutico: string | null
+          updated_at: string
+        }
+        Insert: {
+          address?: string | null
+          alergias?: string | null
+          created_at?: string
+          created_by?: string | null
+          diagnostico_cie10?: string | null
+          diagnostico_descripcion?: string | null
+          emergency_contact_name?: string | null
+          emergency_contact_phone?: string | null
+          gender?: string | null
+          heredofamiliares?: string | null
+          id?: string
+          marital_status?: string | null
+          medicamentos_actuales?: string | null
+          observaciones?: string | null
+          occupation?: string | null
+          patient_id: string
+          personales_no_patologicos?: string | null
+          personales_patologicos?: string | null
+          plan_terapeutico?: string | null
+          updated_at?: string
+        }
+        Update: {
+          address?: string | null
+          alergias?: string | null
+          created_at?: string
+          created_by?: string | null
+          diagnostico_cie10?: string | null
+          diagnostico_descripcion?: string | null
+          emergency_contact_name?: string | null
+          emergency_contact_phone?: string | null
+          gender?: string | null
+          heredofamiliares?: string | null
+          id?: string
+          marital_status?: string | null
+          medicamentos_actuales?: string | null
+          observaciones?: string | null
+          occupation?: string | null
+          patient_id?: string
+          personales_no_patologicos?: string | null
+          personales_patologicos?: string | null
+          plan_terapeutico?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "medical_records_patient_id_fkey"
+            columns: ["patient_id"]
+            isOneToOne: true
+            referencedRelation: "patients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       patients: {
         Row: {
           created_at: string
@@ -180,9 +491,11 @@ export type Database = {
           full_name: string
           id: string
           is_active: boolean
+          is_partner: boolean
           phone: string | null
           specialty: Database["public"]["Enums"]["specialty_type"]
           updated_at: string
+          user_id: string | null
         }
         Insert: {
           consultation_fee?: number
@@ -191,9 +504,11 @@ export type Database = {
           full_name: string
           id?: string
           is_active?: boolean
+          is_partner?: boolean
           phone?: string | null
           specialty: Database["public"]["Enums"]["specialty_type"]
           updated_at?: string
+          user_id?: string | null
         }
         Update: {
           consultation_fee?: number
@@ -202,9 +517,11 @@ export type Database = {
           full_name?: string
           id?: string
           is_active?: boolean
+          is_partner?: boolean
           phone?: string | null
           specialty?: Database["public"]["Enums"]["specialty_type"]
           updated_at?: string
+          user_id?: string | null
         }
         Relationships: []
       }
@@ -285,6 +602,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      current_specialist_id: { Args: never; Returns: string }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -295,6 +613,12 @@ export type Database = {
     }
     Enums: {
       app_role: "admin" | "recepcion" | "especialista" | "administrativo"
+      appointment_status:
+        | "programada"
+        | "confirmada"
+        | "cancelada"
+        | "completada"
+        | "no_asistio"
       payment_method: "efectivo" | "transferencia" | "tarjeta"
       specialty_type: "psiquiatra" | "psicologo"
       visit_status: "en_espera" | "en_consulta" | "atendido" | "cancelado"
@@ -426,6 +750,13 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["admin", "recepcion", "especialista", "administrativo"],
+      appointment_status: [
+        "programada",
+        "confirmada",
+        "cancelada",
+        "completada",
+        "no_asistio",
+      ],
       payment_method: ["efectivo", "transferencia", "tarjeta"],
       specialty_type: ["psiquiatra", "psicologo"],
       visit_status: ["en_espera", "en_consulta", "atendido", "cancelado"],
