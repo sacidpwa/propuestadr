@@ -39,8 +39,9 @@ const App = () => (
       <BrowserRouter>
         <AuthProvider>
           <Routes>
-            <Route path="/" element={<Index />} />
-            <Route path="/contratos" element={<Contratos />} />
+            <Route path="/" element={<SynapsiaLogin />} />
+            <Route path="/propuesta" element={<OwnerOnlyRoute><Index /></OwnerOnlyRoute>} />
+            <Route path="/contratos" element={<OwnerOnlyRoute><Contratos /></OwnerOnlyRoute>} />
             <Route path="/synapsia/login" element={<SynapsiaLogin />} />
             <Route path="/synapsia" element={<ProtectedRoute><SynapsiaHome /></ProtectedRoute>} />
             <Route path="/synapsia/admin" element={<ProtectedRoute requiredRole={["admin", "administrativo"]}><AdminHome /></ProtectedRoute>} />
