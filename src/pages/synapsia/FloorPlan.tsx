@@ -308,6 +308,19 @@ export default function FloorPlan() {
     toast({ title: "Mobiliario eliminado" });
   };
 
+  const rotateFurnitureBy = async (f: Furniture, deg: number) => {
+    const newRot = (f.rotation || 0) + deg;
+    setFurniture(prev => prev.map(x => x.id === f.id ? { ...x, rotation: newRot } : x));
+    setSelectedFurniture({ ...f, rotation: newRot });
+    await supabase.from("floor_furniture" as any).update({ rotation: newRot }).eq("id", f.id);
+  };
+  const rotateZoneBy = async (z: Zone, deg: number) => {
+    const newRot = (z.rotation || 0) + deg;
+    setZones(prev => prev.map(x => x.id === z.id ? { ...x, rotation: newRot } : x));
+    setSelectedZone({ ...z, rotation: newRot });
+    await supabase.from("floor_zones").update({ rotation: newRot }).eq("id", z.id);
+  };
+
   const onMouseDownFurn = (e: React.MouseEvent, f: Furniture, mode: "move" | "resize" | "rotate") => {
     if (!editMode) return;
     e.preventDefault(); e.stopPropagation();
