@@ -370,6 +370,38 @@ export default function UsersAdmin() {
         </Card>
       </main>
 
+      {/* New specialist dialog */}
+      <Dialog open={specOpen} onOpenChange={setSpecOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Registrar especialista</DialogTitle>
+            <DialogDescription>Da de alta al especialista en el catálogo. La cuenta de usuario se vincula después.</DialogDescription>
+          </DialogHeader>
+          <form onSubmit={createSpecialist} className="space-y-3">
+            <div className="space-y-1.5"><Label>Nombre completo *</Label><Input required value={newSpec.full_name} onChange={(e) => setNewSpec((p) => ({ ...p, full_name: e.target.value }))} /></div>
+            <div className="space-y-1.5">
+              <Label>Especialidad *</Label>
+              <Select value={newSpec.specialty} onValueChange={(v) => setNewSpec((p) => ({ ...p, specialty: v as any }))}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="psiquiatra">Psiquiatra</SelectItem>
+                  <SelectItem value="psicologo">Psicólogo</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1.5"><Label>Tarifa por consulta</Label><Input type="number" min="0" value={newSpec.consultation_fee} onChange={(e) => setNewSpec((p) => ({ ...p, consultation_fee: e.target.value }))} /></div>
+            <div className="grid grid-cols-2 gap-2">
+              <div className="space-y-1.5"><Label>Teléfono</Label><Input value={newSpec.phone} onChange={(e) => setNewSpec((p) => ({ ...p, phone: e.target.value }))} /></div>
+              <div className="space-y-1.5"><Label>Correo</Label><Input type="email" value={newSpec.email} onChange={(e) => setNewSpec((p) => ({ ...p, email: e.target.value }))} /></div>
+            </div>
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={() => setSpecOpen(false)}>Cancelar</Button>
+              <Button type="submit" disabled={specLoading}>{specLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : "Registrar"}</Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+
       {/* PIN dialog */}
       <Dialog open={pinDialog.open} onOpenChange={(v) => { if (!v) { setPinDialog({ open: false, userId: null, name: "" }); setPinValue(""); } }}>
         <DialogContent className="max-w-sm">
