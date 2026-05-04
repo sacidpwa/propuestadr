@@ -450,12 +450,16 @@ export default function FloorPlan() {
               {selectedFurniture && (
                 <>
                   <span className="px-2 py-0.5 rounded bg-accent/20 text-accent-foreground border border-accent/40">Mueble: {selectedFurniture.label || FURNITURE_TYPES.find(t => t.value === selectedFurniture.furniture_type)?.label}</span>
+                  <Button size="sm" variant="outline" className="h-7" onClick={() => rotateFurnitureBy(selectedFurniture, -90)} title="Rotar 90° izq."><RotateCcw className="w-3 h-3" /></Button>
+                  <Button size="sm" variant="outline" className="h-7" onClick={() => rotateFurnitureBy(selectedFurniture, 90)} title="Rotar 90° der."><RotateCw className="w-3 h-3" /></Button>
                   <Button size="sm" variant="destructive" className="h-7" onClick={() => deleteFurniture(selectedFurniture)}><Trash2 className="w-3 h-3 mr-1" />Eliminar mueble</Button>
                 </>
               )}
               {selectedZone && !selectedFurniture && (
                 <>
                   <span className="px-2 py-0.5 rounded bg-accent/20 text-accent-foreground border border-accent/40">Zona: {selectedZone.name}</span>
+                  <Button size="sm" variant="outline" className="h-7" onClick={() => rotateZoneBy(selectedZone, -90)} title="Rotar 90° izq."><RotateCcw className="w-3 h-3" /></Button>
+                  <Button size="sm" variant="outline" className="h-7" onClick={() => rotateZoneBy(selectedZone, 90)} title="Rotar 90° der."><RotateCw className="w-3 h-3" /></Button>
                   <Button size="sm" variant="destructive" className="h-7" onClick={() => deleteZone(selectedZone)}><Trash2 className="w-3 h-3 mr-1" />Eliminar zona</Button>
                 </>
               )}
