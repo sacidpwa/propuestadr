@@ -18,6 +18,7 @@ import MedicalRecord from "./pages/synapsia/MedicalRecord";
 import Expenses from "./pages/synapsia/Expenses";
 import UsersAdmin from "./pages/synapsia/UsersAdmin";
 import Metrics from "./pages/synapsia/Metrics";
+import FloorPlan from "./pages/synapsia/FloorPlan";
 import ProtectedRoute from "./components/synapsia/ProtectedRoute";
 import OwnerOnlyRoute from "./components/synapsia/OwnerOnlyRoute";
 import { AuthProvider, useAuth } from "./hooks/useAuth";
@@ -56,6 +57,7 @@ const App = () => (
             <Route path="/synapsia/expenses" element={<ProtectedRoute requiredRole={["admin", "dueno", "administrativo"]}><Expenses /></ProtectedRoute>} />
             <Route path="/synapsia/users" element={<ProtectedRoute requiredRole={["admin", "dueno"]}><UsersAdmin /></ProtectedRoute>} />
             <Route path="/synapsia/metrics" element={<ProtectedRoute><Metrics /></ProtectedRoute>} />
+            <Route path="/synapsia/floor" element={<ProtectedRoute requiredRole={["admin", "dueno", "recepcion"]}><FloorPlan /></ProtectedRoute>} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </AuthProvider>

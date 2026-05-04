@@ -187,6 +187,65 @@ export type Database = {
         }
         Relationships: []
       }
+      floor_zones: {
+        Row: {
+          capacity: number
+          color: string
+          created_at: string
+          height: number
+          id: string
+          is_active: boolean
+          name: string
+          notes: string | null
+          specialist_id: string | null
+          updated_at: string
+          width: number
+          x: number
+          y: number
+          zone_type: string
+        }
+        Insert: {
+          capacity?: number
+          color?: string
+          created_at?: string
+          height?: number
+          id?: string
+          is_active?: boolean
+          name: string
+          notes?: string | null
+          specialist_id?: string | null
+          updated_at?: string
+          width?: number
+          x?: number
+          y?: number
+          zone_type?: string
+        }
+        Update: {
+          capacity?: number
+          color?: string
+          created_at?: string
+          height?: number
+          id?: string
+          is_active?: boolean
+          name?: string
+          notes?: string | null
+          specialist_id?: string | null
+          updated_at?: string
+          width?: number
+          x?: number
+          y?: number
+          zone_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "floor_zones_specialist_id_fkey"
+            columns: ["specialist_id"]
+            isOneToOne: false
+            referencedRelation: "specialists"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       informed_consents: {
         Row: {
           consent_type: string
@@ -390,6 +449,86 @@ export type Database = {
             columns: ["patient_id"]
             isOneToOne: true
             referencedRelation: "patients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      patient_flow: {
+        Row: {
+          arrived_at: string
+          created_at: string
+          created_by: string | null
+          exited_at: string | null
+          id: string
+          in_consult_at: string | null
+          notes: string | null
+          patient_id: string
+          specialist_id: string | null
+          stage: string
+          to_payment_at: string | null
+          updated_at: string
+          visit_id: string | null
+          zone_id: string | null
+        }
+        Insert: {
+          arrived_at?: string
+          created_at?: string
+          created_by?: string | null
+          exited_at?: string | null
+          id?: string
+          in_consult_at?: string | null
+          notes?: string | null
+          patient_id: string
+          specialist_id?: string | null
+          stage?: string
+          to_payment_at?: string | null
+          updated_at?: string
+          visit_id?: string | null
+          zone_id?: string | null
+        }
+        Update: {
+          arrived_at?: string
+          created_at?: string
+          created_by?: string | null
+          exited_at?: string | null
+          id?: string
+          in_consult_at?: string | null
+          notes?: string | null
+          patient_id?: string
+          specialist_id?: string | null
+          stage?: string
+          to_payment_at?: string | null
+          updated_at?: string
+          visit_id?: string | null
+          zone_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "patient_flow_patient_id_fkey"
+            columns: ["patient_id"]
+            isOneToOne: false
+            referencedRelation: "patients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "patient_flow_specialist_id_fkey"
+            columns: ["specialist_id"]
+            isOneToOne: false
+            referencedRelation: "specialists"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "patient_flow_visit_id_fkey"
+            columns: ["visit_id"]
+            isOneToOne: false
+            referencedRelation: "visits"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "patient_flow_zone_id_fkey"
+            columns: ["zone_id"]
+            isOneToOne: false
+            referencedRelation: "floor_zones"
             referencedColumns: ["id"]
           },
         ]

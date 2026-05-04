@@ -2,7 +2,7 @@ import { Link } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { BarChart3, Calendar, FileText, LogOut, Users, Wallet, Stethoscope, Calculator, ShieldCheck } from "lucide-react";
+import { BarChart3, Calendar, FileText, LogOut, Users, Wallet, Stethoscope, Calculator, ShieldCheck, LayoutDashboard } from "lucide-react";
 import synapsiaIcon from "@/assets/synapsia-icon.svg";
 import { useState } from "react";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -63,6 +63,7 @@ export default function OwnerHome() {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <Tool to="/synapsia/floor" icon={<LayoutDashboard className="w-6 h-6 text-primary" />} title="Planta en vivo" desc="Canvas editable con consultorios, recepción y flujo de pacientes en tiempo real." />
           <Tool to="/synapsia/metrics" icon={<BarChart3 className="w-6 h-6 text-primary" />} title="Métricas y desempeño" desc="KPIs globales, por especialista, tendencias y reparto entre socios." />
           <Tool to="/synapsia/users" icon={<Users className="w-6 h-6 text-primary" />} title="Usuarios y roles" desc="Crear cuentas, asignar roles, PIN de seguridad y vincular especialistas." />
           <Tool to="/synapsia/expenses" icon={<Wallet className="w-6 h-6 text-primary" />} title="Gastos y reporte" desc="Registra gastos fijos y revisa estado de resultados por socio." />
