@@ -148,6 +148,7 @@ export default function FloorPlan() {
   const [selectedZoneIds, setSelectedZoneIds] = useState<Set<string>>(new Set());
   const [selectedFurnIds, setSelectedFurnIds] = useState<Set<string>>(new Set());
   const [dragOverFurnId, setDragOverFurnId] = useState<string | null>(null);
+  const [dragOverZoneId, setDragOverZoneId] = useState<string | null>(null);
 
   // Multi-drag (mover grupo)
   const groupDragRef = useRef<{ startX: number; startY: number; zones: Map<string, { x: number; y: number }>; furn: Map<string, { x: number; y: number }>; latestZ: Map<string, { x: number; y: number }>; latestF: Map<string, { x: number; y: number }>; } | null>(null);
@@ -592,6 +593,37 @@ export default function FloorPlan() {
     toast({ title: "Paciente movido", description: dest ? `Ahora en ${dest.name}.` : "Sentado en silla sin zona." });
   };
 
+  const movePatientToZone = async (zoneId: string, patientId: string) => {
+    const targetZone = zones.find(z => z.id === zoneId);
+    if (!targetZone) return;
+
+    const occupiedFurniture = furniture.filter(f => f.patient_id === patientId);
+    for (const f of occupiedFurniture) {
+      const { error } = await supabase.from("floor_furniture").update({ patient_id: null }).eq("id", f.id);
+      if (error) { toast({ variant: "destructive", title: "Error", description: error.message }); return; }
+    }
+
+    const upd: any = { zone_id: zoneId };
+    if (targetZone.zone_type === "consultorio") {
+      upd.stage = "consulta";
+      upd.in_consult_at = new Date().toISOString();
+      if (targetZone.specialist_id) upd.specialist_id = targetZone.specialist_id;
+    } else if (targetZone.zone_type === "recepcion" || targetZone.zone_type === "espera") {
+      upd.stage = "espera";
+    }
+
+    const { error } = await supabase
+      .from("patient_flow")
+      .update(upd)
+      .eq("patient_id", patientId)
+      .is("exited_at", null);
+    if (error) { toast({ variant: "destructive", title: "Error", description: error.message }); return; }
+
+    fetchFurniture();
+    fetchFlows();
+    toast({ title: "Paciente movido", description: `Ahora en ${targetZone.name}.` });
+  };
+
   const releaseFurniture = async (furnitureId: string) => {
     const { error } = await supabase.from("floor_furniture").update({ patient_id: null }).eq("id", furnitureId);
     if (error) toast({ variant: "destructive", title: "Error", description: error.message });
@@ -794,13 +826,22 @@ export default function FloorPlan() {
                 {/* ZONES */}
                 {zones.map((z) => {
                   const occupants = (flowsByZone[z.id] || []);
+                  const isZoneDropTarget = dragOverZoneId === z.id;
                   return (
                     <div
                       key={z.id}
                       onMouseDown={(e) => onMouseDownZone(e, z, "move")}
                       onClick={(e) => { if (!editMode) { e.stopPropagation(); setSelectedZone(z); } }}
                       onDoubleClick={() => editMode && openEditZone(z)}
-                      className={`absolute rounded-xl shadow-sm border-2 ${editMode ? "cursor-move" : "cursor-pointer"} transition-shadow hover:shadow-md ${editMode && selectedZoneIds.has(z.id) ? "ring-2 ring-primary ring-offset-2" : ""}`}
+                      onDragOver={(e) => { if (editMode) return; if (e.dataTransfer.types.includes("text/patient-id")) { e.preventDefault(); e.dataTransfer.dropEffect = "move"; if (dragOverZoneId !== z.id) setDragOverZoneId(z.id); } }}
+                      onDragLeave={(e) => { if (e.currentTarget.contains(e.relatedTarget as Node)) return; if (dragOverZoneId === z.id) setDragOverZoneId(null); }}
+                      onDrop={(e) => {
+                        if (editMode) return;
+                        const pid = e.dataTransfer.getData("text/patient-id");
+                        setDragOverZoneId(null);
+                        if (pid) { e.preventDefault(); e.stopPropagation(); movePatientToZone(z.id, pid); }
+                      }}
+                      className={`absolute rounded-xl shadow-sm border-2 ${editMode ? "cursor-move" : "cursor-pointer"} transition-shadow hover:shadow-md ${editMode && selectedZoneIds.has(z.id) ? "ring-2 ring-primary ring-offset-2" : ""} ${isZoneDropTarget ? "ring-4 ring-emerald-400 ring-offset-2" : ""}`}
                       style={{
                         left: z.x, top: z.y, width: z.width, height: z.height,
                         background: `${z.color}10`, borderColor: z.color,
@@ -892,6 +933,7 @@ export default function FloorPlan() {
                         const pid = e.dataTransfer.getData("text/patient-id");
                         const fromFurn = e.dataTransfer.getData("text/from-furniture-id");
                         setDragOverFurnId(null);
+                        setDragOverZoneId(null);
                         if (fromFurn === f.id) return; // soltó en la misma silla
                         if (pid) { e.preventDefault(); e.stopPropagation(); seatPatientOnFurniture(f.id, pid); }
                       }}
