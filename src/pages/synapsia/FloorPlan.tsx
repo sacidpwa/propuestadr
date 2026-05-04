@@ -603,16 +603,37 @@ export default function FloorPlan() {
               );
             })}
             <span className="ml-auto text-[11px] text-muted-foreground flex items-center gap-2 flex-wrap">
+              {/* Tamaño del canvas */}
+              <span className="flex items-center gap-1 px-2 py-1 rounded border bg-background">
+                <span className="font-semibold">Canvas:</span>
+                <Input type="number" className="h-6 w-20 text-[11px]" value={canvasSize.w}
+                  onChange={(e) => setCanvasSize(s => ({ ...s, w: Math.max(400, parseInt(e.target.value) || 0) }))} />
+                <span>×</span>
+                <Input type="number" className="h-6 w-20 text-[11px]" value={canvasSize.h}
+                  onChange={(e) => setCanvasSize(s => ({ ...s, h: Math.max(400, parseInt(e.target.value) || 0) }))} />
+                <Button size="sm" variant="ghost" className="h-6 px-1.5 text-[10px]" onClick={() => setCanvasSize(s => ({ w: s.w + 200, h: s.h }))}>+W</Button>
+                <Button size="sm" variant="ghost" className="h-6 px-1.5 text-[10px]" onClick={() => setCanvasSize(s => ({ w: s.w, h: s.h + 200 }))}>+H</Button>
+              </span>
               <span className="flex items-center gap-1">
                 <kbd className="px-1.5 py-0.5 rounded border bg-background font-mono text-[10px]">←</kbd>
                 <kbd className="px-1.5 py-0.5 rounded border bg-background font-mono text-[10px]">→</kbd>
                 Rotar 90°
               </span>
               <span className="flex items-center gap-1">
-                <kbd className="px-1.5 py-0.5 rounded border bg-background font-mono text-[10px]">Supr</kbd>
-                Eliminar
+                <kbd className="px-1.5 py-0.5 rounded border bg-background font-mono text-[10px]">Shift</kbd>+clic múltiple · arrastra el fondo para seleccionar
               </span>
-              {selectedFurniture && (
+              {(selectedZoneIds.size + selectedFurnIds.size > 1) && (
+                <>
+                  <span className="px-2 py-0.5 rounded bg-primary/15 text-primary border border-primary/40 font-semibold">
+                    {selectedZoneIds.size + selectedFurnIds.size} elementos
+                  </span>
+                  <Button size="sm" variant="outline" className="h-7" onClick={clearSelection}>Limpiar</Button>
+                  <Button size="sm" variant="destructive" className="h-7" onClick={deleteSelection}>
+                    <Trash2 className="w-3 h-3 mr-1" />Eliminar selección
+                  </Button>
+                </>
+              )}
+              {selectedFurniture && (selectedZoneIds.size + selectedFurnIds.size <= 1) && (
                 <>
                   <span className="px-2 py-0.5 rounded bg-accent/20 text-accent-foreground border border-accent/40">Mueble: {selectedFurniture.label || FURNITURE_TYPES.find(t => t.value === selectedFurniture.furniture_type)?.label}</span>
                   <Button size="sm" variant="outline" className="h-7" onClick={() => rotateFurnitureBy(selectedFurniture, -90)} title="Rotar 90° izq."><RotateCcw className="w-3 h-3" /></Button>
@@ -620,7 +641,7 @@ export default function FloorPlan() {
                   <Button size="sm" variant="destructive" className="h-7" onClick={() => deleteFurniture(selectedFurniture)}><Trash2 className="w-3 h-3 mr-1" />Eliminar mueble</Button>
                 </>
               )}
-              {selectedZone && !selectedFurniture && (
+              {selectedZone && !selectedFurniture && (selectedZoneIds.size + selectedFurnIds.size <= 1) && (
                 <>
                   <span className="px-2 py-0.5 rounded bg-accent/20 text-accent-foreground border border-accent/40">Zona: {selectedZone.name}</span>
                   <Button size="sm" variant="outline" className="h-7" onClick={() => rotateZoneBy(selectedZone, -90)} title="Rotar 90° izq."><RotateCcw className="w-3 h-3" /></Button>
