@@ -144,6 +144,28 @@ export default function FloorPlan() {
   });
   useEffect(() => { localStorage.setItem("synapsia_canvas_size", JSON.stringify(canvasSize)); }, [canvasSize]);
 
+  // Zoom del canvas (responsive). Persistente, con auto-fit en móvil.
+  const [zoom, setZoom] = useState<number>(() => {
+    const v = parseFloat(localStorage.getItem("synapsia_canvas_zoom") || "");
+    return Number.isFinite(v) && v > 0 ? v : 1;
+  });
+  const zoomRef = useRef(zoom);
+  useEffect(() => { zoomRef.current = zoom; localStorage.setItem("synapsia_canvas_zoom", String(zoom)); }, [zoom]);
+  const fitToWidth = () => {
+    const el = canvasRef.current; if (!el) return;
+    const avail = el.clientWidth - 4;
+    const z = Math.min(1.5, Math.max(0.2, avail / canvasSize.w));
+    setZoom(Number(z.toFixed(3)));
+  };
+  // Auto-fit en móvil al montar / cambiar tamaño
+  useEffect(() => {
+    const handle = () => { if (window.innerWidth < 768) fitToWidth(); };
+    handle();
+    window.addEventListener("resize", handle);
+    return () => window.removeEventListener("resize", handle);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [canvasSize.w]);
+
   // Selección múltiple
   const [selectedZoneIds, setSelectedZoneIds] = useState<Set<string>>(new Set());
   const [selectedFurnIds, setSelectedFurnIds] = useState<Set<string>>(new Set());
