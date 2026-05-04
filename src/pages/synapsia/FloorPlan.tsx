@@ -658,7 +658,59 @@ export default function FloorPlan() {
         </div>
       )}
 
-      <main className="max-w-[1600px] mx-auto px-4 py-4 grid grid-cols-1 lg:grid-cols-[1fr_300px] gap-4">
+      <main className="max-w-[1800px] mx-auto px-4 py-4 grid grid-cols-1 lg:grid-cols-[230px_1fr_300px] gap-4">
+        {/* === Panel izquierdo: herramientas por rol === */}
+        <aside className="space-y-3 order-2 lg:order-1">
+          <Card>
+            <CardHeader className="pb-2"><CardTitle className="text-sm">Herramientas</CardTitle></CardHeader>
+            <CardContent className="space-y-1.5">
+              <Link to="/synapsia/calendar" className="block">
+                <Button variant="outline" size="sm" className="w-full justify-start"><CalendarIcon className="w-4 h-4 mr-2" />Agenda</Button>
+              </Link>
+              <Link to="/synapsia/patients" className="block">
+                <Button variant="outline" size="sm" className="w-full justify-start"><Users className="w-4 h-4 mr-2" />Pacientes</Button>
+              </Link>
+              {(isOwner || isReception) && (
+                <Link to="/synapsia/metrics" className="block">
+                  <Button variant="outline" size="sm" className="w-full justify-start"><BarChart3 className="w-4 h-4 mr-2" />Métricas</Button>
+                </Link>
+              )}
+              {isOwner && (
+                <>
+                  <Link to="/synapsia/users" className="block">
+                    <Button variant="outline" size="sm" className="w-full justify-start"><UserCheck className="w-4 h-4 mr-2" />Usuarios y roles</Button>
+                  </Link>
+                  <Link to="/synapsia/expenses" className="block">
+                    <Button variant="outline" size="sm" className="w-full justify-start"><Wallet className="w-4 h-4 mr-2" />Gastos</Button>
+                  </Link>
+                  <Link to="/synapsia/admin" className="block">
+                    <Button variant="outline" size="sm" className="w-full justify-start"><DollarSign className="w-4 h-4 mr-2" />Admin</Button>
+                  </Link>
+                  <Link to="/synapsia/cotizador" className="block">
+                    <Button variant="outline" size="sm" className="w-full justify-start"><Calculator className="w-4 h-4 mr-2" />Cotizador</Button>
+                  </Link>
+                </>
+              )}
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="pb-2"><CardTitle className="text-sm">Acciones rápidas</CardTitle></CardHeader>
+            <CardContent className="space-y-1.5">
+              <Button size="sm" className="w-full justify-start" onClick={() => openIntake()}>
+                <LogIn className="w-4 h-4 mr-2" />Registrar llegada
+              </Button>
+              {(isOwner || isReception) && (
+                <Button size="sm" variant={editMode ? "default" : "outline"} className="w-full justify-start" onClick={() => setEditMode(!editMode)}>
+                  {editMode ? <Unlock className="w-4 h-4 mr-2" /> : <Lock className="w-4 h-4 mr-2" />}
+                  {editMode ? "Salir de edición" : "Editar planta"}
+                </Button>
+              )}
+            </CardContent>
+          </Card>
+        </aside>
+
+        {/* === Centro: canvas === */}
+        <div className="order-1 lg:order-2 min-w-0">
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-base flex items-center justify-between">
