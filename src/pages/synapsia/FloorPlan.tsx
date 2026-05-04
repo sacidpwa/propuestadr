@@ -143,13 +143,10 @@ export default function FloorPlan() {
         if (selectedZone) { e.preventDefault(); await deleteZone(selectedZone); return; }
       }
 
-      if (selectedFurniture && (e.key === "ArrowLeft" || e.key === "ArrowRight")) {
-        e.preventDefault();
+      if (e.key === "ArrowLeft" || e.key === "ArrowRight") {
         const delta = e.key === "ArrowRight" ? 90 : -90;
-        const newRot = (selectedFurniture.rotation || 0) + delta;
-        setFurniture(prev => prev.map(x => x.id === selectedFurniture.id ? { ...x, rotation: newRot } : x));
-        setSelectedFurniture({ ...selectedFurniture, rotation: newRot });
-        await supabase.from("floor_furniture" as any).update({ rotation: newRot }).eq("id", selectedFurniture.id);
+        if (selectedFurniture) { e.preventDefault(); await rotateFurnitureBy(selectedFurniture, delta); return; }
+        if (selectedZone) { e.preventDefault(); await rotateZoneBy(selectedZone, delta); return; }
       }
     };
     window.addEventListener("keydown", onKey);
