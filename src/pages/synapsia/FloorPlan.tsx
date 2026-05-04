@@ -148,6 +148,7 @@ export default function FloorPlan() {
   const [selectedZoneIds, setSelectedZoneIds] = useState<Set<string>>(new Set());
   const [selectedFurnIds, setSelectedFurnIds] = useState<Set<string>>(new Set());
   const [dragOverFurnId, setDragOverFurnId] = useState<string | null>(null);
+  const [dragOverZoneId, setDragOverZoneId] = useState<string | null>(null);
 
   // Multi-drag (mover grupo)
   const groupDragRef = useRef<{ startX: number; startY: number; zones: Map<string, { x: number; y: number }>; furn: Map<string, { x: number; y: number }>; latestZ: Map<string, { x: number; y: number }>; latestF: Map<string, { x: number; y: number }>; } | null>(null);
@@ -590,6 +591,37 @@ export default function FloorPlan() {
     fetchFlows();
     const dest = zones.find(z => z.id === target.zone_id);
     toast({ title: "Paciente movido", description: dest ? `Ahora en ${dest.name}.` : "Sentado en silla sin zona." });
+  };
+
+  const movePatientToZone = async (zoneId: string, patientId: string) => {
+    const targetZone = zones.find(z => z.id === zoneId);
+    if (!targetZone) return;
+
+    const occupiedFurniture = furniture.filter(f => f.patient_id === patientId);
+    for (const f of occupiedFurniture) {
+      const { error } = await supabase.from("floor_furniture").update({ patient_id: null }).eq("id", f.id);
+      if (error) { toast({ variant: "destructive", title: "Error", description: error.message }); return; }
+    }
+
+    const upd: any = { zone_id: zoneId };
+    if (targetZone.zone_type === "consultorio") {
+      upd.stage = "consulta";
+      upd.in_consult_at = new Date().toISOString();
+      if (targetZone.specialist_id) upd.specialist_id = targetZone.specialist_id;
+    } else if (targetZone.zone_type === "recepcion" || targetZone.zone_type === "espera") {
+      upd.stage = "espera";
+    }
+
+    const { error } = await supabase
+      .from("patient_flow")
+      .update(upd)
+      .eq("patient_id", patientId)
+      .is("exited_at", null);
+    if (error) { toast({ variant: "destructive", title: "Error", description: error.message }); return; }
+
+    fetchFurniture();
+    fetchFlows();
+    toast({ title: "Paciente movido", description: `Ahora en ${targetZone.name}.` });
   };
 
   const releaseFurniture = async (furnitureId: string) => {
