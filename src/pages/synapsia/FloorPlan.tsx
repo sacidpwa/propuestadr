@@ -134,6 +134,24 @@ export default function FloorPlan() {
   // drag/resize/rotate state for FURNITURE
   const fDragRef = useRef<{ id: string; mode: "move" | "resize" | "rotate"; startX: number; startY: number; orig: Furniture; latest: Furniture; cx?: number; cy?: number; startAngle?: number } | null>(null);
 
+  // Tamaño de canvas (persistente)
+  const [canvasSize, setCanvasSize] = useState<{ w: number; h: number }>(() => {
+    try { const s = JSON.parse(localStorage.getItem("synapsia_canvas_size") || "null"); if (s?.w && s?.h) return s; } catch {}
+    return { w: 1800, h: 1200 };
+  });
+  useEffect(() => { localStorage.setItem("synapsia_canvas_size", JSON.stringify(canvasSize)); }, [canvasSize]);
+
+  // Selección múltiple
+  const [selectedZoneIds, setSelectedZoneIds] = useState<Set<string>>(new Set());
+  const [selectedFurnIds, setSelectedFurnIds] = useState<Set<string>>(new Set());
+
+  // Multi-drag (mover grupo)
+  const groupDragRef = useRef<{ startX: number; startY: number; zones: Map<string, { x: number; y: number }>; furn: Map<string, { x: number; y: number }>; latestZ: Map<string, { x: number; y: number }>; latestF: Map<string, { x: number; y: number }>; } | null>(null);
+
+  // Marquee de selección
+  const [marquee, setMarquee] = useState<{ x: number; y: number; w: number; h: number } | null>(null);
+  const marqueeRef = useRef<{ startX: number; startY: number; additive: boolean } | null>(null);
+
   useEffect(() => { fetchAll(); }, []);
   useEffect(() => {
     const ch = supabase
@@ -153,6 +171,7 @@ export default function FloorPlan() {
       if (tag === "INPUT" || tag === "TEXTAREA" || (e.target as HTMLElement)?.isContentEditable) return;
 
       if ((e.key === "Delete" || e.key === "Backspace")) {
+        if (selectedZoneIds.size + selectedFurnIds.size > 1) { e.preventDefault(); await deleteSelection(); return; }
         if (selectedFurniture) { e.preventDefault(); await deleteFurniture(selectedFurniture); return; }
         if (selectedZone) { e.preventDefault(); await deleteZone(selectedZone); return; }
       }
@@ -165,7 +184,7 @@ export default function FloorPlan() {
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [editMode, selectedFurniture, selectedZone]);
+  }, [editMode, selectedFurniture, selectedZone, selectedZoneIds, selectedFurnIds]);
 
   const fetchAll = async () => { await Promise.all([fetchZones(), fetchFurniture(), fetchFlows(), fetchSpecialists(), fetchPatients()]); };
   const fetchZones = async () => {
@@ -241,7 +260,14 @@ export default function FloorPlan() {
   const onMouseDownZone = (e: React.MouseEvent, z: Zone, mode: "move" | "resize" | "rotate") => {
     if (!editMode) return;
     e.preventDefault(); e.stopPropagation();
+    // Si hay selección múltiple y arrastro un miembro → mover grupo
+    if (mode === "move" && (selectedZoneIds.size + selectedFurnIds.size > 1) && selectedZoneIds.has(z.id)) {
+      startGroupDrag(e, selectedZoneIds, selectedFurnIds);
+      return;
+    }
     setSelectedZone(z); setSelectedFurniture(null);
+    if (!(e.shiftKey || e.metaKey || e.ctrlKey)) { setSelectedZoneIds(new Set([z.id])); setSelectedFurnIds(new Set()); }
+    else { setSelectedZoneIds(prev => new Set(prev).add(z.id)); }
     const rect = canvasRef.current?.querySelector(".canvas-inner")?.getBoundingClientRect();
     const cx = (rect?.left ?? 0) + z.x + z.width / 2;
     const cy = (rect?.top ?? 0) + z.y + z.height / 2;
@@ -332,10 +358,125 @@ export default function FloorPlan() {
     await supabase.from("floor_zones").update({ rotation: newRot }).eq("id", z.id);
   };
 
+  // ===== Selección múltiple helpers =====
+  const toggleSelectZone = (z: Zone, additive: boolean) => {
+    setSelectedZoneIds(prev => {
+      const next = new Set(additive ? prev : []);
+      if (additive && next.has(z.id)) next.delete(z.id); else next.add(z.id);
+      return next;
+    });
+    if (!additive) setSelectedFurnIds(new Set());
+    setSelectedZone(z); setSelectedFurniture(null);
+  };
+  const toggleSelectFurn = (f: Furniture, additive: boolean) => {
+    setSelectedFurnIds(prev => {
+      const next = new Set(additive ? prev : []);
+      if (additive && next.has(f.id)) next.delete(f.id); else next.add(f.id);
+      return next;
+    });
+    if (!additive) setSelectedZoneIds(new Set());
+    setSelectedFurniture(f); setSelectedZone(null);
+  };
+  const clearSelection = () => {
+    setSelectedZoneIds(new Set()); setSelectedFurnIds(new Set());
+    setSelectedZone(null); setSelectedFurniture(null);
+  };
+
+  // Mover grupo
+  const startGroupDrag = (e: React.MouseEvent, zoneIds: Set<string>, furnIds: Set<string>) => {
+    const zMap = new Map<string, { x: number; y: number }>();
+    const fMap = new Map<string, { x: number; y: number }>();
+    zones.forEach(z => { if (zoneIds.has(z.id)) zMap.set(z.id, { x: z.x, y: z.y }); });
+    furniture.forEach(f => { if (furnIds.has(f.id)) fMap.set(f.id, { x: f.x, y: f.y }); });
+    groupDragRef.current = {
+      startX: e.clientX, startY: e.clientY,
+      zones: zMap, furn: fMap,
+      latestZ: new Map(zMap), latestF: new Map(fMap),
+    };
+    document.addEventListener("mousemove", onGroupMove);
+    document.addEventListener("mouseup", onGroupUp);
+  };
+  const onGroupMove = (e: MouseEvent) => {
+    const g = groupDragRef.current; if (!g) return;
+    const dx = e.clientX - g.startX, dy = e.clientY - g.startY;
+    const nz = new Map<string, { x: number; y: number }>();
+    g.zones.forEach((p, id) => nz.set(id, { x: Math.max(0, p.x + dx), y: Math.max(0, p.y + dy) }));
+    const nf = new Map<string, { x: number; y: number }>();
+    g.furn.forEach((p, id) => nf.set(id, { x: Math.max(0, p.x + dx), y: Math.max(0, p.y + dy) }));
+    g.latestZ = nz; g.latestF = nf;
+    setZones(prev => prev.map(z => nz.has(z.id) ? { ...z, ...nz.get(z.id)! } : z));
+    setFurniture(prev => prev.map(f => nf.has(f.id) ? { ...f, ...nf.get(f.id)! } : f));
+  };
+  const onGroupUp = async () => {
+    document.removeEventListener("mousemove", onGroupMove);
+    document.removeEventListener("mouseup", onGroupUp);
+    const g = groupDragRef.current; if (!g) return;
+    groupDragRef.current = null;
+    const zUpdates = Array.from(g.latestZ.entries()).map(([id, p]) =>
+      supabase.from("floor_zones").update({ x: p.x, y: p.y }).eq("id", id));
+    const fUpdates = Array.from(g.latestF.entries()).map(([id, p]) =>
+      supabase.from("floor_furniture" as any).update({ x: p.x, y: p.y }).eq("id", id));
+    await Promise.all([...zUpdates, ...fUpdates]);
+  };
+
+  // Eliminar selección múltiple
+  const deleteSelection = async () => {
+    if (selectedZoneIds.size === 0 && selectedFurnIds.size === 0) return;
+    if (!confirm(`¿Eliminar ${selectedZoneIds.size} zona(s) y ${selectedFurnIds.size} mueble(s) seleccionados?`)) return;
+    if (selectedZoneIds.size > 0)
+      await supabase.from("floor_zones").update({ is_active: false }).in("id", Array.from(selectedZoneIds));
+    if (selectedFurnIds.size > 0)
+      await supabase.from("floor_furniture" as any).update({ is_active: false }).in("id", Array.from(selectedFurnIds));
+    clearSelection(); fetchZones(); fetchFurniture();
+  };
+
+  // Marquee selection
+  const onCanvasMouseDown = (e: React.MouseEvent) => {
+    if (!editMode) return;
+    if (e.target !== e.currentTarget) return; // solo si clickeo el fondo
+    const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+    const sx = e.clientX - rect.left, sy = e.clientY - rect.top;
+    marqueeRef.current = { startX: sx, startY: sy, additive: e.shiftKey || e.metaKey || e.ctrlKey };
+    setMarquee({ x: sx, y: sy, w: 0, h: 0 });
+    const move = (ev: MouseEvent) => {
+      const m = marqueeRef.current; if (!m) return;
+      const cx = ev.clientX - rect.left, cy = ev.clientY - rect.top;
+      setMarquee({
+        x: Math.min(m.startX, cx), y: Math.min(m.startY, cy),
+        w: Math.abs(cx - m.startX), h: Math.abs(cy - m.startY),
+      });
+    };
+    const up = (ev: MouseEvent) => {
+      document.removeEventListener("mousemove", move);
+      document.removeEventListener("mouseup", up);
+      const m = marqueeRef.current; if (!m) { setMarquee(null); return; }
+      const cx = ev.clientX - rect.left, cy = ev.clientY - rect.top;
+      const x1 = Math.min(m.startX, cx), y1 = Math.min(m.startY, cy);
+      const x2 = Math.max(m.startX, cx), y2 = Math.max(m.startY, cy);
+      const within = (ix: number, iy: number, iw: number, ih: number) =>
+        ix < x2 && ix + iw > x1 && iy < y2 && iy + ih > y1;
+      const newZ = new Set(m.additive ? selectedZoneIds : []);
+      const newF = new Set(m.additive ? selectedFurnIds : []);
+      zones.forEach(z => { if (within(z.x, z.y, z.width, z.height)) newZ.add(z.id); });
+      furniture.forEach(f => { if (within(f.x, f.y, f.width, f.height)) newF.add(f.id); });
+      setSelectedZoneIds(newZ); setSelectedFurnIds(newF);
+      setMarquee(null); marqueeRef.current = null;
+      if (newZ.size + newF.size === 0) clearSelection();
+    };
+    document.addEventListener("mousemove", move);
+    document.addEventListener("mouseup", up);
+  };
+
   const onMouseDownFurn = (e: React.MouseEvent, f: Furniture, mode: "move" | "resize" | "rotate") => {
     if (!editMode) return;
     e.preventDefault(); e.stopPropagation();
-    setSelectedFurniture(f);
+    if (mode === "move" && (selectedZoneIds.size + selectedFurnIds.size > 1) && selectedFurnIds.has(f.id)) {
+      startGroupDrag(e, selectedZoneIds, selectedFurnIds);
+      return;
+    }
+    setSelectedFurniture(f); setSelectedZone(null);
+    if (!(e.shiftKey || e.metaKey || e.ctrlKey)) { setSelectedFurnIds(new Set([f.id])); setSelectedZoneIds(new Set()); }
+    else { setSelectedFurnIds(prev => new Set(prev).add(f.id)); }
     const rect = canvasRef.current?.querySelector(".canvas-inner")?.getBoundingClientRect();
     const cx = (rect?.left ?? 0) + f.x + f.width / 2;
     const cy = (rect?.top ?? 0) + f.y + f.height / 2;
@@ -462,16 +603,37 @@ export default function FloorPlan() {
               );
             })}
             <span className="ml-auto text-[11px] text-muted-foreground flex items-center gap-2 flex-wrap">
+              {/* Tamaño del canvas */}
+              <span className="flex items-center gap-1 px-2 py-1 rounded border bg-background">
+                <span className="font-semibold">Canvas:</span>
+                <Input type="number" className="h-6 w-20 text-[11px]" value={canvasSize.w}
+                  onChange={(e) => setCanvasSize(s => ({ ...s, w: Math.max(400, parseInt(e.target.value) || 0) }))} />
+                <span>×</span>
+                <Input type="number" className="h-6 w-20 text-[11px]" value={canvasSize.h}
+                  onChange={(e) => setCanvasSize(s => ({ ...s, h: Math.max(400, parseInt(e.target.value) || 0) }))} />
+                <Button size="sm" variant="ghost" className="h-6 px-1.5 text-[10px]" onClick={() => setCanvasSize(s => ({ w: s.w + 200, h: s.h }))}>+W</Button>
+                <Button size="sm" variant="ghost" className="h-6 px-1.5 text-[10px]" onClick={() => setCanvasSize(s => ({ w: s.w, h: s.h + 200 }))}>+H</Button>
+              </span>
               <span className="flex items-center gap-1">
                 <kbd className="px-1.5 py-0.5 rounded border bg-background font-mono text-[10px]">←</kbd>
                 <kbd className="px-1.5 py-0.5 rounded border bg-background font-mono text-[10px]">→</kbd>
                 Rotar 90°
               </span>
               <span className="flex items-center gap-1">
-                <kbd className="px-1.5 py-0.5 rounded border bg-background font-mono text-[10px]">Supr</kbd>
-                Eliminar
+                <kbd className="px-1.5 py-0.5 rounded border bg-background font-mono text-[10px]">Shift</kbd>+clic múltiple · arrastra el fondo para seleccionar
               </span>
-              {selectedFurniture && (
+              {(selectedZoneIds.size + selectedFurnIds.size > 1) && (
+                <>
+                  <span className="px-2 py-0.5 rounded bg-primary/15 text-primary border border-primary/40 font-semibold">
+                    {selectedZoneIds.size + selectedFurnIds.size} elementos
+                  </span>
+                  <Button size="sm" variant="outline" className="h-7" onClick={clearSelection}>Limpiar</Button>
+                  <Button size="sm" variant="destructive" className="h-7" onClick={deleteSelection}>
+                    <Trash2 className="w-3 h-3 mr-1" />Eliminar selección
+                  </Button>
+                </>
+              )}
+              {selectedFurniture && (selectedZoneIds.size + selectedFurnIds.size <= 1) && (
                 <>
                   <span className="px-2 py-0.5 rounded bg-accent/20 text-accent-foreground border border-accent/40">Mueble: {selectedFurniture.label || FURNITURE_TYPES.find(t => t.value === selectedFurniture.furniture_type)?.label}</span>
                   <Button size="sm" variant="outline" className="h-7" onClick={() => rotateFurnitureBy(selectedFurniture, -90)} title="Rotar 90° izq."><RotateCcw className="w-3 h-3" /></Button>
@@ -479,7 +641,7 @@ export default function FloorPlan() {
                   <Button size="sm" variant="destructive" className="h-7" onClick={() => deleteFurniture(selectedFurniture)}><Trash2 className="w-3 h-3 mr-1" />Eliminar mueble</Button>
                 </>
               )}
-              {selectedZone && !selectedFurniture && (
+              {selectedZone && !selectedFurniture && (selectedZoneIds.size + selectedFurnIds.size <= 1) && (
                 <>
                   <span className="px-2 py-0.5 rounded bg-accent/20 text-accent-foreground border border-accent/40">Zona: {selectedZone.name}</span>
                   <Button size="sm" variant="outline" className="h-7" onClick={() => rotateZoneBy(selectedZone, -90)} title="Rotar 90° izq."><RotateCcw className="w-3 h-3" /></Button>
@@ -508,7 +670,12 @@ export default function FloorPlan() {
               className="relative w-full bg-[radial-gradient(circle,#e2e8f0_1px,transparent_1px)] [background-size:20px_20px] border rounded-lg overflow-auto"
               style={{ height: "70vh", minHeight: 500 }}
             >
-              <div className="canvas-inner relative" style={{ width: 1800, height: 1200 }}>
+              <div
+                className="canvas-inner relative"
+                style={{ width: canvasSize.w, height: canvasSize.h }}
+                onMouseDown={onCanvasMouseDown}
+                onClick={(e) => { if (editMode && e.target === e.currentTarget) clearSelection(); }}
+              >
                 {/* ZONES */}
                 {zones.map((z) => {
                   const occupants = (flowsByZone[z.id] || []);
@@ -518,7 +685,7 @@ export default function FloorPlan() {
                       onMouseDown={(e) => onMouseDownZone(e, z, "move")}
                       onClick={(e) => { if (!editMode) { e.stopPropagation(); setSelectedZone(z); } }}
                       onDoubleClick={() => editMode && openEditZone(z)}
-                      className={`absolute rounded-xl shadow-sm border-2 ${editMode ? "cursor-move" : "cursor-pointer"} transition-shadow hover:shadow-md`}
+                      className={`absolute rounded-xl shadow-sm border-2 ${editMode ? "cursor-move" : "cursor-pointer"} transition-shadow hover:shadow-md ${editMode && selectedZoneIds.has(z.id) ? "ring-2 ring-primary ring-offset-2" : ""}`}
                       style={{
                         left: z.x, top: z.y, width: z.width, height: z.height,
                         background: `${z.color}10`, borderColor: z.color,
@@ -589,7 +756,7 @@ export default function FloorPlan() {
                       onMouseDown={(e) => onMouseDownFurn(e, f, "move")}
                       onClick={(e) => { e.stopPropagation(); if (editMode) { setSelectedFurniture(f); setSelectedZone(null); } else { const d = FURNITURE_TYPES.find(t => t.value === f.furniture_type); if (d?.decorative) return; setSelectedFurniture(f); openEditFurniture(f); } }}
                       onDoubleClick={() => editMode && openEditFurniture(f)}
-                      className={`absolute rounded-md shadow-sm border-2 flex flex-col items-center justify-center text-white ${editMode ? "cursor-move" : "cursor-pointer"} hover:shadow-md transition-shadow ${editMode && selectedFurniture?.id === f.id ? "ring-2 ring-accent ring-offset-2" : ""}`}
+                      className={`absolute rounded-md shadow-sm border-2 flex flex-col items-center justify-center text-white ${editMode ? "cursor-move" : "cursor-pointer"} hover:shadow-md transition-shadow ${editMode && (selectedFurnIds.has(f.id) || selectedFurniture?.id === f.id) ? "ring-2 ring-accent ring-offset-2" : ""}`}
                       style={{
                         left: f.x, top: f.y, width: f.width, height: f.height,
                         background: isOccupied ? f.color : `${f.color}cc`,
@@ -627,6 +794,12 @@ export default function FloorPlan() {
                   );
                 })}
 
+                {marquee && (
+                  <div
+                    className="absolute pointer-events-none border-2 border-dashed border-primary bg-primary/10 rounded-sm"
+                    style={{ left: marquee.x, top: marquee.y, width: marquee.w, height: marquee.h }}
+                  />
+                )}
                 {zones.length === 0 && furniture.length === 0 && (
                   <div className="absolute inset-0 flex items-center justify-center text-sm text-muted-foreground">
                     Activa el modo edición y crea tu primera zona o agrega mobiliario.
