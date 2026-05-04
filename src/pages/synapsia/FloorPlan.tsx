@@ -291,11 +291,13 @@ export default function FloorPlan() {
     if (error) toast({ variant: "destructive", title: "Error", description: error.message });
     else { setFurnEditOpen(false); fetchFurniture(); }
   };
-  const deleteFurniture = async () => {
-    if (!selectedFurniture) return;
-    if (!confirm("¿Eliminar este mobiliario?")) return;
-    await supabase.from("floor_furniture" as any).update({ is_active: false }).eq("id", selectedFurniture.id);
-    setFurnEditOpen(false); fetchFurniture();
+  const deleteFurniture = async (furnArg?: Furniture) => {
+    const f = furnArg || selectedFurniture;
+    if (!f) return;
+    if (!confirm(`¿Eliminar este mobiliario${f.label ? ` "${f.label}"` : ""}?`)) return;
+    await supabase.from("floor_furniture" as any).update({ is_active: false }).eq("id", f.id);
+    setFurnEditOpen(false); setSelectedFurniture(null); fetchFurniture();
+    toast({ title: "Mobiliario eliminado" });
   };
 
   const onMouseDownFurn = (e: React.MouseEvent, f: Furniture, mode: "move" | "resize" | "rotate") => {
