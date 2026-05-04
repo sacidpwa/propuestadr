@@ -920,12 +920,19 @@ export default function FloorPlan() {
             <CardHeader className="pb-2"><CardTitle className="text-sm">Sin ubicar ({(flowsByZone["__unassigned__"] || []).length})</CardTitle></CardHeader>
             <CardContent className="space-y-1.5 max-h-72 overflow-auto">
               {(flowsByZone["__unassigned__"] || []).map((f) => (
-                <button key={f.id} onClick={() => setSelectedFlow(f)} className={`w-full text-left p-2 rounded border ${STAGE_COLOR[f.stage]}`}>
+                <button
+                  key={f.id}
+                  draggable
+                  onDragStart={(e) => { e.dataTransfer.setData("text/patient-id", f.patient_id); e.dataTransfer.effectAllowed = "move"; }}
+                  onClick={() => setSelectedFlow(f)}
+                  className={`w-full text-left p-2 rounded border ${STAGE_COLOR[f.stage]} cursor-grab active:cursor-grabbing`}
+                  title="Arrastra a una silla para ubicarlo"
+                >
                   <div className="text-xs font-semibold">{f.patients.full_name}</div>
                   <div className="text-[10px] opacity-70">{STAGE_LABEL[f.stage]} · {formatDistanceToNow(new Date(f.arrived_at), { locale: es, addSuffix: true })}</div>
                 </button>
               ))}
-              {(flowsByZone["__unassigned__"] || []).length === 0 && <p className="text-xs text-muted-foreground">Sin pacientes pendientes de asignar.</p>}
+              {(flowsByZone["__unassigned__"] || []).length === 0 && <p className="text-xs text-muted-foreground">Arrastra desde aquí o usa "Registrar llegada".</p>}
             </CardContent>
           </Card>
 
