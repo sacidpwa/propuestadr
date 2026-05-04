@@ -416,6 +416,12 @@ export default function FloorPlan() {
                 </Button>
               );
             })}
+            <span className="ml-auto text-[11px] text-muted-foreground flex items-center gap-1">
+              <kbd className="px-1.5 py-0.5 rounded border bg-background font-mono text-[10px]">←</kbd>
+              <kbd className="px-1.5 py-0.5 rounded border bg-background font-mono text-[10px]">→</kbd>
+              Rotar 90° el mueble seleccionado
+              {selectedFurniture && <span className="ml-2 px-2 py-0.5 rounded bg-accent/20 text-accent-foreground border border-accent/40">Seleccionado: {selectedFurniture.label || FURNITURE_TYPES.find(t => t.value === selectedFurniture.furniture_type)?.label}</span>}
+            </span>
           </div>
         </div>
       )}
@@ -517,7 +523,7 @@ export default function FloorPlan() {
                       onMouseDown={(e) => onMouseDownFurn(e, f, "move")}
                       onClick={(e) => { if (!editMode) { e.stopPropagation(); setSelectedFurniture(f); openEditFurniture(f); } }}
                       onDoubleClick={() => editMode && openEditFurniture(f)}
-                      className={`absolute rounded-md shadow-sm border-2 flex flex-col items-center justify-center text-white ${editMode ? "cursor-move" : "cursor-pointer"} hover:shadow-md transition-shadow`}
+                      className={`absolute rounded-md shadow-sm border-2 flex flex-col items-center justify-center text-white ${editMode ? "cursor-move" : "cursor-pointer"} hover:shadow-md transition-shadow ${editMode && selectedFurniture?.id === f.id ? "ring-2 ring-accent ring-offset-2" : ""}`}
                       style={{
                         left: f.x, top: f.y, width: f.width, height: f.height,
                         background: isOccupied ? f.color : `${f.color}cc`,
