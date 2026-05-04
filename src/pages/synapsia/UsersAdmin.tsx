@@ -241,8 +241,10 @@ export default function UsersAdmin() {
               </DialogContent>
             </Dialog>
           )}
+          </div>
         </div>
 
+        {isOwnerOrAdmin && (
         <Card>
           <CardHeader className="pb-2"><CardTitle className="text-base">Cuentas registradas</CardTitle><CardDescription>Asigna rol principal, agrega rol secundario (ej. dueño + especialista) y establece PIN.</CardDescription></CardHeader>
           <CardContent className="p-0 overflow-x-auto">
