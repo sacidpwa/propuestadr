@@ -131,23 +131,30 @@ export default function FloorPlan() {
     return () => { supabase.removeChannel(ch); };
   }, []);
 
-  // Rotación 90° con flechas izquierda/derecha sobre el mueble seleccionado (modo edición)
+  // Atajos de teclado en modo edición: flechas rotan 90°, Supr/Backspace elimina
   useEffect(() => {
-    if (!editMode || !selectedFurniture) return;
+    if (!editMode) return;
     const onKey = async (e: KeyboardEvent) => {
-      if (e.key !== "ArrowLeft" && e.key !== "ArrowRight") return;
       const tag = (e.target as HTMLElement)?.tagName;
       if (tag === "INPUT" || tag === "TEXTAREA" || (e.target as HTMLElement)?.isContentEditable) return;
-      e.preventDefault();
-      const delta = e.key === "ArrowRight" ? 90 : -90;
-      const newRot = (selectedFurniture.rotation || 0) + delta;
-      setFurniture(prev => prev.map(x => x.id === selectedFurniture.id ? { ...x, rotation: newRot } : x));
-      setSelectedFurniture({ ...selectedFurniture, rotation: newRot });
-      await supabase.from("floor_furniture" as any).update({ rotation: newRot }).eq("id", selectedFurniture.id);
+
+      if ((e.key === "Delete" || e.key === "Backspace")) {
+        if (selectedFurniture) { e.preventDefault(); await deleteFurniture(selectedFurniture); return; }
+        if (selectedZone) { e.preventDefault(); await deleteZone(selectedZone); return; }
+      }
+
+      if (selectedFurniture && (e.key === "ArrowLeft" || e.key === "ArrowRight")) {
+        e.preventDefault();
+        const delta = e.key === "ArrowRight" ? 90 : -90;
+        const newRot = (selectedFurniture.rotation || 0) + delta;
+        setFurniture(prev => prev.map(x => x.id === selectedFurniture.id ? { ...x, rotation: newRot } : x));
+        setSelectedFurniture({ ...selectedFurniture, rotation: newRot });
+        await supabase.from("floor_furniture" as any).update({ rotation: newRot }).eq("id", selectedFurniture.id);
+      }
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [editMode, selectedFurniture]);
+  }, [editMode, selectedFurniture, selectedZone]);
 
   const fetchAll = async () => { await Promise.all([fetchZones(), fetchFurniture(), fetchFlows(), fetchSpecialists(), fetchPatients()]); };
   const fetchZones = async () => {
@@ -210,18 +217,20 @@ export default function FloorPlan() {
     if (error) toast({ variant: "destructive", title: "Error", description: error.message });
     else { toast({ title: selectedZone ? "Zona actualizada" : "Zona creada" }); setZoneEditOpen(false); fetchZones(); }
   };
-  const deleteZone = async () => {
-    if (!selectedZone) return;
-    if (!confirm("¿Eliminar esta zona?")) return;
-    const { error } = await supabase.from("floor_zones").update({ is_active: false }).eq("id", selectedZone.id);
+  const deleteZone = async (zoneArg?: Zone) => {
+    const z = zoneArg || selectedZone;
+    if (!z) return;
+    if (!confirm(`¿Eliminar la zona "${z.name}"?`)) return;
+    const { error } = await supabase.from("floor_zones").update({ is_active: false }).eq("id", z.id);
     if (error) toast({ variant: "destructive", title: "Error", description: error.message });
-    else { setZoneEditOpen(false); fetchZones(); }
+    else { setZoneEditOpen(false); setSelectedZone(null); fetchZones(); toast({ title: "Zona eliminada" }); }
   };
 
   // ===== Zone Drag / Resize / Rotate =====
   const onMouseDownZone = (e: React.MouseEvent, z: Zone, mode: "move" | "resize" | "rotate") => {
     if (!editMode) return;
     e.preventDefault(); e.stopPropagation();
+    setSelectedZone(z); setSelectedFurniture(null);
     const rect = canvasRef.current?.querySelector(".canvas-inner")?.getBoundingClientRect();
     const cx = (rect?.left ?? 0) + z.x + z.width / 2;
     const cy = (rect?.top ?? 0) + z.y + z.height / 2;
@@ -290,11 +299,13 @@ export default function FloorPlan() {
     if (error) toast({ variant: "destructive", title: "Error", description: error.message });
     else { setFurnEditOpen(false); fetchFurniture(); }
   };
-  const deleteFurniture = async () => {
-    if (!selectedFurniture) return;
-    if (!confirm("¿Eliminar este mobiliario?")) return;
-    await supabase.from("floor_furniture" as any).update({ is_active: false }).eq("id", selectedFurniture.id);
-    setFurnEditOpen(false); fetchFurniture();
+  const deleteFurniture = async (furnArg?: Furniture) => {
+    const f = furnArg || selectedFurniture;
+    if (!f) return;
+    if (!confirm(`¿Eliminar este mobiliario${f.label ? ` "${f.label}"` : ""}?`)) return;
+    await supabase.from("floor_furniture" as any).update({ is_active: false }).eq("id", f.id);
+    setFurnEditOpen(false); setSelectedFurniture(null); fetchFurniture();
+    toast({ title: "Mobiliario eliminado" });
   };
 
   const onMouseDownFurn = (e: React.MouseEvent, f: Furniture, mode: "move" | "resize" | "rotate") => {
@@ -416,11 +427,28 @@ export default function FloorPlan() {
                 </Button>
               );
             })}
-            <span className="ml-auto text-[11px] text-muted-foreground flex items-center gap-1">
-              <kbd className="px-1.5 py-0.5 rounded border bg-background font-mono text-[10px]">←</kbd>
-              <kbd className="px-1.5 py-0.5 rounded border bg-background font-mono text-[10px]">→</kbd>
-              Rotar 90° el mueble seleccionado
-              {selectedFurniture && <span className="ml-2 px-2 py-0.5 rounded bg-accent/20 text-accent-foreground border border-accent/40">Seleccionado: {selectedFurniture.label || FURNITURE_TYPES.find(t => t.value === selectedFurniture.furniture_type)?.label}</span>}
+            <span className="ml-auto text-[11px] text-muted-foreground flex items-center gap-2 flex-wrap">
+              <span className="flex items-center gap-1">
+                <kbd className="px-1.5 py-0.5 rounded border bg-background font-mono text-[10px]">←</kbd>
+                <kbd className="px-1.5 py-0.5 rounded border bg-background font-mono text-[10px]">→</kbd>
+                Rotar 90°
+              </span>
+              <span className="flex items-center gap-1">
+                <kbd className="px-1.5 py-0.5 rounded border bg-background font-mono text-[10px]">Supr</kbd>
+                Eliminar
+              </span>
+              {selectedFurniture && (
+                <>
+                  <span className="px-2 py-0.5 rounded bg-accent/20 text-accent-foreground border border-accent/40">Mueble: {selectedFurniture.label || FURNITURE_TYPES.find(t => t.value === selectedFurniture.furniture_type)?.label}</span>
+                  <Button size="sm" variant="destructive" className="h-7" onClick={() => deleteFurniture(selectedFurniture)}><Trash2 className="w-3 h-3 mr-1" />Eliminar mueble</Button>
+                </>
+              )}
+              {selectedZone && !selectedFurniture && (
+                <>
+                  <span className="px-2 py-0.5 rounded bg-accent/20 text-accent-foreground border border-accent/40">Zona: {selectedZone.name}</span>
+                  <Button size="sm" variant="destructive" className="h-7" onClick={() => deleteZone(selectedZone)}><Trash2 className="w-3 h-3 mr-1" />Eliminar zona</Button>
+                </>
+              )}
             </span>
           </div>
         </div>
@@ -647,7 +675,7 @@ export default function FloorPlan() {
             <div className="space-y-2"><Label>Notas</Label><Textarea rows={2} value={zoneForm.notes} onChange={(e) => setZoneForm({ ...zoneForm, notes: e.target.value })} /></div>
           </div>
           <DialogFooter className="gap-2">
-            {selectedZone && <Button variant="destructive" onClick={deleteZone}><Trash2 className="w-4 h-4 mr-1" />Eliminar</Button>}
+            {selectedZone && <Button variant="destructive" onClick={() => deleteZone()}><Trash2 className="w-4 h-4 mr-1" />Eliminar</Button>}
             <Button variant="outline" onClick={() => setZoneEditOpen(false)}>Cancelar</Button>
             <Button onClick={saveZone} disabled={!zoneForm.name}>Guardar</Button>
           </DialogFooter>
@@ -692,7 +720,7 @@ export default function FloorPlan() {
             </div>
           </div>
           <DialogFooter className="gap-2">
-            <Button variant="destructive" onClick={deleteFurniture}><Trash2 className="w-4 h-4 mr-1" />Eliminar</Button>
+            <Button variant="destructive" onClick={() => deleteFurniture()}><Trash2 className="w-4 h-4 mr-1" />Eliminar</Button>
             <Button variant="outline" onClick={() => setFurnEditOpen(false)}>Cancelar</Button>
             <Button onClick={saveFurniture}>Guardar</Button>
           </DialogFooter>
