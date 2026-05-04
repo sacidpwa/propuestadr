@@ -648,7 +648,7 @@ export default function FloorPlan() {
             <div className="space-y-2"><Label>Notas</Label><Textarea rows={2} value={zoneForm.notes} onChange={(e) => setZoneForm({ ...zoneForm, notes: e.target.value })} /></div>
           </div>
           <DialogFooter className="gap-2">
-            {selectedZone && <Button variant="destructive" onClick={deleteZone}><Trash2 className="w-4 h-4 mr-1" />Eliminar</Button>}
+            {selectedZone && <Button variant="destructive" onClick={() => deleteZone()}><Trash2 className="w-4 h-4 mr-1" />Eliminar</Button>}
             <Button variant="outline" onClick={() => setZoneEditOpen(false)}>Cancelar</Button>
             <Button onClick={saveZone} disabled={!zoneForm.name}>Guardar</Button>
           </DialogFooter>
