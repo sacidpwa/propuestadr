@@ -635,29 +635,38 @@ export type Database = {
         Row: {
           amount: number
           collected_by: string | null
+          concepts: Json
           created_at: string
+          flow_id: string | null
           id: string
           notes: string | null
+          patient_id: string | null
           payment_method: Database["public"]["Enums"]["payment_method"]
-          visit_id: string
+          visit_id: string | null
         }
         Insert: {
           amount: number
           collected_by?: string | null
+          concepts?: Json
           created_at?: string
+          flow_id?: string | null
           id?: string
           notes?: string | null
+          patient_id?: string | null
           payment_method: Database["public"]["Enums"]["payment_method"]
-          visit_id: string
+          visit_id?: string | null
         }
         Update: {
           amount?: number
           collected_by?: string | null
+          concepts?: Json
           created_at?: string
+          flow_id?: string | null
           id?: string
           notes?: string | null
+          patient_id?: string | null
           payment_method?: Database["public"]["Enums"]["payment_method"]
-          visit_id?: string
+          visit_id?: string | null
         }
         Relationships: [
           {
