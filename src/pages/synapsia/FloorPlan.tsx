@@ -147,6 +147,7 @@ export default function FloorPlan() {
   // Selección múltiple
   const [selectedZoneIds, setSelectedZoneIds] = useState<Set<string>>(new Set());
   const [selectedFurnIds, setSelectedFurnIds] = useState<Set<string>>(new Set());
+  const [dragOverFurnId, setDragOverFurnId] = useState<string | null>(null);
 
   // Multi-drag (mover grupo)
   const groupDragRef = useRef<{ startX: number; startY: number; zones: Map<string, { x: number; y: number }>; furn: Map<string, { x: number; y: number }>; latestZ: Map<string, { x: number; y: number }>; latestF: Map<string, { x: number; y: number }>; } | null>(null);
@@ -548,14 +549,62 @@ export default function FloorPlan() {
     else { fetchFlows(); setSelectedFlow(null); }
   };
 
+  // === Drag & Drop: sentar paciente en una silla / mueble ===
+  const seatPatientOnFurniture = async (furnitureId: string, patientId: string) => {
+    const target = furniture.find(f => f.id === furnitureId);
+    if (!target) return;
+    const def = FURNITURE_TYPES.find(t => t.value === target.furniture_type);
+    if (def?.decorative) {
+      toast({ variant: "destructive", title: "No disponible", description: "Este elemento es decorativo." });
+      return;
+    }
+    // Liberar otras sillas que tengan al mismo paciente (por si lo movemos de una a otra)
+    const previous = furniture.filter(f => f.patient_id === patientId && f.id !== furnitureId);
+    for (const p of previous) {
+      await supabase.from("floor_furniture").update({ patient_id: null }).eq("id", p.id);
+    }
+    // Asignar paciente a la silla
+    const { error: fErr } = await supabase
+      .from("floor_furniture")
+      .update({ patient_id: patientId })
+      .eq("id", furnitureId);
+    if (fErr) { toast({ variant: "destructive", title: "Error", description: fErr.message }); return; }
+
+    // Sincronizar el flow del paciente: ponerle la zona del mueble (si tiene)
+    const flow = flows.find(fl => fl.patient_id === patientId && fl.stage !== "salida");
+    if (flow) {
+      const upd: any = { zone_id: target.zone_id ?? null };
+      const { error: flErr } = await supabase.from("patient_flow").update(upd).eq("id", flow.id);
+      if (flErr) { toast({ variant: "destructive", title: "Error", description: flErr.message }); return; }
+    }
+    fetchFurniture();
+    fetchFlows();
+    toast({ title: "Paciente sentado", description: "Ubicado en la silla seleccionada." });
+  };
+
+  const releaseFurniture = async (furnitureId: string) => {
+    const { error } = await supabase.from("floor_furniture").update({ patient_id: null }).eq("id", furnitureId);
+    if (error) toast({ variant: "destructive", title: "Error", description: error.message });
+    else { fetchFurniture(); toast({ title: "Silla liberada" }); }
+  };
+
+  // Set de IDs de pacientes ya sentados en algún mueble (no deben aparecer en la lista de la zona)
+  const seatedPatientIds = useMemo(() => {
+    const s = new Set<string>();
+    for (const f of furniture) if (f.patient_id) s.add(f.patient_id);
+    return s;
+  }, [furniture]);
+
   const flowsByZone = useMemo(() => {
     const map: Record<string, Flow[]> = {};
     for (const f of flows) {
+      // Si ya está sentado en una silla, no duplicarlo en la lista textual de la zona
+      if (seatedPatientIds.has(f.patient_id)) continue;
       const k = f.zone_id ?? "__unassigned__";
       (map[k] ||= []).push(f);
     }
     return map;
-  }, [flows]);
+  }, [flows, seatedPatientIds]);
 
   const patientById = (id: string | null) => id ? patients.find(p => p.id === id) : null;
 
@@ -768,9 +817,12 @@ export default function FloorPlan() {
                         {occupants.map((f) => (
                           <button
                             key={f.id}
+                            draggable
+                            onDragStart={(e) => { e.stopPropagation(); e.dataTransfer.setData("text/patient-id", f.patient_id); e.dataTransfer.effectAllowed = "move"; }}
                             onClick={(e) => { e.stopPropagation(); setSelectedFlow(f); }}
                             onMouseDown={(e) => e.stopPropagation()}
-                            className={`w-full text-left flex items-center gap-1.5 px-1.5 py-1 rounded border ${STAGE_COLOR[f.stage]} hover:scale-[1.02] transition-transform`}
+                            className={`w-full text-left flex items-center gap-1.5 px-1.5 py-1 rounded border ${STAGE_COLOR[f.stage]} hover:scale-[1.02] transition-transform cursor-grab active:cursor-grabbing`}
+                            title="Arrastra a una silla"
                           >
                             <div className="w-5 h-5 rounded-full bg-white flex items-center justify-center shrink-0">
                               <User className="w-3 h-3 text-foreground" />
@@ -806,20 +858,30 @@ export default function FloorPlan() {
                   const Icon = def.icon;
                   const occupant = patientById(f.patient_id);
                   const isOccupied = !!occupant;
+                  const canSeat = !def.decorative;
+                  const isDropTarget = canSeat && dragOverFurnId === f.id;
                   return (
                     <div
                       key={f.id}
                       onMouseDown={(e) => onMouseDownFurn(e, f, "move")}
                       onClick={(e) => { e.stopPropagation(); if (editMode) { setSelectedFurniture(f); setSelectedZone(null); } else { const d = FURNITURE_TYPES.find(t => t.value === f.furniture_type); if (d?.decorative) return; setSelectedFurniture(f); openEditFurniture(f); } }}
                       onDoubleClick={() => editMode && openEditFurniture(f)}
-                      className={`absolute rounded-md shadow-sm border-2 flex flex-col items-center justify-center text-white ${editMode ? "cursor-move" : "cursor-pointer"} hover:shadow-md transition-shadow ${editMode && (selectedFurnIds.has(f.id) || selectedFurniture?.id === f.id) ? "ring-2 ring-accent ring-offset-2" : ""}`}
+                      onDragOver={(e) => { if (!canSeat || editMode) return; if (e.dataTransfer.types.includes("text/patient-id")) { e.preventDefault(); e.dataTransfer.dropEffect = "move"; if (dragOverFurnId !== f.id) setDragOverFurnId(f.id); } }}
+                      onDragLeave={() => { if (dragOverFurnId === f.id) setDragOverFurnId(null); }}
+                      onDrop={(e) => {
+                        if (!canSeat || editMode) return;
+                        const pid = e.dataTransfer.getData("text/patient-id");
+                        setDragOverFurnId(null);
+                        if (pid) { e.preventDefault(); e.stopPropagation(); seatPatientOnFurniture(f.id, pid); }
+                      }}
+                      className={`absolute rounded-md shadow-sm border-2 flex flex-col items-center justify-center text-white ${editMode ? "cursor-move" : "cursor-pointer"} hover:shadow-md transition-shadow ${editMode && (selectedFurnIds.has(f.id) || selectedFurniture?.id === f.id) ? "ring-2 ring-accent ring-offset-2" : ""} ${isDropTarget ? "ring-4 ring-emerald-400 ring-offset-2 scale-105" : ""}`}
                       style={{
                         left: f.x, top: f.y, width: f.width, height: f.height,
                         background: isOccupied ? f.color : `${f.color}cc`,
                         borderColor: isOccupied ? "#0f172a" : f.color,
                         transform: `rotate(${f.rotation}deg)`, transformOrigin: "center center",
                       }}
-                      title={def.label + (occupant ? ` · ${occupant.full_name}` : "")}
+                      title={def.label + (occupant ? ` · ${occupant.full_name}` : (canSeat ? " · Arrastra un paciente aquí" : ""))}
                     >
                       <Icon className="w-4 h-4 opacity-90" />
                       {(f.label || occupant) && (
@@ -872,12 +934,19 @@ export default function FloorPlan() {
             <CardHeader className="pb-2"><CardTitle className="text-sm">Sin ubicar ({(flowsByZone["__unassigned__"] || []).length})</CardTitle></CardHeader>
             <CardContent className="space-y-1.5 max-h-72 overflow-auto">
               {(flowsByZone["__unassigned__"] || []).map((f) => (
-                <button key={f.id} onClick={() => setSelectedFlow(f)} className={`w-full text-left p-2 rounded border ${STAGE_COLOR[f.stage]}`}>
+                <button
+                  key={f.id}
+                  draggable
+                  onDragStart={(e) => { e.dataTransfer.setData("text/patient-id", f.patient_id); e.dataTransfer.effectAllowed = "move"; }}
+                  onClick={() => setSelectedFlow(f)}
+                  className={`w-full text-left p-2 rounded border ${STAGE_COLOR[f.stage]} cursor-grab active:cursor-grabbing`}
+                  title="Arrastra a una silla para ubicarlo"
+                >
                   <div className="text-xs font-semibold">{f.patients.full_name}</div>
                   <div className="text-[10px] opacity-70">{STAGE_LABEL[f.stage]} · {formatDistanceToNow(new Date(f.arrived_at), { locale: es, addSuffix: true })}</div>
                 </button>
               ))}
-              {(flowsByZone["__unassigned__"] || []).length === 0 && <p className="text-xs text-muted-foreground">Sin pacientes pendientes de asignar.</p>}
+              {(flowsByZone["__unassigned__"] || []).length === 0 && <p className="text-xs text-muted-foreground">Arrastra desde aquí o usa "Registrar llegada".</p>}
             </CardContent>
           </Card>
 
