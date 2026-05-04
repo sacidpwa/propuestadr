@@ -870,10 +870,19 @@ export default function FloorPlan() {
                   const isOccupied = !!occupant;
                   const canSeat = !def.decorative;
                   const isDropTarget = canSeat && dragOverFurnId === f.id;
+                  const patientDraggable = isOccupied && !editMode;
                   return (
                     <div
                       key={f.id}
-                      onMouseDown={(e) => onMouseDownFurn(e, f, "move")}
+                      draggable={patientDraggable}
+                      onDragStart={(e) => {
+                        if (!patientDraggable || !occupant) return;
+                        e.stopPropagation();
+                        e.dataTransfer.setData("text/patient-id", occupant.id);
+                        e.dataTransfer.setData("text/from-furniture-id", f.id);
+                        e.dataTransfer.effectAllowed = "move";
+                      }}
+                      onMouseDown={(e) => { if (patientDraggable) return; onMouseDownFurn(e, f, "move"); }}
                       onClick={(e) => { e.stopPropagation(); if (editMode) { setSelectedFurniture(f); setSelectedZone(null); } else { const d = FURNITURE_TYPES.find(t => t.value === f.furniture_type); if (d?.decorative) return; setSelectedFurniture(f); openEditFurniture(f); } }}
                       onDoubleClick={() => editMode && openEditFurniture(f)}
                       onDragOver={(e) => { if (!canSeat || editMode) return; if (e.dataTransfer.types.includes("text/patient-id")) { e.preventDefault(); e.dataTransfer.dropEffect = "move"; if (dragOverFurnId !== f.id) setDragOverFurnId(f.id); } }}
@@ -881,17 +890,19 @@ export default function FloorPlan() {
                       onDrop={(e) => {
                         if (!canSeat || editMode) return;
                         const pid = e.dataTransfer.getData("text/patient-id");
+                        const fromFurn = e.dataTransfer.getData("text/from-furniture-id");
                         setDragOverFurnId(null);
+                        if (fromFurn === f.id) return; // soltó en la misma silla
                         if (pid) { e.preventDefault(); e.stopPropagation(); seatPatientOnFurniture(f.id, pid); }
                       }}
-                      className={`absolute rounded-md shadow-sm border-2 flex flex-col items-center justify-center text-white ${editMode ? "cursor-move" : "cursor-pointer"} hover:shadow-md transition-shadow ${editMode && (selectedFurnIds.has(f.id) || selectedFurniture?.id === f.id) ? "ring-2 ring-accent ring-offset-2" : ""} ${isDropTarget ? "ring-4 ring-emerald-400 ring-offset-2 scale-105" : ""}`}
+                      className={`absolute rounded-md shadow-sm border-2 flex flex-col items-center justify-center text-white ${editMode ? "cursor-move" : (patientDraggable ? "cursor-grab active:cursor-grabbing" : "cursor-pointer")} hover:shadow-md transition-shadow ${editMode && (selectedFurnIds.has(f.id) || selectedFurniture?.id === f.id) ? "ring-2 ring-accent ring-offset-2" : ""} ${isDropTarget ? "ring-4 ring-emerald-400 ring-offset-2 scale-105" : ""}`}
                       style={{
                         left: f.x, top: f.y, width: f.width, height: f.height,
                         background: isOccupied ? f.color : `${f.color}cc`,
                         borderColor: isOccupied ? "#0f172a" : f.color,
                         transform: `rotate(${f.rotation}deg)`, transformOrigin: "center center",
                       }}
-                      title={def.label + (occupant ? ` · ${occupant.full_name}` : (canSeat ? " · Arrastra un paciente aquí" : ""))}
+                      title={def.label + (occupant ? ` · ${occupant.full_name} (arrastra para mover)` : (canSeat ? " · Arrastra un paciente aquí" : ""))}
                     >
                       <Icon className="w-4 h-4 opacity-90" />
                       {(f.label || occupant) && (
