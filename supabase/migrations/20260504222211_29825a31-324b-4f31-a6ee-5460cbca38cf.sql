@@ -1,0 +1,2 @@
+CREATE POLICY "Especialistas can insert patients" ON public.patients FOR INSERT TO authenticated WITH CHECK (has_role(auth.uid(), 'especialista'::app_role));
+CREATE POLICY "Especialistas can update patients" ON public.patients FOR UPDATE TO authenticated USING (has_role(auth.uid(), 'especialista'::app_role));
