@@ -42,6 +42,8 @@ export default function UsersAdmin() {
   const [createOpen, setCreateOpen] = useState(false);
   const [pinDialog, setPinDialog] = useState<{ open: boolean; userId: string | null; name: string }>({ open: false, userId: null, name: "" });
   const [pinValue, setPinValue] = useState("");
+  const [editDialog, setEditDialog] = useState<{ open: boolean; userId: string | null; full_name: string; email: string }>({ open: false, userId: null, full_name: "", email: "" });
+  const [editLoading, setEditLoading] = useState(false);
 
   const [newUser, setNewUser] = useState({
     email: "", password: "", full_name: "", role: "recepcion" as Role, pin: "", also_especialista: false,
