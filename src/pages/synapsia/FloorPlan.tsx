@@ -144,6 +144,28 @@ export default function FloorPlan() {
   });
   useEffect(() => { localStorage.setItem("synapsia_canvas_size", JSON.stringify(canvasSize)); }, [canvasSize]);
 
+  // Zoom del canvas (responsive). Persistente, con auto-fit en móvil.
+  const [zoom, setZoom] = useState<number>(() => {
+    const v = parseFloat(localStorage.getItem("synapsia_canvas_zoom") || "");
+    return Number.isFinite(v) && v > 0 ? v : 1;
+  });
+  const zoomRef = useRef(zoom);
+  useEffect(() => { zoomRef.current = zoom; localStorage.setItem("synapsia_canvas_zoom", String(zoom)); }, [zoom]);
+  const fitToWidth = () => {
+    const el = canvasRef.current; if (!el) return;
+    const avail = el.clientWidth - 4;
+    const z = Math.min(1.5, Math.max(0.2, avail / canvasSize.w));
+    setZoom(Number(z.toFixed(3)));
+  };
+  // Auto-fit en móvil al montar / cambiar tamaño
+  useEffect(() => {
+    const handle = () => { if (window.innerWidth < 768) fitToWidth(); };
+    handle();
+    window.addEventListener("resize", handle);
+    return () => window.removeEventListener("resize", handle);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [canvasSize.w]);
+
   // Selección múltiple
   const [selectedZoneIds, setSelectedZoneIds] = useState<Set<string>>(new Set());
   const [selectedFurnIds, setSelectedFurnIds] = useState<Set<string>>(new Set());
@@ -283,7 +305,8 @@ export default function FloorPlan() {
   };
   const onMove = (e: MouseEvent) => {
     const d = dragRef.current; if (!d) return;
-    const dx = e.clientX - d.startX, dy = e.clientY - d.startY;
+    const z = zoomRef.current || 1;
+    const dx = (e.clientX - d.startX) / z, dy = (e.clientY - d.startY) / z;
     let next: Zone = d.latest;
     if (d.mode === "move") {
       next = { ...d.orig, x: Math.max(0, d.orig.x + dx), y: Math.max(0, d.orig.y + dy) };
@@ -294,7 +317,7 @@ export default function FloorPlan() {
       next = { ...d.orig, rotation: d.orig.rotation + (ang - d.startAngle) };
     }
     d.latest = next;
-    setZones(prev => prev.map(z => z.id === d.id ? next : z));
+    setZones(prev => prev.map(zz => zz.id === d.id ? next : zz));
   };
   const onUp = async () => {
     document.removeEventListener("mousemove", onMove);
@@ -403,13 +426,14 @@ export default function FloorPlan() {
   };
   const onGroupMove = (e: MouseEvent) => {
     const g = groupDragRef.current; if (!g) return;
-    const dx = e.clientX - g.startX, dy = e.clientY - g.startY;
+    const z = zoomRef.current || 1;
+    const dx = (e.clientX - g.startX) / z, dy = (e.clientY - g.startY) / z;
     const nz = new Map<string, { x: number; y: number }>();
     g.zones.forEach((p, id) => nz.set(id, { x: Math.max(0, p.x + dx), y: Math.max(0, p.y + dy) }));
     const nf = new Map<string, { x: number; y: number }>();
     g.furn.forEach((p, id) => nf.set(id, { x: Math.max(0, p.x + dx), y: Math.max(0, p.y + dy) }));
     g.latestZ = nz; g.latestF = nf;
-    setZones(prev => prev.map(z => nz.has(z.id) ? { ...z, ...nz.get(z.id)! } : z));
+    setZones(prev => prev.map(zz => nz.has(zz.id) ? { ...zz, ...nz.get(zz.id)! } : zz));
     setFurniture(prev => prev.map(f => nf.has(f.id) ? { ...f, ...nf.get(f.id)! } : f));
   };
   const onGroupUp = async () => {
@@ -440,12 +464,13 @@ export default function FloorPlan() {
     if (!editMode) return;
     if (e.target !== e.currentTarget) return; // solo si clickeo el fondo
     const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
-    const sx = e.clientX - rect.left, sy = e.clientY - rect.top;
+    const z = zoomRef.current || 1;
+    const sx = (e.clientX - rect.left) / z, sy = (e.clientY - rect.top) / z;
     marqueeRef.current = { startX: sx, startY: sy, additive: e.shiftKey || e.metaKey || e.ctrlKey };
     setMarquee({ x: sx, y: sy, w: 0, h: 0 });
     const move = (ev: MouseEvent) => {
       const m = marqueeRef.current; if (!m) return;
-      const cx = ev.clientX - rect.left, cy = ev.clientY - rect.top;
+      const cx = (ev.clientX - rect.left) / z, cy = (ev.clientY - rect.top) / z;
       setMarquee({
         x: Math.min(m.startX, cx), y: Math.min(m.startY, cy),
         w: Math.abs(cx - m.startX), h: Math.abs(cy - m.startY),
@@ -455,14 +480,14 @@ export default function FloorPlan() {
       document.removeEventListener("mousemove", move);
       document.removeEventListener("mouseup", up);
       const m = marqueeRef.current; if (!m) { setMarquee(null); return; }
-      const cx = ev.clientX - rect.left, cy = ev.clientY - rect.top;
+      const cx = (ev.clientX - rect.left) / z, cy = (ev.clientY - rect.top) / z;
       const x1 = Math.min(m.startX, cx), y1 = Math.min(m.startY, cy);
       const x2 = Math.max(m.startX, cx), y2 = Math.max(m.startY, cy);
       const within = (ix: number, iy: number, iw: number, ih: number) =>
         ix < x2 && ix + iw > x1 && iy < y2 && iy + ih > y1;
       const newZ = new Set(m.additive ? selectedZoneIds : []);
       const newF = new Set(m.additive ? selectedFurnIds : []);
-      zones.forEach(z => { if (within(z.x, z.y, z.width, z.height)) newZ.add(z.id); });
+      zones.forEach(zz => { if (within(zz.x, zz.y, zz.width, zz.height)) newZ.add(zz.id); });
       furniture.forEach(f => { if (within(f.x, f.y, f.width, f.height)) newF.add(f.id); });
       setSelectedZoneIds(newZ); setSelectedFurnIds(newF);
       setMarquee(null); marqueeRef.current = null;
@@ -492,7 +517,8 @@ export default function FloorPlan() {
   };
   const onFMove = (e: MouseEvent) => {
     const d = fDragRef.current; if (!d) return;
-    const dx = e.clientX - d.startX, dy = e.clientY - d.startY;
+    const z = zoomRef.current || 1;
+    const dx = (e.clientX - d.startX) / z, dy = (e.clientY - d.startY) / z;
     let next: Furniture = d.latest;
     if (d.mode === "move") {
       next = { ...d.orig, x: Math.max(0, d.orig.x + dx), y: Math.max(0, d.orig.y + dy) };
@@ -503,7 +529,7 @@ export default function FloorPlan() {
       next = { ...d.orig, rotation: d.orig.rotation + (ang - d.startAngle) };
     }
     d.latest = next;
-    setFurniture(prev => prev.map(z => z.id === d.id ? next : z));
+    setFurniture(prev => prev.map(zz => zz.id === d.id ? next : zz));
   };
   const onFUp = async () => {
     document.removeEventListener("mousemove", onFMove);
@@ -766,6 +792,11 @@ export default function FloorPlan() {
                   <Button variant="outline" size="sm" className="w-full justify-start"><BarChart3 className="w-4 h-4 mr-2" />Métricas</Button>
                 </Link>
               )}
+              {isReception && !isOwner && (
+                <Link to="/synapsia/users" className="block">
+                  <Button variant="outline" size="sm" className="w-full justify-start"><Stethoscope className="w-4 h-4 mr-2" />Especialistas</Button>
+                </Link>
+              )}
               {isOwner && (
                 <>
                   <Link to="/synapsia/users" className="block">
@@ -804,22 +835,30 @@ export default function FloorPlan() {
         <div className="order-1 lg:order-2 min-w-0">
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-base flex items-center justify-between">
+            <CardTitle className="text-base flex items-center justify-between gap-2 flex-wrap">
               <span>Plano del consultorio</span>
-              <span className="text-xs font-normal text-muted-foreground">
-                {editMode ? "Mover · esquina ↘ redimensionar · ↻ rotar · doble-clic: editar" : "Click en zona, mueble o paciente"}
-              </span>
+              <div className="flex items-center gap-1 text-xs font-normal">
+                <Button size="sm" variant="outline" className="h-7 px-2" onClick={() => setZoom(z => Math.max(0.2, +(z - 0.1).toFixed(2)))}>−</Button>
+                <span className="px-2 font-mono tabular-nums">{Math.round(zoom * 100)}%</span>
+                <Button size="sm" variant="outline" className="h-7 px-2" onClick={() => setZoom(z => Math.min(2, +(z + 0.1).toFixed(2)))}>+</Button>
+                <Button size="sm" variant="outline" className="h-7 px-2 ml-1" onClick={fitToWidth}>Ajustar</Button>
+                <Button size="sm" variant="ghost" className="h-7 px-2" onClick={() => setZoom(1)}>100%</Button>
+              </div>
             </CardTitle>
+            <p className="text-[11px] text-muted-foreground mt-1">
+              {editMode ? "Mover · esquina ↘ redimensionar · ↻ rotar · doble-clic: editar" : "Click en zona, mueble o paciente"}
+            </p>
           </CardHeader>
           <CardContent>
             <div
               ref={canvasRef}
-              className="relative w-full bg-[radial-gradient(circle,#e2e8f0_1px,transparent_1px)] [background-size:20px_20px] border rounded-lg overflow-auto"
-              style={{ height: "70vh", minHeight: 500 }}
+              className="relative w-full bg-[radial-gradient(circle,#e2e8f0_1px,transparent_1px)] [background-size:20px_20px] border rounded-lg overflow-auto touch-pan-x touch-pan-y"
+              style={{ height: "70vh", minHeight: 400 }}
             >
+              <div style={{ width: canvasSize.w * zoom, height: canvasSize.h * zoom }}>
               <div
-                className="canvas-inner relative"
-                style={{ width: canvasSize.w, height: canvasSize.h }}
+                className="canvas-inner relative origin-top-left"
+                style={{ width: canvasSize.w, height: canvasSize.h, transform: `scale(${zoom})` }}
                 onMouseDown={onCanvasMouseDown}
                 onClick={(e) => { if (editMode && e.target === e.currentTarget) clearSelection(); }}
               >
@@ -986,6 +1025,7 @@ export default function FloorPlan() {
                     Activa el modo edición y crea tu primera zona o agrega mobiliario.
                   </div>
                 )}
+              </div>
               </div>
             </div>
           </CardContent>

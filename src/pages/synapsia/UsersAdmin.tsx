@@ -12,7 +12,7 @@ import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
-import { ArrowLeft, LogOut, Loader2, UserPlus, KeyRound, ShieldCheck, BarChart3, Users as UsersIcon, Pencil } from "lucide-react";
+import { ArrowLeft, LogOut, Loader2, UserPlus, KeyRound, ShieldCheck, BarChart3, Users as UsersIcon, Pencil, Stethoscope } from "lucide-react";
 import synapsiaIcon from "@/assets/synapsia-icon.svg";
 
 type Role = "admin" | "recepcion" | "especialista" | "administrativo" | "dueno";
@@ -49,7 +49,13 @@ export default function UsersAdmin() {
     email: "", password: "", full_name: "", role: "recepcion" as Role, pin: "", also_especialista: false,
   });
 
+  // Crear especialista (sin cuenta de usuario asociada)
+  const [specOpen, setSpecOpen] = useState(false);
+  const [specLoading, setSpecLoading] = useState(false);
+  const [newSpec, setNewSpec] = useState({ full_name: "", specialty: "psiquiatra" as "psiquiatra" | "psicologo", consultation_fee: "0", phone: "", email: "" });
+
   const isOwnerOrAdmin = hasRole("admin") || hasRole("dueno");
+  const isReception = hasRole("recepcion");
 
   useEffect(() => { fetchAll(); }, []);
 
@@ -149,6 +155,28 @@ export default function UsersAdmin() {
     fetchAll();
   };
 
+  const createSpecialist = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newSpec.full_name.trim()) { toast({ variant: "destructive", title: "Nombre requerido" }); return; }
+    setSpecLoading(true);
+    const { error } = await supabase.from("specialists").insert({
+      full_name: newSpec.full_name.trim(),
+      specialty: newSpec.specialty,
+      consultation_fee: Number(newSpec.consultation_fee) || 0,
+      phone: newSpec.phone.trim() || null,
+      email: newSpec.email.trim() || null,
+      is_active: true,
+    } as any);
+    setSpecLoading(false);
+    if (error) toast({ variant: "destructive", title: "No se pudo registrar", description: error.message });
+    else {
+      toast({ title: "Especialista registrado" });
+      setSpecOpen(false);
+      setNewSpec({ full_name: "", specialty: "psiquiatra", consultation_fee: "0", phone: "", email: "" });
+      fetchAll();
+    }
+  };
+
   return (
     <div className="min-h-screen bg-background">
       <header className="border-b bg-card shadow-sm">
@@ -165,9 +193,11 @@ export default function UsersAdmin() {
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <h2 className="text-2xl font-bold tracking-tight flex items-center gap-2"><UsersIcon className="w-6 h-6" /> Usuarios y roles</h2>
-            <p className="text-sm text-muted-foreground">Crea cuentas, asigna roles, establece PIN de seguridad y vincula especialistas.</p>
+            <h2 className="text-2xl font-bold tracking-tight flex items-center gap-2"><UsersIcon className="w-6 h-6" /> {isOwnerOrAdmin ? "Usuarios y roles" : "Especialistas"}</h2>
+            <p className="text-sm text-muted-foreground">{isOwnerOrAdmin ? "Crea cuentas, asigna roles, establece PIN de seguridad y vincula especialistas." : "Registra y mantiene el catálogo de especialistas."}</p>
           </div>
+          <div className="flex flex-wrap gap-2">
+            <Button variant="outline" onClick={() => setSpecOpen(true)}><Stethoscope className="w-4 h-4 mr-2" /> Nuevo especialista</Button>
           {isOwnerOrAdmin && (
             <Dialog open={createOpen} onOpenChange={setCreateOpen}>
               <DialogTrigger asChild>
@@ -211,8 +241,10 @@ export default function UsersAdmin() {
               </DialogContent>
             </Dialog>
           )}
+          </div>
         </div>
 
+        {isOwnerOrAdmin && (
         <Card>
           <CardHeader className="pb-2"><CardTitle className="text-base">Cuentas registradas</CardTitle><CardDescription>Asigna rol principal, agrega rol secundario (ej. dueño + especialista) y establece PIN.</CardDescription></CardHeader>
           <CardContent className="p-0 overflow-x-auto">
@@ -290,6 +322,7 @@ export default function UsersAdmin() {
             </Table>
           </CardContent>
         </Card>
+        )}
 
         <Card>
           <CardHeader className="pb-2"><CardTitle className="text-base">Especialistas y socios</CardTitle><CardDescription>Marca quién es socio (reparto de gastos), activa/desactiva y vincula a una cuenta de usuario.</CardDescription></CardHeader>
@@ -336,6 +369,38 @@ export default function UsersAdmin() {
           </CardContent>
         </Card>
       </main>
+
+      {/* New specialist dialog */}
+      <Dialog open={specOpen} onOpenChange={setSpecOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Registrar especialista</DialogTitle>
+            <DialogDescription>Da de alta al especialista en el catálogo. La cuenta de usuario se vincula después.</DialogDescription>
+          </DialogHeader>
+          <form onSubmit={createSpecialist} className="space-y-3">
+            <div className="space-y-1.5"><Label>Nombre completo *</Label><Input required value={newSpec.full_name} onChange={(e) => setNewSpec((p) => ({ ...p, full_name: e.target.value }))} /></div>
+            <div className="space-y-1.5">
+              <Label>Especialidad *</Label>
+              <Select value={newSpec.specialty} onValueChange={(v) => setNewSpec((p) => ({ ...p, specialty: v as any }))}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="psiquiatra">Psiquiatra</SelectItem>
+                  <SelectItem value="psicologo">Psicólogo</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1.5"><Label>Tarifa por consulta</Label><Input type="number" min="0" value={newSpec.consultation_fee} onChange={(e) => setNewSpec((p) => ({ ...p, consultation_fee: e.target.value }))} /></div>
+            <div className="grid grid-cols-2 gap-2">
+              <div className="space-y-1.5"><Label>Teléfono</Label><Input value={newSpec.phone} onChange={(e) => setNewSpec((p) => ({ ...p, phone: e.target.value }))} /></div>
+              <div className="space-y-1.5"><Label>Correo</Label><Input type="email" value={newSpec.email} onChange={(e) => setNewSpec((p) => ({ ...p, email: e.target.value }))} /></div>
+            </div>
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={() => setSpecOpen(false)}>Cancelar</Button>
+              <Button type="submit" disabled={specLoading}>{specLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : "Registrar"}</Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
 
       {/* PIN dialog */}
       <Dialog open={pinDialog.open} onOpenChange={(v) => { if (!v) { setPinDialog({ open: false, userId: null, name: "" }); setPinValue(""); } }}>
