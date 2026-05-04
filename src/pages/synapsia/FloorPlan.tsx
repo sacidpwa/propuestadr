@@ -1393,6 +1393,68 @@ export default function FloorPlan() {
           )}
         </SheetContent>
       </Sheet>
+      {/* === Payment dialog === */}
+      <Dialog open={payOpen} onOpenChange={setPayOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Cobrar a {payFlow?.patients.full_name}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            <div className="space-y-2">
+              <Label className="text-xs">Conceptos</Label>
+              {payConcepts.map((c, i) => (
+                <div key={i} className="flex gap-2 items-start">
+                  <Input
+                    placeholder="Descripción (ej. Consulta, Material...)"
+                    value={c.description}
+                    onChange={(e) => setPayConcepts(prev => prev.map((p, j) => j === i ? { ...p, description: e.target.value } : p))}
+                    className="flex-1"
+                  />
+                  <Input
+                    type="number"
+                    inputMode="decimal"
+                    placeholder="0.00"
+                    value={c.amount}
+                    onChange={(e) => setPayConcepts(prev => prev.map((p, j) => j === i ? { ...p, amount: e.target.value } : p))}
+                    className="w-28"
+                  />
+                  <Button size="icon" variant="ghost" onClick={() => setPayConcepts(prev => prev.filter((_, j) => j !== i))} disabled={payConcepts.length === 1}>
+                    <Trash2 className="w-4 h-4" />
+                  </Button>
+                </div>
+              ))}
+              <Button size="sm" variant="outline" onClick={() => setPayConcepts(prev => [...prev, { description: "", amount: "" }])}>
+                <Plus className="w-4 h-4 mr-1" /> Agregar concepto
+              </Button>
+            </div>
+            <div className="flex items-center justify-between border-t pt-2">
+              <span className="text-sm text-muted-foreground">Total</span>
+              <span className="text-xl font-bold">${payTotal.toLocaleString("es-MX", { minimumFractionDigits: 2 })}</span>
+            </div>
+            <div className="space-y-2">
+              <Label className="text-xs">Método de pago</Label>
+              <Select value={payMethod} onValueChange={setPayMethod}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="efectivo">Efectivo</SelectItem>
+                  <SelectItem value="transferencia">Transferencia</SelectItem>
+                  <SelectItem value="tarjeta">Tarjeta</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label className="text-xs">Notas</Label>
+              <Textarea value={payNotes} onChange={(e) => setPayNotes(e.target.value)} rows={2} />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setPayOpen(false)}>Cancelar</Button>
+            <Button onClick={submitPayment} disabled={paySaving || payTotal <= 0}>
+              <DollarSign className="w-4 h-4 mr-1" /> Confirmar cobro
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
