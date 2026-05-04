@@ -147,6 +147,7 @@ export default function FloorPlan() {
   // Selección múltiple
   const [selectedZoneIds, setSelectedZoneIds] = useState<Set<string>>(new Set());
   const [selectedFurnIds, setSelectedFurnIds] = useState<Set<string>>(new Set());
+  const [dragOverFurnId, setDragOverFurnId] = useState<string | null>(null);
 
   // Multi-drag (mover grupo)
   const groupDragRef = useRef<{ startX: number; startY: number; zones: Map<string, { x: number; y: number }>; furn: Map<string, { x: number; y: number }>; latestZ: Map<string, { x: number; y: number }>; latestF: Map<string, { x: number; y: number }>; } | null>(null);
