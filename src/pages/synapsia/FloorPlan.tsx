@@ -132,6 +132,51 @@ export default function FloorPlan() {
   const [intakeOpen, setIntakeOpen] = useState(false);
   const [intakeForm, setIntakeForm] = useState({ patient_id: "", zone_id: "", specialist_id: "" });
 
+  // === Cobro ===
+  const [payOpen, setPayOpen] = useState(false);
+  const [payFlow, setPayFlow] = useState<Flow | null>(null);
+  const [payConcepts, setPayConcepts] = useState<{ description: string; amount: string }[]>([]);
+  const [payMethod, setPayMethod] = useState<string>("efectivo");
+  const [payNotes, setPayNotes] = useState<string>("");
+  const [paySaving, setPaySaving] = useState(false);
+
+  const openPayment = (flow: Flow) => {
+    setPayFlow(flow);
+    const fee = flow.specialists ? Number(specialists.find(s => s.id === flow.specialist_id)?.consultation_fee || 0) : 0;
+    setPayConcepts([{ description: `Consulta ${flow.specialists?.full_name ?? ""}`.trim(), amount: fee ? String(fee) : "" }]);
+    setPayMethod("efectivo");
+    setPayNotes("");
+    setPayOpen(true);
+  };
+  const payTotal = payConcepts.reduce((s, c) => s + (parseFloat(c.amount) || 0), 0);
+  const submitPayment = async () => {
+    if (!payFlow) return;
+    if (payTotal <= 0) { toast({ variant: "destructive", title: "Monto inválido", description: "Total debe ser mayor a 0." }); return; }
+    setPaySaving(true);
+    const { error } = await (supabase.from("payments") as any).insert({
+      patient_id: payFlow.patient_id,
+      flow_id: payFlow.id,
+      amount: payTotal,
+      payment_method: payMethod as any,
+      collected_by: user?.id,
+      notes: payNotes || null,
+      concepts: payConcepts.filter(c => c.description.trim() && parseFloat(c.amount) > 0),
+    });
+    if (error) {
+      toast({ variant: "destructive", title: "Error", description: error.message });
+      setPaySaving(false); return;
+    }
+    // marcar etapa "pago"
+    await supabase.from("patient_flow").update({
+      stage: "pago",
+      to_payment_at: payFlow.to_payment_at ?? new Date().toISOString(),
+    }).eq("id", payFlow.id);
+    toast({ title: "Cobro registrado", description: `Total $${payTotal.toLocaleString("es-MX")}` });
+    setPaySaving(false);
+    setPayOpen(false);
+    fetchFlows();
+  };
+
   // drag/resize/rotate state for ZONES
   const dragRef = useRef<{ id: string; mode: "move" | "resize" | "rotate"; startX: number; startY: number; orig: Zone; latest: Zone; cx?: number; cy?: number; startAngle?: number } | null>(null);
   // drag/resize/rotate state for FURNITURE
