@@ -827,7 +827,7 @@ export default function FloorPlan() {
       </Sheet>
 
       {/* === Zone side panel (view mode) === */}
-      <Sheet open={!!selectedZone && !zoneEditOpen} onOpenChange={(o) => !o && setSelectedZone(null)}>
+      <Sheet open={!!selectedZone && !zoneEditOpen && !editMode} onOpenChange={(o) => !o && setSelectedZone(null)}>
         <SheetContent className="w-[360px]">
           {selectedZone && (
             <>
