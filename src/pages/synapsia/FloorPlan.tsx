@@ -17,6 +17,7 @@ import {
   Stethoscope, ClipboardList, FileText, DollarSign, LogIn, RotateCw, RotateCcw,
   Armchair, Sofa, Bed, Square, DoorClosed, Bath, Droplet, Package,
   Coffee, Refrigerator, Monitor, BookOpen, Archive, Wind,
+  BarChart3, Users, Wallet, Calendar as CalendarIcon, Calculator, LayoutDashboard,
 } from "lucide-react";
 import synapsiaIcon from "@/assets/synapsia-icon.svg";
 import { format, formatDistanceToNow } from "date-fns";
@@ -100,7 +101,9 @@ const STAGE_COLOR: Record<string, string> = {
 };
 
 export default function FloorPlan() {
-  const { user, signOut } = useAuth();
+  const { user, signOut, hasRole } = useAuth();
+  const isOwner = hasRole("dueno") || hasRole("admin");
+  const isReception = hasRole("recepcion");
   const { toast } = useToast();
   const navigate = useNavigate();
   const canvasRef = useRef<HTMLDivElement>(null);
@@ -559,9 +562,8 @@ export default function FloorPlan() {
   return (
     <div className="min-h-screen bg-background">
       <header className="border-b bg-card shadow-sm">
-        <div className="max-w-[1600px] mx-auto px-4 py-3 flex items-center justify-between">
+        <div className="max-w-[1800px] mx-auto px-4 py-3 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <Button variant="ghost" size="icon" onClick={() => navigate("/synapsia")}><ArrowLeft className="w-4 h-4" /></Button>
             <img src={synapsiaIcon} alt="" className="w-9 h-9" />
             <div>
               <h1 className="text-lg font-bold">Synapsia · Planta en vivo</h1>
@@ -569,13 +571,15 @@ export default function FloorPlan() {
             </div>
           </div>
           <div className="flex items-center gap-2">
-            <Button variant={editMode ? "default" : "outline"} size="sm" onClick={() => setEditMode(!editMode)}>
-              {editMode ? <Unlock className="w-4 h-4 mr-1" /> : <Lock className="w-4 h-4 mr-1" />}
-              {editMode ? "Modo edición" : "Bloqueado"}
-            </Button>
+            {(isOwner || isReception) && (
+              <Button variant={editMode ? "default" : "outline"} size="sm" onClick={() => setEditMode(!editMode)}>
+                {editMode ? <Unlock className="w-4 h-4 mr-1" /> : <Lock className="w-4 h-4 mr-1" />}
+                {editMode ? "Modo edición" : "Bloqueado"}
+              </Button>
+            )}
             {editMode && <Button size="sm" onClick={openNewZone}><Plus className="w-4 h-4 mr-1" /> Nueva zona</Button>}
             <Button size="sm" variant="secondary" onClick={() => openIntake()}><LogIn className="w-4 h-4 mr-1" /> Registrar llegada</Button>
-            <Button variant="ghost" size="icon" onClick={signOut}><LogOut className="w-4 h-4" /></Button>
+            <Button variant="ghost" size="icon" onClick={signOut} title="Cerrar sesión"><LogOut className="w-4 h-4" /></Button>
           </div>
         </div>
       </header>
@@ -654,7 +658,59 @@ export default function FloorPlan() {
         </div>
       )}
 
-      <main className="max-w-[1600px] mx-auto px-4 py-4 grid grid-cols-1 lg:grid-cols-[1fr_300px] gap-4">
+      <main className="max-w-[1800px] mx-auto px-4 py-4 grid grid-cols-1 lg:grid-cols-[230px_1fr_300px] gap-4">
+        {/* === Panel izquierdo: herramientas por rol === */}
+        <aside className="space-y-3 order-2 lg:order-1">
+          <Card>
+            <CardHeader className="pb-2"><CardTitle className="text-sm">Herramientas</CardTitle></CardHeader>
+            <CardContent className="space-y-1.5">
+              <Link to="/synapsia/calendar" className="block">
+                <Button variant="outline" size="sm" className="w-full justify-start"><CalendarIcon className="w-4 h-4 mr-2" />Agenda</Button>
+              </Link>
+              <Link to="/synapsia/patients" className="block">
+                <Button variant="outline" size="sm" className="w-full justify-start"><Users className="w-4 h-4 mr-2" />Pacientes</Button>
+              </Link>
+              {(isOwner || isReception) && (
+                <Link to="/synapsia/metrics" className="block">
+                  <Button variant="outline" size="sm" className="w-full justify-start"><BarChart3 className="w-4 h-4 mr-2" />Métricas</Button>
+                </Link>
+              )}
+              {isOwner && (
+                <>
+                  <Link to="/synapsia/users" className="block">
+                    <Button variant="outline" size="sm" className="w-full justify-start"><UserCheck className="w-4 h-4 mr-2" />Usuarios y roles</Button>
+                  </Link>
+                  <Link to="/synapsia/expenses" className="block">
+                    <Button variant="outline" size="sm" className="w-full justify-start"><Wallet className="w-4 h-4 mr-2" />Gastos</Button>
+                  </Link>
+                  <Link to="/synapsia/admin" className="block">
+                    <Button variant="outline" size="sm" className="w-full justify-start"><DollarSign className="w-4 h-4 mr-2" />Admin</Button>
+                  </Link>
+                  <Link to="/synapsia/cotizador" className="block">
+                    <Button variant="outline" size="sm" className="w-full justify-start"><Calculator className="w-4 h-4 mr-2" />Cotizador</Button>
+                  </Link>
+                </>
+              )}
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="pb-2"><CardTitle className="text-sm">Acciones rápidas</CardTitle></CardHeader>
+            <CardContent className="space-y-1.5">
+              <Button size="sm" className="w-full justify-start" onClick={() => openIntake()}>
+                <LogIn className="w-4 h-4 mr-2" />Registrar llegada
+              </Button>
+              {(isOwner || isReception) && (
+                <Button size="sm" variant={editMode ? "default" : "outline"} className="w-full justify-start" onClick={() => setEditMode(!editMode)}>
+                  {editMode ? <Unlock className="w-4 h-4 mr-2" /> : <Lock className="w-4 h-4 mr-2" />}
+                  {editMode ? "Salir de edición" : "Editar planta"}
+                </Button>
+              )}
+            </CardContent>
+          </Card>
+        </aside>
+
+        {/* === Centro: canvas === */}
+        <div className="order-1 lg:order-2 min-w-0">
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-base flex items-center justify-between">
@@ -809,8 +865,9 @@ export default function FloorPlan() {
             </div>
           </CardContent>
         </Card>
+        </div>
 
-        <div className="space-y-3">
+        <div className="space-y-3 order-3 lg:order-3">
           <Card>
             <CardHeader className="pb-2"><CardTitle className="text-sm">Sin ubicar ({(flowsByZone["__unassigned__"] || []).length})</CardTitle></CardHeader>
             <CardContent className="space-y-1.5 max-h-72 overflow-auto">

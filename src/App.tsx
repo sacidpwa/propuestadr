@@ -28,12 +28,13 @@ const queryClient = new QueryClient();
 const SynapsiaHome = () => {
   const { hasRole, loading } = useAuth();
   if (loading) return null;
-  if (hasRole("dueno")) return <OwnerHome />;
-  if (hasRole("admin")) return <OwnerHome />;
-  if (hasRole("recepcion")) return <Reception />;
+  // Dueño, admin y recepción aterrizan en la Planta en vivo (canvas central)
+  if (hasRole("dueno") || hasRole("admin") || hasRole("recepcion")) {
+    return <Navigate to="/synapsia/floor" replace />;
+  }
   if (hasRole("especialista")) return <SpecialistHome />;
   if (hasRole("administrativo")) return <Navigate to="/synapsia/admin" replace />;
-  return <Reception />;
+  return <Navigate to="/synapsia/floor" replace />;
 };
 
 const App = () => (
