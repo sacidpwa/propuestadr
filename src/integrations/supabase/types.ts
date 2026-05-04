@@ -557,7 +557,10 @@ export type Database = {
           email: string | null
           full_name: string
           id: string
+          is_active: boolean
           phone: string | null
+          pin_hash: string | null
+          pin_set_at: string | null
           updated_at: string
           user_id: string
         }
@@ -566,7 +569,10 @@ export type Database = {
           email?: string | null
           full_name: string
           id?: string
+          is_active?: boolean
           phone?: string | null
+          pin_hash?: string | null
+          pin_set_at?: string | null
           updated_at?: string
           user_id: string
         }
@@ -575,7 +581,10 @@ export type Database = {
           email?: string | null
           full_name?: string
           id?: string
+          is_active?: boolean
           phone?: string | null
+          pin_hash?: string | null
+          pin_set_at?: string | null
           updated_at?: string
           user_id?: string
         }
@@ -824,7 +833,12 @@ export type Database = {
       }
     }
     Enums: {
-      app_role: "admin" | "recepcion" | "especialista" | "administrativo"
+      app_role:
+        | "admin"
+        | "recepcion"
+        | "especialista"
+        | "administrativo"
+        | "dueno"
       appointment_status:
         | "programada"
         | "confirmada"
@@ -961,7 +975,13 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      app_role: ["admin", "recepcion", "especialista", "administrativo"],
+      app_role: [
+        "admin",
+        "recepcion",
+        "especialista",
+        "administrativo",
+        "dueno",
+      ],
       appointment_status: [
         "programada",
         "confirmada",
