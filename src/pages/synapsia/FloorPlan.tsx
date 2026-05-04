@@ -558,28 +558,38 @@ export default function FloorPlan() {
       toast({ variant: "destructive", title: "No disponible", description: "Este elemento es decorativo." });
       return;
     }
-    // Liberar otras sillas que tengan al mismo paciente (por si lo movemos de una a otra)
+    // 1) Liberar CUALQUIER otra silla que tenga al mismo paciente (no puede estar en dos lugares)
     const previous = furniture.filter(f => f.patient_id === patientId && f.id !== furnitureId);
     for (const p of previous) {
-      await supabase.from("floor_furniture").update({ patient_id: null }).eq("id", p.id);
+      const { error: relErr } = await supabase.from("floor_furniture").update({ patient_id: null }).eq("id", p.id);
+      if (relErr) { toast({ variant: "destructive", title: "Error", description: relErr.message }); return; }
     }
-    // Asignar paciente a la silla
+    // 2) Asignar paciente a la nueva silla
     const { error: fErr } = await supabase
       .from("floor_furniture")
       .update({ patient_id: patientId })
       .eq("id", furnitureId);
     if (fErr) { toast({ variant: "destructive", title: "Error", description: fErr.message }); return; }
 
-    // Sincronizar el flow del paciente: ponerle la zona del mueble (si tiene)
+    // 3) Sincronizar el flow: zona = la del mueble; etapa según el tipo de zona destino
     const flow = flows.find(fl => fl.patient_id === patientId && fl.stage !== "salida");
     if (flow) {
+      const targetZone = zones.find(z => z.id === target.zone_id);
       const upd: any = { zone_id: target.zone_id ?? null };
+      if (targetZone?.zone_type === "consultorio") {
+        upd.stage = "consulta";
+        if (!flow.in_consult_at) upd.in_consult_at = new Date().toISOString();
+        if (targetZone.specialist_id) upd.specialist_id = targetZone.specialist_id;
+      } else if (targetZone?.zone_type === "recepcion" || targetZone?.zone_type === "espera") {
+        upd.stage = "espera";
+      }
       const { error: flErr } = await supabase.from("patient_flow").update(upd).eq("id", flow.id);
       if (flErr) { toast({ variant: "destructive", title: "Error", description: flErr.message }); return; }
     }
     fetchFurniture();
     fetchFlows();
-    toast({ title: "Paciente sentado", description: "Ubicado en la silla seleccionada." });
+    const dest = zones.find(z => z.id === target.zone_id);
+    toast({ title: "Paciente movido", description: dest ? `Ahora en ${dest.name}.` : "Sentado en silla sin zona." });
   };
 
   const releaseFurniture = async (furnitureId: string) => {
