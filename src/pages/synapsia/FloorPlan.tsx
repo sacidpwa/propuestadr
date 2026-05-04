@@ -649,7 +649,12 @@ export default function FloorPlan() {
               className="relative w-full bg-[radial-gradient(circle,#e2e8f0_1px,transparent_1px)] [background-size:20px_20px] border rounded-lg overflow-auto"
               style={{ height: "70vh", minHeight: 500 }}
             >
-              <div className="canvas-inner relative" style={{ width: 1800, height: 1200 }}>
+              <div
+                className="canvas-inner relative"
+                style={{ width: canvasSize.w, height: canvasSize.h }}
+                onMouseDown={onCanvasMouseDown}
+                onClick={(e) => { if (editMode && e.target === e.currentTarget) clearSelection(); }}
+              >
                 {/* ZONES */}
                 {zones.map((z) => {
                   const occupants = (flowsByZone[z.id] || []);
