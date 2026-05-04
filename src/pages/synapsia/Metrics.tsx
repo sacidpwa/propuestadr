@@ -19,7 +19,7 @@ interface Payment { id: string; visit_id: string; amount: number; payment_method
 interface Specialist { id: string; full_name: string; consultation_fee: number; is_partner: boolean; is_active: boolean; user_id: string | null; }
 interface ExpenseEntry { id: string; amount: number; period_year: number; period_month: number; expense_date: string; description: string; }
 
-const COLORS = ["hsl(220 40% 30%)", "hsl(40 70% 55%)", "hsl(160 50% 40%)", "hsl(0 60% 55%)", "hsl(260 40% 50%)", "hsl(190 60% 45%)"];
+
 
 export default function Metrics() {
   const navigate = useNavigate();
