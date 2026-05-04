@@ -210,12 +210,13 @@ export default function FloorPlan() {
     if (error) toast({ variant: "destructive", title: "Error", description: error.message });
     else { toast({ title: selectedZone ? "Zona actualizada" : "Zona creada" }); setZoneEditOpen(false); fetchZones(); }
   };
-  const deleteZone = async () => {
-    if (!selectedZone) return;
-    if (!confirm("¿Eliminar esta zona?")) return;
-    const { error } = await supabase.from("floor_zones").update({ is_active: false }).eq("id", selectedZone.id);
+  const deleteZone = async (zoneArg?: Zone) => {
+    const z = zoneArg || selectedZone;
+    if (!z) return;
+    if (!confirm(`¿Eliminar la zona "${z.name}"?`)) return;
+    const { error } = await supabase.from("floor_zones").update({ is_active: false }).eq("id", z.id);
     if (error) toast({ variant: "destructive", title: "Error", description: error.message });
-    else { setZoneEditOpen(false); fetchZones(); }
+    else { setZoneEditOpen(false); setSelectedZone(null); fetchZones(); toast({ title: "Zona eliminada" }); }
   };
 
   // ===== Zone Drag / Resize / Rotate =====
