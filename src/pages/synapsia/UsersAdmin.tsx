@@ -5,64 +5,122 @@ import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
-import { ArrowLeft, Brain, LogOut, Loader2 } from "lucide-react";
+import { ArrowLeft, LogOut, Loader2, UserPlus, KeyRound, ShieldCheck, BarChart3, Users as UsersIcon } from "lucide-react";
+import synapsiaIcon from "@/assets/synapsia-icon.svg";
+
+type Role = "admin" | "recepcion" | "especialista" | "administrativo" | "dueno";
+const ROLE_LABEL: Record<Role, string> = {
+  admin: "Administrador (super)",
+  dueno: "Dueño",
+  especialista: "Especialista",
+  recepcion: "Recepción",
+  administrativo: "Administrativo",
+};
 
 interface Specialist {
   id: string; full_name: string; specialty: string; consultation_fee: number;
   is_active: boolean; is_partner: boolean; user_id: string | null; email: string | null;
 }
-interface Profile { user_id: string; full_name: string; email: string | null; }
+interface Profile { user_id: string; full_name: string; email: string | null; pin_set_at?: string | null; is_active?: boolean; }
+interface UserRoleRow { user_id: string; role: Role; }
 
 export default function UsersAdmin() {
-  const { user, signOut } = useAuth();
+  const { user, signOut, hasRole } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
   const [specialists, setSpecialists] = useState<Specialist[]>([]);
   const [profiles, setProfiles] = useState<Profile[]>([]);
+  const [rolesByUser, setRolesByUser] = useState<Record<string, Role[]>>({});
   const [loading, setLoading] = useState(false);
+  const [createOpen, setCreateOpen] = useState(false);
+  const [pinDialog, setPinDialog] = useState<{ open: boolean; userId: string | null; name: string }>({ open: false, userId: null, name: "" });
+  const [pinValue, setPinValue] = useState("");
+
+  const [newUser, setNewUser] = useState({
+    email: "", password: "", full_name: "", role: "recepcion" as Role, pin: "", also_especialista: false,
+  });
+
+  const isOwnerOrAdmin = hasRole("admin") || hasRole("dueno");
 
   useEffect(() => { fetchAll(); }, []);
+
   const fetchAll = async () => {
-    const [{ data: s }, { data: p }] = await Promise.all([
+    const [{ data: s }, { data: p }, { data: r }] = await Promise.all([
       supabase.from("specialists").select("*").order("full_name"),
-      supabase.from("profiles").select("user_id, full_name, email"),
+      supabase.from("profiles").select("user_id, full_name, email, pin_set_at, is_active").order("full_name"),
+      supabase.from("user_roles").select("user_id, role"),
     ]);
     setSpecialists((s as any) || []);
     setProfiles((p as any) || []);
+    const map: Record<string, Role[]> = {};
+    (r as UserRoleRow[] | null)?.forEach((row) => {
+      map[row.user_id] = [...(map[row.user_id] || []), row.role];
+    });
+    setRolesByUser(map);
   };
 
-  const togglePartner = async (id: string, v: boolean) => {
-    await supabase.from("specialists").update({ is_partner: v }).eq("id", id);
-    fetchAll();
-  };
-  const toggleActive = async (id: string, v: boolean) => {
-    await supabase.from("specialists").update({ is_active: v }).eq("id", id);
-    fetchAll();
-  };
-
-  const linkUser = async (specialistId: string, userId: string) => {
+  const handleCreateUser = async (e: React.FormEvent) => {
+    e.preventDefault();
     setLoading(true);
-    const finalId = userId === "__none__" ? null : userId;
-    const { error } = await supabase.from("specialists").update({ user_id: finalId }).eq("id", specialistId);
+    const additional = newUser.also_especialista && newUser.role !== "especialista" ? ["especialista"] : [];
+    const { data, error } = await supabase.functions.invoke("admin-create-user", {
+      body: {
+        email: newUser.email,
+        password: newUser.password,
+        full_name: newUser.full_name,
+        role: newUser.role,
+        pin: newUser.pin || null,
+        additional_roles: additional,
+      },
+    });
+    if (error || (data as any)?.error) {
+      toast({ variant: "destructive", title: "No se pudo crear", description: (data as any)?.error || error?.message });
+    } else {
+      toast({ title: "Usuario creado", description: (data as any)?.warning || "Cuenta lista para iniciar sesión." });
+      setCreateOpen(false);
+      setNewUser({ email: "", password: "", full_name: "", role: "recepcion", pin: "", also_especialista: false });
+      fetchAll();
+    }
+    setLoading(false);
+  };
+
+  const setPrimaryRole = async (userId: string, role: Role) => {
+    const { error } = await supabase.rpc("admin_set_user_role", { _user_id: userId, _role: role });
     if (error) toast({ variant: "destructive", title: "Error", description: error.message });
-    else toast({ title: "Vinculación actualizada" });
-    fetchAll();
-    setLoading(false);
+    else { toast({ title: "Rol actualizado" }); fetchAll(); }
   };
 
-  const grantSpecialistRole = async (userId: string) => {
-    if (!userId) return;
-    setLoading(true);
-    const { error } = await supabase.from("user_roles").insert({ user_id: userId, role: "especialista" as any });
-    if (error && !error.message.includes("duplicate")) toast({ variant: "destructive", title: "Error", description: error.message });
-    else toast({ title: "Rol 'especialista' asignado" });
-    setLoading(false);
+  const toggleAdditionalRole = async (userId: string, role: Role, has: boolean) => {
+    const fn = has ? "admin_remove_user_role" : "admin_add_user_role";
+    const { error } = await supabase.rpc(fn, { _user_id: userId, _role: role });
+    if (error) toast({ variant: "destructive", title: "Error", description: error.message });
+    else fetchAll();
+  };
+
+  const submitPin = async () => {
+    if (!pinDialog.userId) return;
+    if (!/^[0-9]{4,8}$/.test(pinValue)) {
+      toast({ variant: "destructive", title: "PIN inválido", description: "4 a 8 dígitos numéricos." });
+      return;
+    }
+    const { error } = await supabase.rpc("admin_set_user_pin", { _user_id: pinDialog.userId, _pin: pinValue });
+    if (error) toast({ variant: "destructive", title: "Error", description: error.message });
+    else { toast({ title: "PIN establecido" }); setPinDialog({ open: false, userId: null, name: "" }); setPinValue(""); fetchAll(); }
+  };
+
+  const togglePartner = async (id: string, v: boolean) => { await supabase.from("specialists").update({ is_partner: v }).eq("id", id); fetchAll(); };
+  const toggleActive = async (id: string, v: boolean) => { await supabase.from("specialists").update({ is_active: v }).eq("id", id); fetchAll(); };
+  const linkUser = async (specialistId: string, userId: string) => {
+    const finalId = userId === "__none__" ? null : userId;
+    await supabase.from("specialists").update({ user_id: finalId }).eq("id", specialistId);
+    fetchAll();
   };
 
   return (
@@ -70,16 +128,142 @@ export default function UsersAdmin() {
       <header className="border-b bg-card shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <Button variant="ghost" size="icon" onClick={() => navigate("/synapsia/admin")}><ArrowLeft className="w-4 h-4" /></Button>
-            <div className="w-10 h-10 rounded-xl bg-primary flex items-center justify-center"><Brain className="w-5 h-5 text-primary-foreground" /></div>
-            <div><h1 className="text-lg font-bold">Especialistas y Socios</h1><p className="text-xs text-muted-foreground">{user?.email}</p></div>
+            <Button variant="ghost" size="icon" onClick={() => navigate(-1)}><ArrowLeft className="w-4 h-4" /></Button>
+            <img src={synapsiaIcon} alt="" className="w-9 h-9" />
+            <div><h1 className="text-lg font-bold">Gestión de usuarios</h1><p className="text-xs text-muted-foreground">{user?.email}</p></div>
           </div>
           <Button variant="ghost" size="icon" onClick={signOut}><LogOut className="w-4 h-4" /></Button>
         </div>
       </header>
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-4">
+
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <h2 className="text-2xl font-bold tracking-tight flex items-center gap-2"><UsersIcon className="w-6 h-6" /> Usuarios y roles</h2>
+            <p className="text-sm text-muted-foreground">Crea cuentas, asigna roles, establece PIN de seguridad y vincula especialistas.</p>
+          </div>
+          {isOwnerOrAdmin && (
+            <Dialog open={createOpen} onOpenChange={setCreateOpen}>
+              <DialogTrigger asChild>
+                <Button><UserPlus className="w-4 h-4 mr-2" /> Nuevo usuario</Button>
+              </DialogTrigger>
+              <DialogContent className="max-w-md">
+                <DialogHeader>
+                  <DialogTitle>Crear usuario</DialogTitle>
+                  <DialogDescription>El usuario quedará confirmado y podrá iniciar sesión inmediatamente.</DialogDescription>
+                </DialogHeader>
+                <form onSubmit={handleCreateUser} className="space-y-3">
+                  <div className="space-y-1.5"><Label>Nombre completo *</Label><Input required value={newUser.full_name} onChange={(e) => setNewUser((p) => ({ ...p, full_name: e.target.value }))} /></div>
+                  <div className="space-y-1.5"><Label>Correo electrónico *</Label><Input required type="email" value={newUser.email} onChange={(e) => setNewUser((p) => ({ ...p, email: e.target.value }))} /></div>
+                  <div className="space-y-1.5"><Label>Contraseña inicial *</Label><Input required type="text" minLength={8} value={newUser.password} onChange={(e) => setNewUser((p) => ({ ...p, password: e.target.value }))} placeholder="Mínimo 8 caracteres" /></div>
+                  <div className="space-y-1.5">
+                    <Label>Rol principal *</Label>
+                    <Select value={newUser.role} onValueChange={(v) => setNewUser((p) => ({ ...p, role: v as Role }))}>
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        {(["dueno", "especialista", "recepcion", "administrativo", "admin"] as Role[]).map((r) => (
+                          <SelectItem key={r} value={r}>{ROLE_LABEL[r]}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  {newUser.role === "dueno" && (
+                    <label className="flex items-center gap-2 text-sm">
+                      <Switch checked={newUser.also_especialista} onCheckedChange={(v) => setNewUser((p) => ({ ...p, also_especialista: v }))} />
+                      También es especialista
+                    </label>
+                  )}
+                  <div className="space-y-1.5">
+                    <Label>PIN de seguridad (opcional, 4–8 dígitos)</Label>
+                    <Input inputMode="numeric" maxLength={8} value={newUser.pin} onChange={(e) => setNewUser((p) => ({ ...p, pin: e.target.value.replace(/\D/g, "") }))} placeholder="Ej. 1234" />
+                  </div>
+                  <DialogFooter>
+                    <Button type="button" variant="outline" onClick={() => setCreateOpen(false)}>Cancelar</Button>
+                    <Button type="submit" disabled={loading}>{loading ? <Loader2 className="w-4 h-4 animate-spin" /> : "Crear usuario"}</Button>
+                  </DialogFooter>
+                </form>
+              </DialogContent>
+            </Dialog>
+          )}
+        </div>
+
         <Card>
-          <CardHeader className="pb-2"><CardTitle className="text-base">Configuración por especialista</CardTitle></CardHeader>
+          <CardHeader className="pb-2"><CardTitle className="text-base">Cuentas registradas</CardTitle><CardDescription>Asigna rol principal, agrega rol secundario (ej. dueño + especialista) y establece PIN.</CardDescription></CardHeader>
+          <CardContent className="p-0 overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Usuario</TableHead>
+                  <TableHead>Rol principal</TableHead>
+                  <TableHead>Roles adicionales</TableHead>
+                  <TableHead>PIN</TableHead>
+                  <TableHead className="text-right">Acciones</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {profiles.map((p) => {
+                  const userRoles = rolesByUser[p.user_id] || [];
+                  const primary = userRoles[0];
+                  return (
+                    <TableRow key={p.user_id}>
+                      <TableCell>
+                        <div className="font-medium">{p.full_name}</div>
+                        <div className="text-xs text-muted-foreground">{p.email}</div>
+                      </TableCell>
+                      <TableCell>
+                        <Select value={primary || ""} onValueChange={(v) => setPrimaryRole(p.user_id, v as Role)} disabled={!isOwnerOrAdmin}>
+                          <SelectTrigger className="w-44"><SelectValue placeholder="Sin rol" /></SelectTrigger>
+                          <SelectContent>
+                            {(["dueno", "especialista", "recepcion", "administrativo", "admin"] as Role[]).map((r) => (
+                              <SelectItem key={r} value={r}>{ROLE_LABEL[r]}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex flex-wrap gap-1">
+                          {(["especialista", "recepcion", "administrativo", "dueno"] as Role[]).filter((r) => r !== primary).map((r) => {
+                            const has = userRoles.includes(r);
+                            return (
+                              <Badge
+                                key={r}
+                                variant={has ? "default" : "outline"}
+                                className="cursor-pointer text-xs"
+                                onClick={() => isOwnerOrAdmin && toggleAdditionalRole(p.user_id, r, has)}
+                              >
+                                {ROLE_LABEL[r]}
+                              </Badge>
+                            );
+                          })}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        {p.pin_set_at ? (
+                          <Badge variant="secondary" className="gap-1"><ShieldCheck className="w-3 h-3" /> Configurado</Badge>
+                        ) : (
+                          <Badge variant="outline">Sin PIN</Badge>
+                        )}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <div className="flex justify-end gap-2">
+                          <Button size="sm" variant="outline" onClick={() => setPinDialog({ open: true, userId: p.user_id, name: p.full_name })} disabled={!isOwnerOrAdmin}>
+                            <KeyRound className="w-3 h-3 mr-1" /> PIN
+                          </Button>
+                          <Button size="sm" variant="ghost" onClick={() => navigate(`/synapsia/metrics?user=${p.user_id}`)}>
+                            <BarChart3 className="w-3 h-3 mr-1" /> Métricas
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="pb-2"><CardTitle className="text-base">Especialistas y socios</CardTitle><CardDescription>Marca quién es socio (reparto de gastos), activa/desactiva y vincula a una cuenta de usuario.</CardDescription></CardHeader>
           <CardContent className="p-0 overflow-x-auto">
             <Table>
               <TableHeader>
@@ -93,35 +277,28 @@ export default function UsersAdmin() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {specialists.map(s => (
+                {specialists.map((s) => (
                   <TableRow key={s.id}>
                     <TableCell className="font-medium">{s.full_name}</TableCell>
-                    <TableCell className="text-sm">{s.specialty}</TableCell>
+                    <TableCell className="text-sm capitalize">{s.specialty}</TableCell>
                     <TableCell className="text-right font-mono">${Number(s.consultation_fee).toLocaleString()}</TableCell>
                     <TableCell><Switch checked={s.is_active} onCheckedChange={(v) => toggleActive(s.id, v)} /></TableCell>
                     <TableCell>
                       <div className="flex items-center gap-2">
                         <Switch checked={s.is_partner} onCheckedChange={(v) => togglePartner(s.id, v)} />
-                        {s.is_partner && <Badge variant="default">Socio</Badge>}
+                        {s.is_partner && <Badge>Socio</Badge>}
                       </div>
                     </TableCell>
                     <TableCell>
-                      <div className="flex items-center gap-2">
-                        <Select value={s.user_id ?? ""} onValueChange={(v) => linkUser(s.id, v)}>
-                          <SelectTrigger className="w-56"><SelectValue placeholder="Sin vincular" /></SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value={"__none__"}>— Sin vincular —</SelectItem>
-                            {profiles.map(p => (
-                              <SelectItem key={p.user_id} value={p.user_id}>{p.full_name} ({p.email})</SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                        {s.user_id && (
-                          <Button size="sm" variant="outline" onClick={() => grantSpecialistRole(s.user_id!)} disabled={loading}>
-                            Asignar rol
-                          </Button>
-                        )}
-                      </div>
+                      <Select value={s.user_id ?? ""} onValueChange={(v) => linkUser(s.id, v)}>
+                        <SelectTrigger className="w-56"><SelectValue placeholder="Sin vincular" /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="__none__">— Sin vincular —</SelectItem>
+                          {profiles.map((p) => (
+                            <SelectItem key={p.user_id} value={p.user_id}>{p.full_name} ({p.email})</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                     </TableCell>
                   </TableRow>
                 ))}
@@ -129,10 +306,19 @@ export default function UsersAdmin() {
             </Table>
           </CardContent>
         </Card>
-        <p className="text-xs text-muted-foreground">
-          Para que un especialista entre al sistema con su agenda y expedientes: 1) la persona se registra desde el login con su email; 2) aquí lo vinculas a su perfil y le asignas el rol "especialista".
-        </p>
       </main>
+
+      {/* PIN dialog */}
+      <Dialog open={pinDialog.open} onOpenChange={(v) => { if (!v) { setPinDialog({ open: false, userId: null, name: "" }); setPinValue(""); } }}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader><DialogTitle>Establecer PIN para {pinDialog.name}</DialogTitle><DialogDescription>4 a 8 dígitos numéricos.</DialogDescription></DialogHeader>
+          <Input inputMode="numeric" maxLength={8} value={pinValue} onChange={(e) => setPinValue(e.target.value.replace(/\D/g, ""))} placeholder="••••" className="text-center text-xl tracking-[0.5em]" />
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setPinDialog({ open: false, userId: null, name: "" })}>Cancelar</Button>
+            <Button onClick={submitPin} disabled={pinValue.length < 4}>Guardar PIN</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
