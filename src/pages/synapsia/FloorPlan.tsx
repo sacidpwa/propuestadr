@@ -68,10 +68,23 @@ const ZONE_TYPES = [
 ];
 
 const FURNITURE_TYPES = [
-  { value: "silla_espera", label: "Silla de espera", icon: Armchair, color: "#64748b", w: 38, h: 38 },
-  { value: "sillon", label: "Sillón", icon: Sofa, color: "#7c3aed", w: 70, h: 42 },
-  { value: "silla", label: "Silla", icon: Armchair, color: "#475569", w: 34, h: 34 },
-  { value: "escritorio", label: "Escritorio", icon: Square, color: "#92400e", w: 110, h: 50 },
+  // Mobiliario para pacientes / personal
+  { value: "silla_espera", label: "Silla de espera", icon: Armchair, color: "#64748b", w: 38, h: 38, decorative: false },
+  { value: "sillon", label: "Sillón", icon: Sofa, color: "#7c3aed", w: 70, h: 42, decorative: false },
+  { value: "silla", label: "Silla", icon: Armchair, color: "#475569", w: 34, h: 34, decorative: false },
+  { value: "escritorio", label: "Escritorio", icon: Square, color: "#92400e", w: 110, h: 50, decorative: false },
+  { value: "camilla", label: "Camilla", icon: Bed, color: "#0e7490", w: 90, h: 45, decorative: false },
+  // Elementos de layout (decorativos, no asignables)
+  { value: "puerta", label: "Puerta", icon: DoorClosed, color: "#a16207", w: 50, h: 12, decorative: true },
+  { value: "bano", label: "Baño", icon: Bath, color: "#0369a1", w: 80, h: 80, decorative: true },
+  { value: "lavamanos", label: "Lavamanos", icon: Droplet, color: "#0891b2", w: 45, h: 30, decorative: true },
+  { value: "bodega", label: "Bodega", icon: Package, color: "#57534e", w: 90, h: 70, decorative: true },
+  { value: "mesa_centro", label: "Mesa de centro", icon: Coffee, color: "#78350f", w: 70, h: 45, decorative: true },
+  { value: "estante", label: "Estante", icon: BookOpen, color: "#44403c", w: 80, h: 25, decorative: true },
+  { value: "archivero", label: "Archivero", icon: Archive, color: "#3f3f46", w: 55, h: 35, decorative: true },
+  { value: "refrigerador", label: "Refrigerador", icon: Refrigerator, color: "#1e293b", w: 45, h: 45, decorative: true },
+  { value: "tv", label: "Pantalla / TV", icon: Monitor, color: "#0f172a", w: 60, h: 18, decorative: true },
+  { value: "aire", label: "Aire acond.", icon: Wind, color: "#475569", w: 55, h: 18, decorative: true },
   { value: "camilla", label: "Camilla", icon: Bed, color: "#0f766e", w: 120, h: 50 },
   { value: "mesa", label: "Mesa", icon: Square, color: "#525252", w: 70, h: 70 },
 ];
