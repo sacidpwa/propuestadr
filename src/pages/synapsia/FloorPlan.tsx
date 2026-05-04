@@ -15,7 +15,8 @@ import { useToast } from "@/hooks/use-toast";
 import {
   ArrowLeft, LogOut, Plus, Trash2, Lock, Unlock, User, UserCheck,
   Stethoscope, ClipboardList, FileText, DollarSign, LogIn, RotateCw, RotateCcw,
-  Armchair, Sofa, Bed, Square,
+  Armchair, Sofa, Bed, Square, DoorClosed, Bath, Droplet, Package,
+  Coffee, Refrigerator, Monitor, BookOpen, Archive, Wind,
 } from "lucide-react";
 import synapsiaIcon from "@/assets/synapsia-icon.svg";
 import { format, formatDistanceToNow } from "date-fns";
@@ -67,10 +68,23 @@ const ZONE_TYPES = [
 ];
 
 const FURNITURE_TYPES = [
-  { value: "silla_espera", label: "Silla de espera", icon: Armchair, color: "#64748b", w: 38, h: 38 },
-  { value: "sillon", label: "Sillón", icon: Sofa, color: "#7c3aed", w: 70, h: 42 },
-  { value: "silla", label: "Silla", icon: Armchair, color: "#475569", w: 34, h: 34 },
-  { value: "escritorio", label: "Escritorio", icon: Square, color: "#92400e", w: 110, h: 50 },
+  // Mobiliario para pacientes / personal
+  { value: "silla_espera", label: "Silla de espera", icon: Armchair, color: "#64748b", w: 38, h: 38, decorative: false },
+  { value: "sillon", label: "Sillón", icon: Sofa, color: "#7c3aed", w: 70, h: 42, decorative: false },
+  { value: "silla", label: "Silla", icon: Armchair, color: "#475569", w: 34, h: 34, decorative: false },
+  { value: "escritorio", label: "Escritorio", icon: Square, color: "#92400e", w: 110, h: 50, decorative: false },
+  { value: "camilla", label: "Camilla", icon: Bed, color: "#0e7490", w: 90, h: 45, decorative: false },
+  // Elementos de layout (decorativos, no asignables)
+  { value: "puerta", label: "Puerta", icon: DoorClosed, color: "#a16207", w: 50, h: 12, decorative: true },
+  { value: "bano", label: "Baño", icon: Bath, color: "#0369a1", w: 80, h: 80, decorative: true },
+  { value: "lavamanos", label: "Lavamanos", icon: Droplet, color: "#0891b2", w: 45, h: 30, decorative: true },
+  { value: "bodega", label: "Bodega", icon: Package, color: "#57534e", w: 90, h: 70, decorative: true },
+  { value: "mesa_centro", label: "Mesa de centro", icon: Coffee, color: "#78350f", w: 70, h: 45, decorative: true },
+  { value: "estante", label: "Estante", icon: BookOpen, color: "#44403c", w: 80, h: 25, decorative: true },
+  { value: "archivero", label: "Archivero", icon: Archive, color: "#3f3f46", w: 55, h: 35, decorative: true },
+  { value: "refrigerador", label: "Refrigerador", icon: Refrigerator, color: "#1e293b", w: 45, h: 45, decorative: true },
+  { value: "tv", label: "Pantalla / TV", icon: Monitor, color: "#0f172a", w: 60, h: 18, decorative: true },
+  { value: "aire", label: "Aire acond.", icon: Wind, color: "#475569", w: 55, h: 18, decorative: true },
   { value: "camilla", label: "Camilla", icon: Bed, color: "#0f766e", w: 120, h: 50 },
   { value: "mesa", label: "Mesa", icon: Square, color: "#525252", w: 70, h: 70 },
 ];
@@ -429,7 +443,17 @@ export default function FloorPlan() {
         <div className="bg-muted/50 border-b">
           <div className="max-w-[1600px] mx-auto px-4 py-2 flex items-center gap-2 flex-wrap">
             <span className="text-xs font-semibold text-muted-foreground mr-2">Agregar mobiliario:</span>
-            {FURNITURE_TYPES.map(t => {
+            {FURNITURE_TYPES.filter(t => !t.decorative).map(t => {
+              const Icon = t.icon;
+              return (
+                <Button key={t.value} variant="outline" size="sm" onClick={() => addFurniture(t.value)} className="h-8">
+                  <Icon className="w-3.5 h-3.5 mr-1" /> {t.label}
+                </Button>
+              );
+            })}
+            <span className="w-px h-6 bg-border mx-1" />
+            <span className="text-xs font-semibold text-muted-foreground mr-1">Layout:</span>
+            {FURNITURE_TYPES.filter(t => t.decorative).map(t => {
               const Icon = t.icon;
               return (
                 <Button key={t.value} variant="outline" size="sm" onClick={() => addFurniture(t.value)} className="h-8">
@@ -563,7 +587,7 @@ export default function FloorPlan() {
                     <div
                       key={f.id}
                       onMouseDown={(e) => onMouseDownFurn(e, f, "move")}
-                      onClick={(e) => { e.stopPropagation(); if (editMode) { setSelectedFurniture(f); setSelectedZone(null); } else { setSelectedFurniture(f); openEditFurniture(f); } }}
+                      onClick={(e) => { e.stopPropagation(); if (editMode) { setSelectedFurniture(f); setSelectedZone(null); } else { const d = FURNITURE_TYPES.find(t => t.value === f.furniture_type); if (d?.decorative) return; setSelectedFurniture(f); openEditFurniture(f); } }}
                       onDoubleClick={() => editMode && openEditFurniture(f)}
                       className={`absolute rounded-md shadow-sm border-2 flex flex-col items-center justify-center text-white ${editMode ? "cursor-move" : "cursor-pointer"} hover:shadow-md transition-shadow ${editMode && selectedFurniture?.id === f.id ? "ring-2 ring-accent ring-offset-2" : ""}`}
                       style={{
