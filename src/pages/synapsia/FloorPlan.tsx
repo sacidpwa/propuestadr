@@ -835,22 +835,30 @@ export default function FloorPlan() {
         <div className="order-1 lg:order-2 min-w-0">
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-base flex items-center justify-between">
+            <CardTitle className="text-base flex items-center justify-between gap-2 flex-wrap">
               <span>Plano del consultorio</span>
-              <span className="text-xs font-normal text-muted-foreground">
-                {editMode ? "Mover · esquina ↘ redimensionar · ↻ rotar · doble-clic: editar" : "Click en zona, mueble o paciente"}
-              </span>
+              <div className="flex items-center gap-1 text-xs font-normal">
+                <Button size="sm" variant="outline" className="h-7 px-2" onClick={() => setZoom(z => Math.max(0.2, +(z - 0.1).toFixed(2)))}>−</Button>
+                <span className="px-2 font-mono tabular-nums">{Math.round(zoom * 100)}%</span>
+                <Button size="sm" variant="outline" className="h-7 px-2" onClick={() => setZoom(z => Math.min(2, +(z + 0.1).toFixed(2)))}>+</Button>
+                <Button size="sm" variant="outline" className="h-7 px-2 ml-1" onClick={fitToWidth}>Ajustar</Button>
+                <Button size="sm" variant="ghost" className="h-7 px-2" onClick={() => setZoom(1)}>100%</Button>
+              </div>
             </CardTitle>
+            <p className="text-[11px] text-muted-foreground mt-1">
+              {editMode ? "Mover · esquina ↘ redimensionar · ↻ rotar · doble-clic: editar" : "Click en zona, mueble o paciente"}
+            </p>
           </CardHeader>
           <CardContent>
             <div
               ref={canvasRef}
-              className="relative w-full bg-[radial-gradient(circle,#e2e8f0_1px,transparent_1px)] [background-size:20px_20px] border rounded-lg overflow-auto"
-              style={{ height: "70vh", minHeight: 500 }}
+              className="relative w-full bg-[radial-gradient(circle,#e2e8f0_1px,transparent_1px)] [background-size:20px_20px] border rounded-lg overflow-auto touch-pan-x touch-pan-y"
+              style={{ height: "70vh", minHeight: 400 }}
             >
+              <div style={{ width: canvasSize.w * zoom, height: canvasSize.h * zoom }}>
               <div
-                className="canvas-inner relative"
-                style={{ width: canvasSize.w, height: canvasSize.h }}
+                className="canvas-inner relative origin-top-left"
+                style={{ width: canvasSize.w, height: canvasSize.h, transform: `scale(${zoom})` }}
                 onMouseDown={onCanvasMouseDown}
                 onClick={(e) => { if (editMode && e.target === e.currentTarget) clearSelection(); }}
               >
