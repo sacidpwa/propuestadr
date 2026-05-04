@@ -169,26 +169,28 @@ export default function FloorPlan() {
   const onMouseDownZone = (e: React.MouseEvent, z: Zone, mode: "move" | "resize") => {
     if (!editMode) return;
     e.preventDefault(); e.stopPropagation();
-    dragRef.current = { id: z.id, mode, startX: e.clientX, startY: e.clientY, orig: { ...z } };
+    dragRef.current = { id: z.id, mode, startX: e.clientX, startY: e.clientY, orig: { ...z }, latest: { ...z } };
     document.addEventListener("mousemove", onMove);
     document.addEventListener("mouseup", onUp);
   };
   const onMove = (e: MouseEvent) => {
     const d = dragRef.current; if (!d) return;
     const dx = e.clientX - d.startX, dy = e.clientY - d.startY;
-    setZones(prev => prev.map(z => {
-      if (z.id !== d.id) return z;
-      if (d.mode === "move") return { ...z, x: Math.max(0, d.orig.x + dx), y: Math.max(0, d.orig.y + dy) };
-      return { ...z, width: Math.max(80, d.orig.width + dx), height: Math.max(60, d.orig.height + dy) };
-    }));
+    let next: Zone = d.latest;
+    if (d.mode === "move") {
+      next = { ...d.orig, x: Math.max(0, d.orig.x + dx), y: Math.max(0, d.orig.y + dy) };
+    } else {
+      next = { ...d.orig, width: Math.max(80, d.orig.width + dx), height: Math.max(60, d.orig.height + dy) };
+    }
+    d.latest = next;
+    setZones(prev => prev.map(z => z.id === d.id ? next : z));
   };
   const onUp = async () => {
     document.removeEventListener("mousemove", onMove);
     document.removeEventListener("mouseup", onUp);
     const d = dragRef.current; if (!d) return;
-    const z = (zones.find(zz => zz.id === d.id));
+    const z = d.latest;
     dragRef.current = null;
-    if (!z) return;
     await supabase.from("floor_zones").update({ x: z.x, y: z.y, width: z.width, height: z.height }).eq("id", z.id);
   };
 
