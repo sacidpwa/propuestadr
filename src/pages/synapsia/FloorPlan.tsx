@@ -88,7 +88,7 @@ export default function FloorPlan() {
   const [intakeForm, setIntakeForm] = useState({ patient_id: "", zone_id: "", specialist_id: "" });
 
   // drag/resize state
-  const dragRef = useRef<{ id: string; mode: "move" | "resize"; startX: number; startY: number; orig: Zone } | null>(null);
+  const dragRef = useRef<{ id: string; mode: "move" | "resize"; startX: number; startY: number; orig: Zone; latest: Zone } | null>(null);
 
   useEffect(() => { fetchAll(); }, []);
   useEffect(() => {
