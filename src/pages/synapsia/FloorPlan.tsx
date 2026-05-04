@@ -853,9 +853,23 @@ export default function FloorPlan() {
             <div
               ref={canvasRef}
               className="relative w-full bg-[radial-gradient(circle,#e2e8f0_1px,transparent_1px)] [background-size:20px_20px] border rounded-lg overflow-auto touch-pan-x touch-pan-y"
-              style={{ height: "70vh", minHeight: 400 }}
+              style={(() => {
+                const contentH = Math.max(
+                  ...zones.map(z => z.y + z.height),
+                  ...furniture.map(f => f.y + f.height),
+                  200
+                );
+                const contentW = Math.max(
+                  ...zones.map(z => z.x + z.width),
+                  ...furniture.map(f => f.x + f.width),
+                  200
+                );
+                const innerH = (editMode ? canvasSize.h : contentH + 40) * zoom + 16;
+                const innerW = (editMode ? canvasSize.w : contentW + 40) * zoom + 16;
+                return { height: Math.min(innerH, window.innerHeight * 0.8), minHeight: 320, maxWidth: "100%" } as React.CSSProperties;
+              })()}
             >
-              <div style={{ width: canvasSize.w * zoom, height: canvasSize.h * zoom }}>
+              <div style={{ width: (editMode ? canvasSize.w : Math.max(...zones.map(z => z.x + z.width), ...furniture.map(f => f.x + f.width), 200) + 40) * zoom, height: (editMode ? canvasSize.h : Math.max(...zones.map(z => z.y + z.height), ...furniture.map(f => f.y + f.height), 200) + 40) * zoom }}>
               <div
                 className="canvas-inner relative origin-top-left"
                 style={{ width: canvasSize.w, height: canvasSize.h, transform: `scale(${zoom})` }}
