@@ -464,12 +464,13 @@ export default function FloorPlan() {
     if (!editMode) return;
     if (e.target !== e.currentTarget) return; // solo si clickeo el fondo
     const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
-    const sx = e.clientX - rect.left, sy = e.clientY - rect.top;
+    const z = zoomRef.current || 1;
+    const sx = (e.clientX - rect.left) / z, sy = (e.clientY - rect.top) / z;
     marqueeRef.current = { startX: sx, startY: sy, additive: e.shiftKey || e.metaKey || e.ctrlKey };
     setMarquee({ x: sx, y: sy, w: 0, h: 0 });
     const move = (ev: MouseEvent) => {
       const m = marqueeRef.current; if (!m) return;
-      const cx = ev.clientX - rect.left, cy = ev.clientY - rect.top;
+      const cx = (ev.clientX - rect.left) / z, cy = (ev.clientY - rect.top) / z;
       setMarquee({
         x: Math.min(m.startX, cx), y: Math.min(m.startY, cy),
         w: Math.abs(cx - m.startX), h: Math.abs(cy - m.startY),
@@ -479,14 +480,14 @@ export default function FloorPlan() {
       document.removeEventListener("mousemove", move);
       document.removeEventListener("mouseup", up);
       const m = marqueeRef.current; if (!m) { setMarquee(null); return; }
-      const cx = ev.clientX - rect.left, cy = ev.clientY - rect.top;
+      const cx = (ev.clientX - rect.left) / z, cy = (ev.clientY - rect.top) / z;
       const x1 = Math.min(m.startX, cx), y1 = Math.min(m.startY, cy);
       const x2 = Math.max(m.startX, cx), y2 = Math.max(m.startY, cy);
       const within = (ix: number, iy: number, iw: number, ih: number) =>
         ix < x2 && ix + iw > x1 && iy < y2 && iy + ih > y1;
       const newZ = new Set(m.additive ? selectedZoneIds : []);
       const newF = new Set(m.additive ? selectedFurnIds : []);
-      zones.forEach(z => { if (within(z.x, z.y, z.width, z.height)) newZ.add(z.id); });
+      zones.forEach(zz => { if (within(zz.x, zz.y, zz.width, zz.height)) newZ.add(zz.id); });
       furniture.forEach(f => { if (within(f.x, f.y, f.width, f.height)) newF.add(f.id); });
       setSelectedZoneIds(newZ); setSelectedFurnIds(newF);
       setMarquee(null); marqueeRef.current = null;
