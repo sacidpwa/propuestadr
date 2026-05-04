@@ -933,6 +933,7 @@ export default function FloorPlan() {
                         const pid = e.dataTransfer.getData("text/patient-id");
                         const fromFurn = e.dataTransfer.getData("text/from-furniture-id");
                         setDragOverFurnId(null);
+                        setDragOverZoneId(null);
                         if (fromFurn === f.id) return; // soltó en la misma silla
                         if (pid) { e.preventDefault(); e.stopPropagation(); seatPatientOnFurniture(f.id, pid); }
                       }}
