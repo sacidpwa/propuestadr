@@ -1306,8 +1306,8 @@ export default function FloorPlan() {
                   <Button size="sm" variant="outline" onClick={() => moveFlow(selectedFlow, selectedFlow.zone_id, "consulta")}>
                     <Stethoscope className="w-4 h-4 mr-1" /> En consulta
                   </Button>
-                  <Button size="sm" variant="outline" onClick={() => moveFlow(selectedFlow, selectedFlow.zone_id, "pago")}>
-                    <DollarSign className="w-4 h-4 mr-1" /> A pago
+                  <Button size="sm" variant="default" onClick={() => openPayment(selectedFlow)}>
+                    <DollarSign className="w-4 h-4 mr-1" /> Cobrar
                   </Button>
                 </div>
 
