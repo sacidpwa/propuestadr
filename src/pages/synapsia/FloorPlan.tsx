@@ -865,8 +865,9 @@ export default function FloorPlan() {
             </div>
           </CardContent>
         </Card>
+        </div>
 
-        <div className="space-y-3">
+        <div className="space-y-3 order-3 lg:order-3">
           <Card>
             <CardHeader className="pb-2"><CardTitle className="text-sm">Sin ubicar ({(flowsByZone["__unassigned__"] || []).length})</CardTitle></CardHeader>
             <CardContent className="space-y-1.5 max-h-72 overflow-auto">
