@@ -548,14 +548,62 @@ export default function FloorPlan() {
     else { fetchFlows(); setSelectedFlow(null); }
   };
 
+  // === Drag & Drop: sentar paciente en una silla / mueble ===
+  const seatPatientOnFurniture = async (furnitureId: string, patientId: string) => {
+    const target = furniture.find(f => f.id === furnitureId);
+    if (!target) return;
+    const def = FURNITURE_TYPES.find(t => t.value === target.furniture_type);
+    if (def?.decorative) {
+      toast({ variant: "destructive", title: "No disponible", description: "Este elemento es decorativo." });
+      return;
+    }
+    // Liberar otras sillas que tengan al mismo paciente (por si lo movemos de una a otra)
+    const previous = furniture.filter(f => f.patient_id === patientId && f.id !== furnitureId);
+    for (const p of previous) {
+      await supabase.from("floor_furniture").update({ patient_id: null }).eq("id", p.id);
+    }
+    // Asignar paciente a la silla
+    const { error: fErr } = await supabase
+      .from("floor_furniture")
+      .update({ patient_id: patientId })
+      .eq("id", furnitureId);
+    if (fErr) { toast({ variant: "destructive", title: "Error", description: fErr.message }); return; }
+
+    // Sincronizar el flow del paciente: ponerle la zona del mueble (si tiene)
+    const flow = flows.find(fl => fl.patient_id === patientId && fl.stage !== "salida");
+    if (flow) {
+      const upd: any = { zone_id: target.zone_id ?? null };
+      const { error: flErr } = await supabase.from("patient_flow").update(upd).eq("id", flow.id);
+      if (flErr) { toast({ variant: "destructive", title: "Error", description: flErr.message }); return; }
+    }
+    fetchFurniture();
+    fetchFlows();
+    toast({ title: "Paciente sentado", description: "Ubicado en la silla seleccionada." });
+  };
+
+  const releaseFurniture = async (furnitureId: string) => {
+    const { error } = await supabase.from("floor_furniture").update({ patient_id: null }).eq("id", furnitureId);
+    if (error) toast({ variant: "destructive", title: "Error", description: error.message });
+    else { fetchFurniture(); toast({ title: "Silla liberada" }); }
+  };
+
+  // Set de IDs de pacientes ya sentados en algún mueble (no deben aparecer en la lista de la zona)
+  const seatedPatientIds = useMemo(() => {
+    const s = new Set<string>();
+    for (const f of furniture) if (f.patient_id) s.add(f.patient_id);
+    return s;
+  }, [furniture]);
+
   const flowsByZone = useMemo(() => {
     const map: Record<string, Flow[]> = {};
     for (const f of flows) {
+      // Si ya está sentado en una silla, no duplicarlo en la lista textual de la zona
+      if (seatedPatientIds.has(f.patient_id)) continue;
       const k = f.zone_id ?? "__unassigned__";
       (map[k] ||= []).push(f);
     }
     return map;
-  }, [flows]);
+  }, [flows, seatedPatientIds]);
 
   const patientById = (id: string | null) => id ? patients.find(p => p.id === id) : null;
 
