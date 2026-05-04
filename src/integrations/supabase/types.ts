@@ -187,6 +187,68 @@ export type Database = {
         }
         Relationships: []
       }
+      floor_furniture: {
+        Row: {
+          color: string
+          created_at: string
+          furniture_type: string
+          height: number
+          id: string
+          is_active: boolean
+          label: string | null
+          notes: string | null
+          patient_id: string | null
+          rotation: number
+          updated_at: string
+          width: number
+          x: number
+          y: number
+          zone_id: string | null
+        }
+        Insert: {
+          color?: string
+          created_at?: string
+          furniture_type?: string
+          height?: number
+          id?: string
+          is_active?: boolean
+          label?: string | null
+          notes?: string | null
+          patient_id?: string | null
+          rotation?: number
+          updated_at?: string
+          width?: number
+          x?: number
+          y?: number
+          zone_id?: string | null
+        }
+        Update: {
+          color?: string
+          created_at?: string
+          furniture_type?: string
+          height?: number
+          id?: string
+          is_active?: boolean
+          label?: string | null
+          notes?: string | null
+          patient_id?: string | null
+          rotation?: number
+          updated_at?: string
+          width?: number
+          x?: number
+          y?: number
+          zone_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "floor_furniture_zone_id_fkey"
+            columns: ["zone_id"]
+            isOneToOne: false
+            referencedRelation: "floor_zones"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       floor_zones: {
         Row: {
           capacity: number
@@ -197,6 +259,7 @@ export type Database = {
           is_active: boolean
           name: string
           notes: string | null
+          rotation: number
           specialist_id: string | null
           updated_at: string
           width: number
@@ -213,6 +276,7 @@ export type Database = {
           is_active?: boolean
           name: string
           notes?: string | null
+          rotation?: number
           specialist_id?: string | null
           updated_at?: string
           width?: number
@@ -229,6 +293,7 @@ export type Database = {
           is_active?: boolean
           name?: string
           notes?: string | null
+          rotation?: number
           specialist_id?: string | null
           updated_at?: string
           width?: number
