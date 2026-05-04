@@ -15,7 +15,8 @@ import { useToast } from "@/hooks/use-toast";
 import {
   ArrowLeft, LogOut, Plus, Trash2, Lock, Unlock, User, UserCheck,
   Stethoscope, ClipboardList, FileText, DollarSign, LogIn, RotateCw, RotateCcw,
-  Armchair, Sofa, Bed, Square,
+  Armchair, Sofa, Bed, Square, DoorClosed, Bath, Droplet, Package,
+  Coffee, Refrigerator, Monitor, BookOpen, Archive, Wind,
 } from "lucide-react";
 import synapsiaIcon from "@/assets/synapsia-icon.svg";
 import { format, formatDistanceToNow } from "date-fns";
