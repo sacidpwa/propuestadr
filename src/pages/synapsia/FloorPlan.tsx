@@ -766,6 +766,11 @@ export default function FloorPlan() {
                   <Button variant="outline" size="sm" className="w-full justify-start"><BarChart3 className="w-4 h-4 mr-2" />Métricas</Button>
                 </Link>
               )}
+              {isReception && !isOwner && (
+                <Link to="/synapsia/users" className="block">
+                  <Button variant="outline" size="sm" className="w-full justify-start"><Stethoscope className="w-4 h-4 mr-2" />Especialistas</Button>
+                </Link>
+              )}
               {isOwner && (
                 <>
                   <Link to="/synapsia/users" className="block">
