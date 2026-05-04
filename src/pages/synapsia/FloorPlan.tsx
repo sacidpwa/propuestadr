@@ -470,7 +470,13 @@ export default function FloorPlan() {
   const onMouseDownFurn = (e: React.MouseEvent, f: Furniture, mode: "move" | "resize" | "rotate") => {
     if (!editMode) return;
     e.preventDefault(); e.stopPropagation();
-    setSelectedFurniture(f);
+    if (mode === "move" && (selectedZoneIds.size + selectedFurnIds.size > 1) && selectedFurnIds.has(f.id)) {
+      startGroupDrag(e, selectedZoneIds, selectedFurnIds);
+      return;
+    }
+    setSelectedFurniture(f); setSelectedZone(null);
+    if (!(e.shiftKey || e.metaKey || e.ctrlKey)) { setSelectedFurnIds(new Set([f.id])); setSelectedZoneIds(new Set()); }
+    else { setSelectedFurnIds(prev => new Set(prev).add(f.id)); }
     const rect = canvasRef.current?.querySelector(".canvas-inner")?.getBoundingClientRect();
     const cx = (rect?.left ?? 0) + f.x + f.width / 2;
     const cy = (rect?.top ?? 0) + f.y + f.height / 2;
