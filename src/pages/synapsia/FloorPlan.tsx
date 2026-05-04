@@ -549,7 +549,7 @@ export default function FloorPlan() {
                     <div
                       key={f.id}
                       onMouseDown={(e) => onMouseDownFurn(e, f, "move")}
-                      onClick={(e) => { if (!editMode) { e.stopPropagation(); setSelectedFurniture(f); openEditFurniture(f); } }}
+                      onClick={(e) => { e.stopPropagation(); if (editMode) { setSelectedFurniture(f); setSelectedZone(null); } else { setSelectedFurniture(f); openEditFurniture(f); } }}
                       onDoubleClick={() => editMode && openEditFurniture(f)}
                       className={`absolute rounded-md shadow-sm border-2 flex flex-col items-center justify-center text-white ${editMode ? "cursor-move" : "cursor-pointer"} hover:shadow-md transition-shadow ${editMode && selectedFurniture?.id === f.id ? "ring-2 ring-accent ring-offset-2" : ""}`}
                       style={{
@@ -768,7 +768,7 @@ export default function FloorPlan() {
       </Dialog>
 
       {/* === Patient flow side panel === */}
-      <Sheet open={!!selectedFlow} onOpenChange={(o) => !o && setSelectedFlow(null)}>
+      <Sheet open={!!selectedFlow && !editMode} onOpenChange={(o) => !o && setSelectedFlow(null)}>
         <SheetContent className="w-[380px] sm:w-[420px]">
           {selectedFlow && (
             <>
@@ -827,7 +827,7 @@ export default function FloorPlan() {
       </Sheet>
 
       {/* === Zone side panel (view mode) === */}
-      <Sheet open={!!selectedZone && !zoneEditOpen} onOpenChange={(o) => !o && setSelectedZone(null)}>
+      <Sheet open={!!selectedZone && !zoneEditOpen && !editMode} onOpenChange={(o) => !o && setSelectedZone(null)}>
         <SheetContent className="w-[360px]">
           {selectedZone && (
             <>
