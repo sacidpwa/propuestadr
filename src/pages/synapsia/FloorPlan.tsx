@@ -426,13 +426,14 @@ export default function FloorPlan() {
   };
   const onGroupMove = (e: MouseEvent) => {
     const g = groupDragRef.current; if (!g) return;
-    const dx = e.clientX - g.startX, dy = e.clientY - g.startY;
+    const z = zoomRef.current || 1;
+    const dx = (e.clientX - g.startX) / z, dy = (e.clientY - g.startY) / z;
     const nz = new Map<string, { x: number; y: number }>();
     g.zones.forEach((p, id) => nz.set(id, { x: Math.max(0, p.x + dx), y: Math.max(0, p.y + dy) }));
     const nf = new Map<string, { x: number; y: number }>();
     g.furn.forEach((p, id) => nf.set(id, { x: Math.max(0, p.x + dx), y: Math.max(0, p.y + dy) }));
     g.latestZ = nz; g.latestF = nf;
-    setZones(prev => prev.map(z => nz.has(z.id) ? { ...z, ...nz.get(z.id)! } : z));
+    setZones(prev => prev.map(zz => nz.has(zz.id) ? { ...zz, ...nz.get(zz.id)! } : zz));
     setFurniture(prev => prev.map(f => nf.has(f.id) ? { ...f, ...nf.get(f.id)! } : f));
   };
   const onGroupUp = async () => {
