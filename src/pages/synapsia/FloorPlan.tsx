@@ -305,7 +305,8 @@ export default function FloorPlan() {
   };
   const onMove = (e: MouseEvent) => {
     const d = dragRef.current; if (!d) return;
-    const dx = e.clientX - d.startX, dy = e.clientY - d.startY;
+    const z = zoomRef.current || 1;
+    const dx = (e.clientX - d.startX) / z, dy = (e.clientY - d.startY) / z;
     let next: Zone = d.latest;
     if (d.mode === "move") {
       next = { ...d.orig, x: Math.max(0, d.orig.x + dx), y: Math.max(0, d.orig.y + dy) };
@@ -316,7 +317,7 @@ export default function FloorPlan() {
       next = { ...d.orig, rotation: d.orig.rotation + (ang - d.startAngle) };
     }
     d.latest = next;
-    setZones(prev => prev.map(z => z.id === d.id ? next : z));
+    setZones(prev => prev.map(zz => zz.id === d.id ? next : zz));
   };
   const onUp = async () => {
     document.removeEventListener("mousemove", onMove);
