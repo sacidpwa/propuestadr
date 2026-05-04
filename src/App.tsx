@@ -10,12 +10,14 @@ import SynapsiaLogin from "./pages/synapsia/Login";
 import Reception from "./pages/synapsia/Reception";
 import Cotizador from "./pages/synapsia/Cotizador";
 import AdminHome from "./pages/synapsia/AdminHome";
+import OwnerHome from "./pages/synapsia/OwnerHome";
 import SpecialistHome from "./pages/synapsia/SpecialistHome";
 import CalendarPage from "./pages/synapsia/Calendar";
 import Patients from "./pages/synapsia/Patients";
 import MedicalRecord from "./pages/synapsia/MedicalRecord";
 import Expenses from "./pages/synapsia/Expenses";
 import UsersAdmin from "./pages/synapsia/UsersAdmin";
+import Metrics from "./pages/synapsia/Metrics";
 import ProtectedRoute from "./components/synapsia/ProtectedRoute";
 import OwnerOnlyRoute from "./components/synapsia/OwnerOnlyRoute";
 import { AuthProvider, useAuth } from "./hooks/useAuth";
@@ -23,11 +25,13 @@ import { AuthProvider, useAuth } from "./hooks/useAuth";
 const queryClient = new QueryClient();
 
 const SynapsiaHome = () => {
-  const { roles, hasRole, loading } = useAuth();
+  const { hasRole, loading } = useAuth();
   if (loading) return null;
-  if (hasRole("admin") || hasRole("recepcion")) return <Reception />;
+  if (hasRole("dueno")) return <OwnerHome />;
+  if (hasRole("admin")) return <OwnerHome />;
+  if (hasRole("recepcion")) return <Reception />;
   if (hasRole("especialista")) return <SpecialistHome />;
-  if (roles.includes("administrativo")) return <Navigate to="/synapsia/admin" replace />;
+  if (hasRole("administrativo")) return <Navigate to="/synapsia/admin" replace />;
   return <Reception />;
 };
 
@@ -44,13 +48,14 @@ const App = () => (
             <Route path="/contratos" element={<OwnerOnlyRoute><Contratos /></OwnerOnlyRoute>} />
             <Route path="/synapsia/login" element={<SynapsiaLogin />} />
             <Route path="/synapsia" element={<ProtectedRoute><SynapsiaHome /></ProtectedRoute>} />
-            <Route path="/synapsia/admin" element={<ProtectedRoute requiredRole={["admin", "administrativo"]}><AdminHome /></ProtectedRoute>} />
-            <Route path="/synapsia/cotizador" element={<ProtectedRoute requiredRole={["admin", "administrativo"]}><Cotizador /></ProtectedRoute>} />
-            <Route path="/synapsia/calendar" element={<ProtectedRoute requiredRole={["admin", "recepcion", "especialista"]}><CalendarPage /></ProtectedRoute>} />
-            <Route path="/synapsia/patients" element={<ProtectedRoute requiredRole={["admin", "recepcion", "especialista"]}><Patients /></ProtectedRoute>} />
-            <Route path="/synapsia/records/:patientId" element={<ProtectedRoute requiredRole={["admin", "especialista"]}><MedicalRecord /></ProtectedRoute>} />
-            <Route path="/synapsia/expenses" element={<ProtectedRoute requiredRole={["admin", "administrativo"]}><Expenses /></ProtectedRoute>} />
-            <Route path="/synapsia/users" element={<ProtectedRoute requiredRole={["admin"]}><UsersAdmin /></ProtectedRoute>} />
+            <Route path="/synapsia/admin" element={<ProtectedRoute requiredRole={["admin", "dueno", "administrativo"]}><AdminHome /></ProtectedRoute>} />
+            <Route path="/synapsia/cotizador" element={<ProtectedRoute requiredRole={["admin", "dueno", "administrativo"]}><Cotizador /></ProtectedRoute>} />
+            <Route path="/synapsia/calendar" element={<ProtectedRoute requiredRole={["admin", "dueno", "recepcion", "especialista"]}><CalendarPage /></ProtectedRoute>} />
+            <Route path="/synapsia/patients" element={<ProtectedRoute requiredRole={["admin", "dueno", "recepcion", "especialista"]}><Patients /></ProtectedRoute>} />
+            <Route path="/synapsia/records/:patientId" element={<ProtectedRoute requiredRole={["admin", "dueno", "especialista"]}><MedicalRecord /></ProtectedRoute>} />
+            <Route path="/synapsia/expenses" element={<ProtectedRoute requiredRole={["admin", "dueno", "administrativo"]}><Expenses /></ProtectedRoute>} />
+            <Route path="/synapsia/users" element={<ProtectedRoute requiredRole={["admin", "dueno"]}><UsersAdmin /></ProtectedRoute>} />
+            <Route path="/synapsia/metrics" element={<ProtectedRoute><Metrics /></ProtectedRoute>} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </AuthProvider>
