@@ -260,6 +260,9 @@ export default function Reception() {
             </div>
           </div>
           <div className="flex items-center gap-2">
+            <Button variant="outline" size="sm" asChild>
+              <Link to="/synapsia/floor">Planta en vivo</Link>
+            </Button>
             <span className="text-sm text-muted-foreground hidden sm:block">
               {format(new Date(), "EEEE d 'de' MMMM, yyyy", { locale: es })}
             </span>
