@@ -49,7 +49,13 @@ export default function UsersAdmin() {
     email: "", password: "", full_name: "", role: "recepcion" as Role, pin: "", also_especialista: false,
   });
 
+  // Crear especialista (sin cuenta de usuario asociada)
+  const [specOpen, setSpecOpen] = useState(false);
+  const [specLoading, setSpecLoading] = useState(false);
+  const [newSpec, setNewSpec] = useState({ full_name: "", specialty: "psiquiatra" as "psiquiatra" | "psicologo", consultation_fee: "0", phone: "", email: "" });
+
   const isOwnerOrAdmin = hasRole("admin") || hasRole("dueno");
+  const isReception = hasRole("recepcion");
 
   useEffect(() => { fetchAll(); }, []);
 
