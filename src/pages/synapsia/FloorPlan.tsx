@@ -695,7 +695,7 @@ export default function FloorPlan() {
             </div>
           </div>
           <DialogFooter className="gap-2">
-            <Button variant="destructive" onClick={deleteFurniture}><Trash2 className="w-4 h-4 mr-1" />Eliminar</Button>
+            <Button variant="destructive" onClick={() => deleteFurniture()}><Trash2 className="w-4 h-4 mr-1" />Eliminar</Button>
             <Button variant="outline" onClick={() => setFurnEditOpen(false)}>Cancelar</Button>
             <Button onClick={saveFurniture}>Guardar</Button>
           </DialogFooter>
