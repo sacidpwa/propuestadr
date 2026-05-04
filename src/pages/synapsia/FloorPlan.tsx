@@ -1026,6 +1026,7 @@ export default function FloorPlan() {
                   </div>
                 )}
               </div>
+              </div>
             </div>
           </CardContent>
         </Card>
