@@ -816,9 +816,12 @@ export default function FloorPlan() {
                         {occupants.map((f) => (
                           <button
                             key={f.id}
+                            draggable
+                            onDragStart={(e) => { e.stopPropagation(); e.dataTransfer.setData("text/patient-id", f.patient_id); e.dataTransfer.effectAllowed = "move"; }}
                             onClick={(e) => { e.stopPropagation(); setSelectedFlow(f); }}
                             onMouseDown={(e) => e.stopPropagation()}
-                            className={`w-full text-left flex items-center gap-1.5 px-1.5 py-1 rounded border ${STAGE_COLOR[f.stage]} hover:scale-[1.02] transition-transform`}
+                            className={`w-full text-left flex items-center gap-1.5 px-1.5 py-1 rounded border ${STAGE_COLOR[f.stage]} hover:scale-[1.02] transition-transform cursor-grab active:cursor-grabbing`}
+                            title="Arrastra a una silla"
                           >
                             <div className="w-5 h-5 rounded-full bg-white flex items-center justify-center shrink-0">
                               <User className="w-3 h-3 text-foreground" />
