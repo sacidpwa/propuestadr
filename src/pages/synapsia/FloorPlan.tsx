@@ -523,7 +523,7 @@ export default function FloorPlan() {
                       onMouseDown={(e) => onMouseDownFurn(e, f, "move")}
                       onClick={(e) => { if (!editMode) { e.stopPropagation(); setSelectedFurniture(f); openEditFurniture(f); } }}
                       onDoubleClick={() => editMode && openEditFurniture(f)}
-                      className={`absolute rounded-md shadow-sm border-2 flex flex-col items-center justify-center text-white ${editMode ? "cursor-move" : "cursor-pointer"} hover:shadow-md transition-shadow`}
+                      className={`absolute rounded-md shadow-sm border-2 flex flex-col items-center justify-center text-white ${editMode ? "cursor-move" : "cursor-pointer"} hover:shadow-md transition-shadow ${editMode && selectedFurniture?.id === f.id ? "ring-2 ring-accent ring-offset-2" : ""}`}
                       style={{
                         left: f.x, top: f.y, width: f.width, height: f.height,
                         background: isOccupied ? f.color : `${f.color}cc`,
