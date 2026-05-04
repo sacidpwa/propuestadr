@@ -826,13 +826,22 @@ export default function FloorPlan() {
                 {/* ZONES */}
                 {zones.map((z) => {
                   const occupants = (flowsByZone[z.id] || []);
+                  const isZoneDropTarget = dragOverZoneId === z.id;
                   return (
                     <div
                       key={z.id}
                       onMouseDown={(e) => onMouseDownZone(e, z, "move")}
                       onClick={(e) => { if (!editMode) { e.stopPropagation(); setSelectedZone(z); } }}
                       onDoubleClick={() => editMode && openEditZone(z)}
-                      className={`absolute rounded-xl shadow-sm border-2 ${editMode ? "cursor-move" : "cursor-pointer"} transition-shadow hover:shadow-md ${editMode && selectedZoneIds.has(z.id) ? "ring-2 ring-primary ring-offset-2" : ""}`}
+                      onDragOver={(e) => { if (editMode) return; if (e.dataTransfer.types.includes("text/patient-id")) { e.preventDefault(); e.dataTransfer.dropEffect = "move"; if (dragOverZoneId !== z.id) setDragOverZoneId(z.id); } }}
+                      onDragLeave={(e) => { if (e.currentTarget.contains(e.relatedTarget as Node)) return; if (dragOverZoneId === z.id) setDragOverZoneId(null); }}
+                      onDrop={(e) => {
+                        if (editMode) return;
+                        const pid = e.dataTransfer.getData("text/patient-id");
+                        setDragOverZoneId(null);
+                        if (pid) { e.preventDefault(); e.stopPropagation(); movePatientToZone(z.id, pid); }
+                      }}
+                      className={`absolute rounded-xl shadow-sm border-2 ${editMode ? "cursor-move" : "cursor-pointer"} transition-shadow hover:shadow-md ${editMode && selectedZoneIds.has(z.id) ? "ring-2 ring-primary ring-offset-2" : ""} ${isZoneDropTarget ? "ring-4 ring-emerald-400 ring-offset-2" : ""}`}
                       style={{
                         left: z.x, top: z.y, width: z.width, height: z.height,
                         background: `${z.color}10`, borderColor: z.color,
