@@ -735,7 +735,7 @@ export default function FloorPlan() {
                       onMouseDown={(e) => onMouseDownFurn(e, f, "move")}
                       onClick={(e) => { e.stopPropagation(); if (editMode) { setSelectedFurniture(f); setSelectedZone(null); } else { const d = FURNITURE_TYPES.find(t => t.value === f.furniture_type); if (d?.decorative) return; setSelectedFurniture(f); openEditFurniture(f); } }}
                       onDoubleClick={() => editMode && openEditFurniture(f)}
-                      className={`absolute rounded-md shadow-sm border-2 flex flex-col items-center justify-center text-white ${editMode ? "cursor-move" : "cursor-pointer"} hover:shadow-md transition-shadow ${editMode && selectedFurniture?.id === f.id ? "ring-2 ring-accent ring-offset-2" : ""}`}
+                      className={`absolute rounded-md shadow-sm border-2 flex flex-col items-center justify-center text-white ${editMode ? "cursor-move" : "cursor-pointer"} hover:shadow-md transition-shadow ${editMode && (selectedFurnIds.has(f.id) || selectedFurniture?.id === f.id) ? "ring-2 ring-accent ring-offset-2" : ""}`}
                       style={{
                         left: f.x, top: f.y, width: f.width, height: f.height,
                         background: isOccupied ? f.color : `${f.color}cc`,
