@@ -14,7 +14,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import {
   ArrowLeft, LogOut, Plus, Trash2, Lock, Unlock, User, UserCheck,
-  Stethoscope, ClipboardList, FileText, DollarSign, LogIn, RotateCw,
+  Stethoscope, ClipboardList, FileText, DollarSign, LogIn, RotateCw, RotateCcw,
   Armchair, Sofa, Bed, Square,
 } from "lucide-react";
 import synapsiaIcon from "@/assets/synapsia-icon.svg";
@@ -143,13 +143,10 @@ export default function FloorPlan() {
         if (selectedZone) { e.preventDefault(); await deleteZone(selectedZone); return; }
       }
 
-      if (selectedFurniture && (e.key === "ArrowLeft" || e.key === "ArrowRight")) {
-        e.preventDefault();
+      if (e.key === "ArrowLeft" || e.key === "ArrowRight") {
         const delta = e.key === "ArrowRight" ? 90 : -90;
-        const newRot = (selectedFurniture.rotation || 0) + delta;
-        setFurniture(prev => prev.map(x => x.id === selectedFurniture.id ? { ...x, rotation: newRot } : x));
-        setSelectedFurniture({ ...selectedFurniture, rotation: newRot });
-        await supabase.from("floor_furniture" as any).update({ rotation: newRot }).eq("id", selectedFurniture.id);
+        if (selectedFurniture) { e.preventDefault(); await rotateFurnitureBy(selectedFurniture, delta); return; }
+        if (selectedZone) { e.preventDefault(); await rotateZoneBy(selectedZone, delta); return; }
       }
     };
     window.addEventListener("keydown", onKey);
@@ -308,6 +305,19 @@ export default function FloorPlan() {
     toast({ title: "Mobiliario eliminado" });
   };
 
+  const rotateFurnitureBy = async (f: Furniture, deg: number) => {
+    const newRot = (f.rotation || 0) + deg;
+    setFurniture(prev => prev.map(x => x.id === f.id ? { ...x, rotation: newRot } : x));
+    setSelectedFurniture({ ...f, rotation: newRot });
+    await supabase.from("floor_furniture" as any).update({ rotation: newRot }).eq("id", f.id);
+  };
+  const rotateZoneBy = async (z: Zone, deg: number) => {
+    const newRot = (z.rotation || 0) + deg;
+    setZones(prev => prev.map(x => x.id === z.id ? { ...x, rotation: newRot } : x));
+    setSelectedZone({ ...z, rotation: newRot });
+    await supabase.from("floor_zones").update({ rotation: newRot }).eq("id", z.id);
+  };
+
   const onMouseDownFurn = (e: React.MouseEvent, f: Furniture, mode: "move" | "resize" | "rotate") => {
     if (!editMode) return;
     e.preventDefault(); e.stopPropagation();
@@ -440,12 +450,16 @@ export default function FloorPlan() {
               {selectedFurniture && (
                 <>
                   <span className="px-2 py-0.5 rounded bg-accent/20 text-accent-foreground border border-accent/40">Mueble: {selectedFurniture.label || FURNITURE_TYPES.find(t => t.value === selectedFurniture.furniture_type)?.label}</span>
+                  <Button size="sm" variant="outline" className="h-7" onClick={() => rotateFurnitureBy(selectedFurniture, -90)} title="Rotar 90° izq."><RotateCcw className="w-3 h-3" /></Button>
+                  <Button size="sm" variant="outline" className="h-7" onClick={() => rotateFurnitureBy(selectedFurniture, 90)} title="Rotar 90° der."><RotateCw className="w-3 h-3" /></Button>
                   <Button size="sm" variant="destructive" className="h-7" onClick={() => deleteFurniture(selectedFurniture)}><Trash2 className="w-3 h-3 mr-1" />Eliminar mueble</Button>
                 </>
               )}
               {selectedZone && !selectedFurniture && (
                 <>
                   <span className="px-2 py-0.5 rounded bg-accent/20 text-accent-foreground border border-accent/40">Zona: {selectedZone.name}</span>
+                  <Button size="sm" variant="outline" className="h-7" onClick={() => rotateZoneBy(selectedZone, -90)} title="Rotar 90° izq."><RotateCcw className="w-3 h-3" /></Button>
+                  <Button size="sm" variant="outline" className="h-7" onClick={() => rotateZoneBy(selectedZone, 90)} title="Rotar 90° der."><RotateCw className="w-3 h-3" /></Button>
                   <Button size="sm" variant="destructive" className="h-7" onClick={() => deleteZone(selectedZone)}><Trash2 className="w-3 h-3 mr-1" />Eliminar zona</Button>
                 </>
               )}
