@@ -14,7 +14,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import {
   ArrowLeft, LogOut, Plus, Trash2, Lock, Unlock, User, UserCheck,
-  Stethoscope, ClipboardList, FileText, DollarSign, LogIn,
+  Stethoscope, ClipboardList, FileText, DollarSign, LogIn, RotateCw,
+  Armchair, Sofa, Bed, Square,
 } from "lucide-react";
 import synapsiaIcon from "@/assets/synapsia-icon.svg";
 import { format, formatDistanceToNow } from "date-fns";
@@ -26,9 +27,20 @@ interface Zone {
   zone_type: string;
   color: string;
   x: number; y: number; width: number; height: number;
+  rotation: number;
   specialist_id: string | null;
   capacity: number;
   notes: string | null;
+}
+interface Furniture {
+  id: string;
+  zone_id: string | null;
+  furniture_type: string;
+  label: string | null;
+  x: number; y: number; width: number; height: number;
+  rotation: number;
+  color: string;
+  patient_id: string | null;
 }
 interface Specialist { id: string; full_name: string; specialty: string; user_id: string | null; consultation_fee: number; }
 interface Patient { id: string; full_name: string; phone: string | null; date_of_birth: string | null; }
@@ -37,7 +49,7 @@ interface Flow {
   patient_id: string;
   zone_id: string | null;
   specialist_id: string | null;
-  stage: string; // espera | consulta | pago | salida
+  stage: string;
   arrived_at: string;
   in_consult_at: string | null;
   to_payment_at: string | null;
@@ -52,6 +64,15 @@ const ZONE_TYPES = [
   { value: "espera", label: "Sala de espera", color: "#475569" },
   { value: "laboratorio", label: "Laboratorio", color: "#047857" },
   { value: "otro", label: "Otro", color: "#6b21a8" },
+];
+
+const FURNITURE_TYPES = [
+  { value: "silla_espera", label: "Silla de espera", icon: Armchair, color: "#64748b", w: 38, h: 38 },
+  { value: "sillon", label: "Sillón", icon: Sofa, color: "#7c3aed", w: 70, h: 42 },
+  { value: "silla", label: "Silla", icon: Armchair, color: "#475569", w: 34, h: 34 },
+  { value: "escritorio", label: "Escritorio", icon: Square, color: "#92400e", w: 110, h: 50 },
+  { value: "camilla", label: "Camilla", icon: Bed, color: "#0f766e", w: 120, h: 50 },
+  { value: "mesa", label: "Mesa", icon: Square, color: "#525252", w: 70, h: 70 },
 ];
 
 const STAGE_LABEL: Record<string, string> = {
@@ -71,6 +92,7 @@ export default function FloorPlan() {
   const canvasRef = useRef<HTMLDivElement>(null);
 
   const [zones, setZones] = useState<Zone[]>([]);
+  const [furniture, setFurniture] = useState<Furniture[]>([]);
   const [specialists, setSpecialists] = useState<Specialist[]>([]);
   const [patients, setPatients] = useState<Patient[]>([]);
   const [flows, setFlows] = useState<Flow[]>([]);
@@ -78,32 +100,45 @@ export default function FloorPlan() {
   const [selectedZone, setSelectedZone] = useState<Zone | null>(null);
   const [selectedFlow, setSelectedFlow] = useState<Flow | null>(null);
   const [selectedSpecialist, setSelectedSpecialist] = useState<Specialist | null>(null);
+  const [selectedFurniture, setSelectedFurniture] = useState<Furniture | null>(null);
 
   const [zoneEditOpen, setZoneEditOpen] = useState(false);
   const [zoneForm, setZoneForm] = useState({
     name: "", zone_type: "consultorio", color: "#1e3a8a", specialist_id: "", capacity: "1", notes: ""
   });
 
+  const [furnEditOpen, setFurnEditOpen] = useState(false);
+  const [furnForm, setFurnForm] = useState({
+    furniture_type: "silla_espera", label: "", color: "#64748b", patient_id: "", zone_id: "",
+  });
+
   const [intakeOpen, setIntakeOpen] = useState(false);
   const [intakeForm, setIntakeForm] = useState({ patient_id: "", zone_id: "", specialist_id: "" });
 
-  // drag/resize state
-  const dragRef = useRef<{ id: string; mode: "move" | "resize"; startX: number; startY: number; orig: Zone; latest: Zone } | null>(null);
+  // drag/resize/rotate state for ZONES
+  const dragRef = useRef<{ id: string; mode: "move" | "resize" | "rotate"; startX: number; startY: number; orig: Zone; latest: Zone; cx?: number; cy?: number; startAngle?: number } | null>(null);
+  // drag/resize/rotate state for FURNITURE
+  const fDragRef = useRef<{ id: string; mode: "move" | "resize" | "rotate"; startX: number; startY: number; orig: Furniture; latest: Furniture; cx?: number; cy?: number; startAngle?: number } | null>(null);
 
   useEffect(() => { fetchAll(); }, []);
   useEffect(() => {
     const ch = supabase
       .channel("floor-canvas")
       .on("postgres_changes", { event: "*", schema: "public", table: "floor_zones" }, () => fetchZones())
+      .on("postgres_changes", { event: "*", schema: "public", table: "floor_furniture" }, () => fetchFurniture())
       .on("postgres_changes", { event: "*", schema: "public", table: "patient_flow" }, () => fetchFlows())
       .subscribe();
     return () => { supabase.removeChannel(ch); };
   }, []);
 
-  const fetchAll = async () => { await Promise.all([fetchZones(), fetchFlows(), fetchSpecialists(), fetchPatients()]); };
+  const fetchAll = async () => { await Promise.all([fetchZones(), fetchFurniture(), fetchFlows(), fetchSpecialists(), fetchPatients()]); };
   const fetchZones = async () => {
     const { data } = await supabase.from("floor_zones").select("*").eq("is_active", true).order("created_at");
     setZones((data as any) || []);
+  };
+  const fetchFurniture = async () => {
+    const { data } = await supabase.from("floor_furniture" as any).select("*").eq("is_active", true).order("created_at");
+    setFurniture((data as any) || []);
   };
   const fetchSpecialists = async () => {
     const { data } = await supabase.from("specialists").select("id, full_name, specialty, user_id, consultation_fee").eq("is_active", true).order("full_name");
@@ -151,7 +186,7 @@ export default function FloorPlan() {
     if (selectedZone) {
       ({ error } = await supabase.from("floor_zones").update(payload).eq("id", selectedZone.id));
     } else {
-      payload.x = 60; payload.y = 60; payload.width = 200; payload.height = 140;
+      payload.x = 60; payload.y = 60; payload.width = 200; payload.height = 140; payload.rotation = 0;
       ({ error } = await supabase.from("floor_zones").insert(payload));
     }
     if (error) toast({ variant: "destructive", title: "Error", description: error.message });
@@ -165,11 +200,15 @@ export default function FloorPlan() {
     else { setZoneEditOpen(false); fetchZones(); }
   };
 
-  // ===== Drag / Resize =====
-  const onMouseDownZone = (e: React.MouseEvent, z: Zone, mode: "move" | "resize") => {
+  // ===== Zone Drag / Resize / Rotate =====
+  const onMouseDownZone = (e: React.MouseEvent, z: Zone, mode: "move" | "resize" | "rotate") => {
     if (!editMode) return;
     e.preventDefault(); e.stopPropagation();
-    dragRef.current = { id: z.id, mode, startX: e.clientX, startY: e.clientY, orig: { ...z }, latest: { ...z } };
+    const rect = canvasRef.current?.querySelector(".canvas-inner")?.getBoundingClientRect();
+    const cx = (rect?.left ?? 0) + z.x + z.width / 2;
+    const cy = (rect?.top ?? 0) + z.y + z.height / 2;
+    const startAngle = Math.atan2(e.clientY - cy, e.clientX - cx) * 180 / Math.PI;
+    dragRef.current = { id: z.id, mode, startX: e.clientX, startY: e.clientY, orig: { ...z }, latest: { ...z }, cx, cy, startAngle };
     document.addEventListener("mousemove", onMove);
     document.addEventListener("mouseup", onUp);
   };
@@ -179,8 +218,11 @@ export default function FloorPlan() {
     let next: Zone = d.latest;
     if (d.mode === "move") {
       next = { ...d.orig, x: Math.max(0, d.orig.x + dx), y: Math.max(0, d.orig.y + dy) };
-    } else {
+    } else if (d.mode === "resize") {
       next = { ...d.orig, width: Math.max(80, d.orig.width + dx), height: Math.max(60, d.orig.height + dy) };
+    } else if (d.mode === "rotate" && d.cx !== undefined && d.cy !== undefined && d.startAngle !== undefined) {
+      const ang = Math.atan2(e.clientY - d.cy, e.clientX - d.cx) * 180 / Math.PI;
+      next = { ...d.orig, rotation: d.orig.rotation + (ang - d.startAngle) };
     }
     d.latest = next;
     setZones(prev => prev.map(z => z.id === d.id ? next : z));
@@ -191,10 +233,88 @@ export default function FloorPlan() {
     const d = dragRef.current; if (!d) return;
     const z = d.latest;
     dragRef.current = null;
-    await supabase.from("floor_zones").update({ x: z.x, y: z.y, width: z.width, height: z.height }).eq("id", z.id);
+    await supabase.from("floor_zones").update({ x: z.x, y: z.y, width: z.width, height: z.height, rotation: z.rotation }).eq("id", z.id);
   };
 
-  // ===== Patient flow actions =====
+  // ===== Furniture =====
+  const addFurniture = async (type: string) => {
+    const def = FURNITURE_TYPES.find(t => t.value === type);
+    if (!def) return;
+    const payload: any = {
+      furniture_type: type,
+      color: def.color,
+      x: 80, y: 80, width: def.w, height: def.h, rotation: 0,
+    };
+    const { error } = await supabase.from("floor_furniture" as any).insert(payload);
+    if (error) toast({ variant: "destructive", title: "Error", description: error.message });
+    else fetchFurniture();
+  };
+  const openEditFurniture = (f: Furniture) => {
+    setSelectedFurniture(f);
+    setFurnForm({
+      furniture_type: f.furniture_type,
+      label: f.label ?? "",
+      color: f.color,
+      patient_id: f.patient_id ?? "",
+      zone_id: f.zone_id ?? "",
+    });
+    setFurnEditOpen(true);
+  };
+  const saveFurniture = async () => {
+    if (!selectedFurniture) return;
+    const { error } = await supabase.from("floor_furniture" as any).update({
+      furniture_type: furnForm.furniture_type,
+      label: furnForm.label || null,
+      color: furnForm.color,
+      patient_id: furnForm.patient_id || null,
+      zone_id: furnForm.zone_id || null,
+    }).eq("id", selectedFurniture.id);
+    if (error) toast({ variant: "destructive", title: "Error", description: error.message });
+    else { setFurnEditOpen(false); fetchFurniture(); }
+  };
+  const deleteFurniture = async () => {
+    if (!selectedFurniture) return;
+    if (!confirm("¿Eliminar este mobiliario?")) return;
+    await supabase.from("floor_furniture" as any).update({ is_active: false }).eq("id", selectedFurniture.id);
+    setFurnEditOpen(false); fetchFurniture();
+  };
+
+  const onMouseDownFurn = (e: React.MouseEvent, f: Furniture, mode: "move" | "resize" | "rotate") => {
+    if (!editMode) return;
+    e.preventDefault(); e.stopPropagation();
+    const rect = canvasRef.current?.querySelector(".canvas-inner")?.getBoundingClientRect();
+    const cx = (rect?.left ?? 0) + f.x + f.width / 2;
+    const cy = (rect?.top ?? 0) + f.y + f.height / 2;
+    const startAngle = Math.atan2(e.clientY - cy, e.clientX - cx) * 180 / Math.PI;
+    fDragRef.current = { id: f.id, mode, startX: e.clientX, startY: e.clientY, orig: { ...f }, latest: { ...f }, cx, cy, startAngle };
+    document.addEventListener("mousemove", onFMove);
+    document.addEventListener("mouseup", onFUp);
+  };
+  const onFMove = (e: MouseEvent) => {
+    const d = fDragRef.current; if (!d) return;
+    const dx = e.clientX - d.startX, dy = e.clientY - d.startY;
+    let next: Furniture = d.latest;
+    if (d.mode === "move") {
+      next = { ...d.orig, x: Math.max(0, d.orig.x + dx), y: Math.max(0, d.orig.y + dy) };
+    } else if (d.mode === "resize") {
+      next = { ...d.orig, width: Math.max(20, d.orig.width + dx), height: Math.max(20, d.orig.height + dy) };
+    } else if (d.mode === "rotate" && d.cx !== undefined && d.cy !== undefined && d.startAngle !== undefined) {
+      const ang = Math.atan2(e.clientY - d.cy, e.clientX - d.cx) * 180 / Math.PI;
+      next = { ...d.orig, rotation: d.orig.rotation + (ang - d.startAngle) };
+    }
+    d.latest = next;
+    setFurniture(prev => prev.map(z => z.id === d.id ? next : z));
+  };
+  const onFUp = async () => {
+    document.removeEventListener("mousemove", onFMove);
+    document.removeEventListener("mouseup", onFUp);
+    const d = fDragRef.current; if (!d) return;
+    const f = d.latest;
+    fDragRef.current = null;
+    await supabase.from("floor_furniture" as any).update({ x: f.x, y: f.y, width: f.width, height: f.height, rotation: f.rotation }).eq("id", f.id);
+  };
+
+  // ===== Patient flow =====
   const openIntake = (zoneId?: string) => {
     setIntakeForm({ patient_id: "", zone_id: zoneId ?? "", specialist_id: "" });
     setIntakeOpen(true);
@@ -230,7 +350,6 @@ export default function FloorPlan() {
     else { fetchFlows(); setSelectedFlow(null); }
   };
 
-  // group flows by zone, plus unassigned
   const flowsByZone = useMemo(() => {
     const map: Record<string, Flow[]> = {};
     for (const f of flows) {
@@ -239,6 +358,8 @@ export default function FloorPlan() {
     }
     return map;
   }, [flows]);
+
+  const patientById = (id: string | null) => id ? patients.find(p => p.id === id) : null;
 
   return (
     <div className="min-h-screen bg-background">
@@ -264,14 +385,29 @@ export default function FloorPlan() {
         </div>
       </header>
 
+      {editMode && (
+        <div className="bg-muted/50 border-b">
+          <div className="max-w-[1600px] mx-auto px-4 py-2 flex items-center gap-2 flex-wrap">
+            <span className="text-xs font-semibold text-muted-foreground mr-2">Agregar mobiliario:</span>
+            {FURNITURE_TYPES.map(t => {
+              const Icon = t.icon;
+              return (
+                <Button key={t.value} variant="outline" size="sm" onClick={() => addFurniture(t.value)} className="h-8">
+                  <Icon className="w-3.5 h-3.5 mr-1" /> {t.label}
+                </Button>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
       <main className="max-w-[1600px] mx-auto px-4 py-4 grid grid-cols-1 lg:grid-cols-[1fr_300px] gap-4">
-        {/* CANVAS */}
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-base flex items-center justify-between">
               <span>Plano del consultorio</span>
               <span className="text-xs font-normal text-muted-foreground">
-                {editMode ? "Arrastra para mover · esquina inferior derecha para redimensionar" : "Click en una zona o paciente para ver detalles"}
+                {editMode ? "Mover · esquina ↘ redimensionar · ↻ rotar · doble-clic: editar" : "Click en zona, mueble o paciente"}
               </span>
             </CardTitle>
           </CardHeader>
@@ -281,7 +417,8 @@ export default function FloorPlan() {
               className="relative w-full bg-[radial-gradient(circle,#e2e8f0_1px,transparent_1px)] [background-size:20px_20px] border rounded-lg overflow-auto"
               style={{ height: "70vh", minHeight: 500 }}
             >
-              <div className="relative" style={{ width: 1800, height: 1200 }}>
+              <div className="canvas-inner relative" style={{ width: 1800, height: 1200 }}>
+                {/* ZONES */}
                 {zones.map((z) => {
                   const occupants = (flowsByZone[z.id] || []);
                   return (
@@ -294,6 +431,7 @@ export default function FloorPlan() {
                       style={{
                         left: z.x, top: z.y, width: z.width, height: z.height,
                         background: `${z.color}10`, borderColor: z.color,
+                        transform: `rotate(${z.rotation}deg)`, transformOrigin: "center center",
                       }}
                     >
                       <div className="p-2 flex items-center justify-between gap-1" style={{ background: z.color, color: "white", borderTopLeftRadius: 8, borderTopRightRadius: 8 }}>
@@ -317,6 +455,7 @@ export default function FloorPlan() {
                           <button
                             key={f.id}
                             onClick={(e) => { e.stopPropagation(); setSelectedFlow(f); }}
+                            onMouseDown={(e) => e.stopPropagation()}
                             className={`w-full text-left flex items-center gap-1.5 px-1.5 py-1 rounded border ${STAGE_COLOR[f.stage]} hover:scale-[1.02] transition-transform`}
                           >
                             <div className="w-5 h-5 rounded-full bg-white flex items-center justify-center shrink-0">
@@ -327,18 +466,79 @@ export default function FloorPlan() {
                         ))}
                       </div>
                       {editMode && (
-                        <div
-                          onMouseDown={(e) => onMouseDownZone(e, z, "resize")}
-                          className="absolute bottom-0 right-0 w-4 h-4 cursor-nwse-resize"
-                          style={{ background: z.color, clipPath: "polygon(100% 0, 100% 100%, 0 100%)", borderBottomRightRadius: 8 }}
-                        />
+                        <>
+                          <div
+                            onMouseDown={(e) => onMouseDownZone(e, z, "resize")}
+                            className="absolute bottom-0 right-0 w-4 h-4 cursor-nwse-resize"
+                            style={{ background: z.color, clipPath: "polygon(100% 0, 100% 100%, 0 100%)", borderBottomRightRadius: 8 }}
+                          />
+                          <button
+                            onMouseDown={(e) => onMouseDownZone(e, z, "rotate")}
+                            className="absolute -top-7 left-1/2 -translate-x-1/2 w-6 h-6 rounded-full bg-white border-2 shadow flex items-center justify-center cursor-grab active:cursor-grabbing"
+                            style={{ borderColor: z.color }}
+                            title="Rotar"
+                          >
+                            <RotateCw className="w-3 h-3" style={{ color: z.color }} />
+                          </button>
+                        </>
                       )}
                     </div>
                   );
                 })}
-                {zones.length === 0 && (
+
+                {/* FURNITURE */}
+                {furniture.map((f) => {
+                  const def = FURNITURE_TYPES.find(t => t.value === f.furniture_type) ?? FURNITURE_TYPES[0];
+                  const Icon = def.icon;
+                  const occupant = patientById(f.patient_id);
+                  const isOccupied = !!occupant;
+                  return (
+                    <div
+                      key={f.id}
+                      onMouseDown={(e) => onMouseDownFurn(e, f, "move")}
+                      onClick={(e) => { if (!editMode) { e.stopPropagation(); setSelectedFurniture(f); openEditFurniture(f); } }}
+                      onDoubleClick={() => editMode && openEditFurniture(f)}
+                      className={`absolute rounded-md shadow-sm border-2 flex flex-col items-center justify-center text-white ${editMode ? "cursor-move" : "cursor-pointer"} hover:shadow-md transition-shadow`}
+                      style={{
+                        left: f.x, top: f.y, width: f.width, height: f.height,
+                        background: isOccupied ? f.color : `${f.color}cc`,
+                        borderColor: isOccupied ? "#0f172a" : f.color,
+                        transform: `rotate(${f.rotation}deg)`, transformOrigin: "center center",
+                      }}
+                      title={def.label + (occupant ? ` · ${occupant.full_name}` : "")}
+                    >
+                      <Icon className="w-4 h-4 opacity-90" />
+                      {(f.label || occupant) && (
+                        <span className="text-[9px] font-semibold truncate max-w-full px-1 leading-tight mt-0.5">
+                          {occupant?.full_name ?? f.label}
+                        </span>
+                      )}
+                      {isOccupied && (
+                        <span className="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-emerald-500 border border-white" />
+                      )}
+                      {editMode && (
+                        <>
+                          <div
+                            onMouseDown={(e) => onMouseDownFurn(e, f, "resize")}
+                            className="absolute bottom-0 right-0 w-3 h-3 cursor-nwse-resize bg-white/80"
+                            style={{ clipPath: "polygon(100% 0, 100% 100%, 0 100%)" }}
+                          />
+                          <button
+                            onMouseDown={(e) => onMouseDownFurn(e, f, "rotate")}
+                            className="absolute -top-5 left-1/2 -translate-x-1/2 w-5 h-5 rounded-full bg-white border shadow flex items-center justify-center cursor-grab active:cursor-grabbing"
+                            title="Rotar"
+                          >
+                            <RotateCw className="w-2.5 h-2.5 text-foreground" />
+                          </button>
+                        </>
+                      )}
+                    </div>
+                  );
+                })}
+
+                {zones.length === 0 && furniture.length === 0 && (
                   <div className="absolute inset-0 flex items-center justify-center text-sm text-muted-foreground">
-                    Activa el modo edición y crea tu primera zona (consultorio, recepción, espera, laboratorio).
+                    Activa el modo edición y crea tu primera zona o agrega mobiliario.
                   </div>
                 )}
               </div>
@@ -346,7 +546,6 @@ export default function FloorPlan() {
           </CardContent>
         </Card>
 
-        {/* SIDE: Unassigned + legend */}
         <div className="space-y-3">
           <Card>
             <CardHeader className="pb-2"><CardTitle className="text-sm">Sin ubicar ({(flowsByZone["__unassigned__"] || []).length})</CardTitle></CardHeader>
@@ -426,6 +625,51 @@ export default function FloorPlan() {
             {selectedZone && <Button variant="destructive" onClick={deleteZone}><Trash2 className="w-4 h-4 mr-1" />Eliminar</Button>}
             <Button variant="outline" onClick={() => setZoneEditOpen(false)}>Cancelar</Button>
             <Button onClick={saveZone} disabled={!zoneForm.name}>Guardar</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* === Furniture editor dialog === */}
+      <Dialog open={furnEditOpen} onOpenChange={setFurnEditOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader><DialogTitle>Editar mobiliario</DialogTitle></DialogHeader>
+          <div className="space-y-3">
+            <div className="grid grid-cols-2 gap-2">
+              <div className="space-y-2">
+                <Label>Tipo</Label>
+                <Select value={furnForm.furniture_type} onValueChange={(v) => { const t = FURNITURE_TYPES.find(x => x.value === v); setFurnForm({ ...furnForm, furniture_type: v, color: t?.color ?? furnForm.color }); }}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>{FURNITURE_TYPES.map(t => <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>)}</SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2"><Label>Color</Label><Input type="color" value={furnForm.color} onChange={(e) => setFurnForm({ ...furnForm, color: e.target.value })} className="h-10 p-1" /></div>
+            </div>
+            <div className="space-y-2"><Label>Etiqueta</Label><Input value={furnForm.label} onChange={(e) => setFurnForm({ ...furnForm, label: e.target.value })} placeholder="Silla A, Escritorio Dr. ..." /></div>
+            <div className="space-y-2">
+              <Label>Zona contenedora</Label>
+              <Select value={furnForm.zone_id || "__none__"} onValueChange={(v) => setFurnForm({ ...furnForm, zone_id: v === "__none__" ? "" : v })}>
+                <SelectTrigger><SelectValue placeholder="Sin zona" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="__none__">Sin zona</SelectItem>
+                  {zones.map(z => <SelectItem key={z.id} value={z.id}>{z.name}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label>Paciente sentado / asignado</Label>
+              <Select value={furnForm.patient_id || "__none__"} onValueChange={(v) => setFurnForm({ ...furnForm, patient_id: v === "__none__" ? "" : v })}>
+                <SelectTrigger><SelectValue placeholder="Vacío" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="__none__">Vacío</SelectItem>
+                  {patients.map(p => <SelectItem key={p.id} value={p.id}>{p.full_name}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <DialogFooter className="gap-2">
+            <Button variant="destructive" onClick={deleteFurniture}><Trash2 className="w-4 h-4 mr-1" />Eliminar</Button>
+            <Button variant="outline" onClick={() => setFurnEditOpen(false)}>Cancelar</Button>
+            <Button onClick={saveFurniture}>Guardar</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
