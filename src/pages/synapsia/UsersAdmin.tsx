@@ -155,6 +155,28 @@ export default function UsersAdmin() {
     fetchAll();
   };
 
+  const createSpecialist = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newSpec.full_name.trim()) { toast({ variant: "destructive", title: "Nombre requerido" }); return; }
+    setSpecLoading(true);
+    const { error } = await supabase.from("specialists").insert({
+      full_name: newSpec.full_name.trim(),
+      specialty: newSpec.specialty,
+      consultation_fee: Number(newSpec.consultation_fee) || 0,
+      phone: newSpec.phone.trim() || null,
+      email: newSpec.email.trim() || null,
+      is_active: true,
+    } as any);
+    setSpecLoading(false);
+    if (error) toast({ variant: "destructive", title: "No se pudo registrar", description: error.message });
+    else {
+      toast({ title: "Especialista registrado" });
+      setSpecOpen(false);
+      setNewSpec({ full_name: "", specialty: "psiquiatra", consultation_fee: "0", phone: "", email: "" });
+      fetchAll();
+    }
+  };
+
   return (
     <div className="min-h-screen bg-background">
       <header className="border-b bg-card shadow-sm">
