@@ -416,6 +416,12 @@ export default function FloorPlan() {
                 </Button>
               );
             })}
+            <span className="ml-auto text-[11px] text-muted-foreground flex items-center gap-1">
+              <kbd className="px-1.5 py-0.5 rounded border bg-background font-mono text-[10px]">←</kbd>
+              <kbd className="px-1.5 py-0.5 rounded border bg-background font-mono text-[10px]">→</kbd>
+              Rotar 90° el mueble seleccionado
+              {selectedFurniture && <span className="ml-2 px-2 py-0.5 rounded bg-accent/20 text-accent-foreground border border-accent/40">Seleccionado: {selectedFurniture.label || FURNITURE_TYPES.find(t => t.value === selectedFurniture.furniture_type)?.label}</span>}
+            </span>
           </div>
         </div>
       )}
