@@ -132,6 +132,51 @@ export default function FloorPlan() {
   const [intakeOpen, setIntakeOpen] = useState(false);
   const [intakeForm, setIntakeForm] = useState({ patient_id: "", zone_id: "", specialist_id: "" });
 
+  // === Cobro ===
+  const [payOpen, setPayOpen] = useState(false);
+  const [payFlow, setPayFlow] = useState<Flow | null>(null);
+  const [payConcepts, setPayConcepts] = useState<{ description: string; amount: string }[]>([]);
+  const [payMethod, setPayMethod] = useState<string>("efectivo");
+  const [payNotes, setPayNotes] = useState<string>("");
+  const [paySaving, setPaySaving] = useState(false);
+
+  const openPayment = (flow: Flow) => {
+    setPayFlow(flow);
+    const fee = flow.specialists ? Number(specialists.find(s => s.id === flow.specialist_id)?.consultation_fee || 0) : 0;
+    setPayConcepts([{ description: `Consulta ${flow.specialists?.full_name ?? ""}`.trim(), amount: fee ? String(fee) : "" }]);
+    setPayMethod("efectivo");
+    setPayNotes("");
+    setPayOpen(true);
+  };
+  const payTotal = payConcepts.reduce((s, c) => s + (parseFloat(c.amount) || 0), 0);
+  const submitPayment = async () => {
+    if (!payFlow) return;
+    if (payTotal <= 0) { toast({ variant: "destructive", title: "Monto inválido", description: "Total debe ser mayor a 0." }); return; }
+    setPaySaving(true);
+    const { error } = await (supabase.from("payments") as any).insert({
+      patient_id: payFlow.patient_id,
+      flow_id: payFlow.id,
+      amount: payTotal,
+      payment_method: payMethod as any,
+      collected_by: user?.id,
+      notes: payNotes || null,
+      concepts: payConcepts.filter(c => c.description.trim() && parseFloat(c.amount) > 0),
+    });
+    if (error) {
+      toast({ variant: "destructive", title: "Error", description: error.message });
+      setPaySaving(false); return;
+    }
+    // marcar etapa "pago"
+    await supabase.from("patient_flow").update({
+      stage: "pago",
+      to_payment_at: payFlow.to_payment_at ?? new Date().toISOString(),
+    }).eq("id", payFlow.id);
+    toast({ title: "Cobro registrado", description: `Total $${payTotal.toLocaleString("es-MX")}` });
+    setPaySaving(false);
+    setPayOpen(false);
+    fetchFlows();
+  };
+
   // drag/resize/rotate state for ZONES
   const dragRef = useRef<{ id: string; mode: "move" | "resize" | "rotate"; startX: number; startY: number; orig: Zone; latest: Zone; cx?: number; cy?: number; startAngle?: number } | null>(null);
   // drag/resize/rotate state for FURNITURE
@@ -1261,8 +1306,8 @@ export default function FloorPlan() {
                   <Button size="sm" variant="outline" onClick={() => moveFlow(selectedFlow, selectedFlow.zone_id, "consulta")}>
                     <Stethoscope className="w-4 h-4 mr-1" /> En consulta
                   </Button>
-                  <Button size="sm" variant="outline" onClick={() => moveFlow(selectedFlow, selectedFlow.zone_id, "pago")}>
-                    <DollarSign className="w-4 h-4 mr-1" /> A pago
+                  <Button size="sm" variant="default" onClick={() => openPayment(selectedFlow)}>
+                    <DollarSign className="w-4 h-4 mr-1" /> Cobrar
                   </Button>
                 </div>
 
@@ -1348,6 +1393,68 @@ export default function FloorPlan() {
           )}
         </SheetContent>
       </Sheet>
+      {/* === Payment dialog === */}
+      <Dialog open={payOpen} onOpenChange={setPayOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Cobrar a {payFlow?.patients.full_name}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            <div className="space-y-2">
+              <Label className="text-xs">Conceptos</Label>
+              {payConcepts.map((c, i) => (
+                <div key={i} className="flex gap-2 items-start">
+                  <Input
+                    placeholder="Descripción (ej. Consulta, Material...)"
+                    value={c.description}
+                    onChange={(e) => setPayConcepts(prev => prev.map((p, j) => j === i ? { ...p, description: e.target.value } : p))}
+                    className="flex-1"
+                  />
+                  <Input
+                    type="number"
+                    inputMode="decimal"
+                    placeholder="0.00"
+                    value={c.amount}
+                    onChange={(e) => setPayConcepts(prev => prev.map((p, j) => j === i ? { ...p, amount: e.target.value } : p))}
+                    className="w-28"
+                  />
+                  <Button size="icon" variant="ghost" onClick={() => setPayConcepts(prev => prev.filter((_, j) => j !== i))} disabled={payConcepts.length === 1}>
+                    <Trash2 className="w-4 h-4" />
+                  </Button>
+                </div>
+              ))}
+              <Button size="sm" variant="outline" onClick={() => setPayConcepts(prev => [...prev, { description: "", amount: "" }])}>
+                <Plus className="w-4 h-4 mr-1" /> Agregar concepto
+              </Button>
+            </div>
+            <div className="flex items-center justify-between border-t pt-2">
+              <span className="text-sm text-muted-foreground">Total</span>
+              <span className="text-xl font-bold">${payTotal.toLocaleString("es-MX", { minimumFractionDigits: 2 })}</span>
+            </div>
+            <div className="space-y-2">
+              <Label className="text-xs">Método de pago</Label>
+              <Select value={payMethod} onValueChange={setPayMethod}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="efectivo">Efectivo</SelectItem>
+                  <SelectItem value="transferencia">Transferencia</SelectItem>
+                  <SelectItem value="tarjeta">Tarjeta</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label className="text-xs">Notas</Label>
+              <Textarea value={payNotes} onChange={(e) => setPayNotes(e.target.value)} rows={2} />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setPayOpen(false)}>Cancelar</Button>
+            <Button onClick={submitPayment} disabled={paySaving || payTotal <= 0}>
+              <DollarSign className="w-4 h-4 mr-1" /> Confirmar cobro
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
