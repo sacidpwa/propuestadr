@@ -193,9 +193,11 @@ export default function UsersAdmin() {
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <h2 className="text-2xl font-bold tracking-tight flex items-center gap-2"><UsersIcon className="w-6 h-6" /> Usuarios y roles</h2>
-            <p className="text-sm text-muted-foreground">Crea cuentas, asigna roles, establece PIN de seguridad y vincula especialistas.</p>
+            <h2 className="text-2xl font-bold tracking-tight flex items-center gap-2"><UsersIcon className="w-6 h-6" /> {isOwnerOrAdmin ? "Usuarios y roles" : "Especialistas"}</h2>
+            <p className="text-sm text-muted-foreground">{isOwnerOrAdmin ? "Crea cuentas, asigna roles, establece PIN de seguridad y vincula especialistas." : "Registra y mantiene el catálogo de especialistas."}</p>
           </div>
+          <div className="flex flex-wrap gap-2">
+            <Button variant="outline" onClick={() => setSpecOpen(true)}><Stethoscope className="w-4 h-4 mr-2" /> Nuevo especialista</Button>
           {isOwnerOrAdmin && (
             <Dialog open={createOpen} onOpenChange={setCreateOpen}>
               <DialogTrigger asChild>
