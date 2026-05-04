@@ -12,7 +12,7 @@ import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
-import { ArrowLeft, LogOut, Loader2, UserPlus, KeyRound, ShieldCheck, BarChart3, Users as UsersIcon } from "lucide-react";
+import { ArrowLeft, LogOut, Loader2, UserPlus, KeyRound, ShieldCheck, BarChart3, Users as UsersIcon, Pencil } from "lucide-react";
 import synapsiaIcon from "@/assets/synapsia-icon.svg";
 
 type Role = "admin" | "recepcion" | "especialista" | "administrativo" | "dueno";
@@ -42,6 +42,8 @@ export default function UsersAdmin() {
   const [createOpen, setCreateOpen] = useState(false);
   const [pinDialog, setPinDialog] = useState<{ open: boolean; userId: string | null; name: string }>({ open: false, userId: null, name: "" });
   const [pinValue, setPinValue] = useState("");
+  const [editDialog, setEditDialog] = useState<{ open: boolean; userId: string | null; full_name: string; email: string }>({ open: false, userId: null, full_name: "", email: "" });
+  const [editLoading, setEditLoading] = useState(false);
 
   const [newUser, setNewUser] = useState({
     email: "", password: "", full_name: "", role: "recepcion" as Role, pin: "", also_especialista: false,
@@ -113,6 +115,30 @@ export default function UsersAdmin() {
     const { error } = await supabase.rpc("admin_set_user_pin", { _user_id: pinDialog.userId, _pin: pinValue });
     if (error) toast({ variant: "destructive", title: "Error", description: error.message });
     else { toast({ title: "PIN establecido" }); setPinDialog({ open: false, userId: null, name: "" }); setPinValue(""); fetchAll(); }
+  };
+
+  const submitEdit = async () => {
+    if (!editDialog.userId) return;
+    if (!editDialog.full_name.trim()) {
+      toast({ variant: "destructive", title: "Nombre requerido" });
+      return;
+    }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(editDialog.email)) {
+      toast({ variant: "destructive", title: "Email inválido" });
+      return;
+    }
+    setEditLoading(true);
+    const { data, error } = await supabase.functions.invoke("admin-update-user", {
+      body: { user_id: editDialog.userId, full_name: editDialog.full_name.trim(), email: editDialog.email.trim().toLowerCase() },
+    });
+    if (error || (data as any)?.error) {
+      toast({ variant: "destructive", title: "No se pudo actualizar", description: (data as any)?.error || error?.message });
+    } else {
+      toast({ title: "Usuario actualizado" });
+      setEditDialog({ open: false, userId: null, full_name: "", email: "" });
+      fetchAll();
+    }
+    setEditLoading(false);
   };
 
   const togglePartner = async (id: string, v: boolean) => { await supabase.from("specialists").update({ is_partner: v }).eq("id", id); fetchAll(); };
@@ -246,6 +272,9 @@ export default function UsersAdmin() {
                       </TableCell>
                       <TableCell className="text-right">
                         <div className="flex justify-end gap-2">
+                          <Button size="sm" variant="outline" onClick={() => setEditDialog({ open: true, userId: p.user_id, full_name: p.full_name, email: p.email ?? "" })} disabled={!isOwnerOrAdmin}>
+                            <Pencil className="w-3 h-3 mr-1" /> Editar
+                          </Button>
                           <Button size="sm" variant="outline" onClick={() => setPinDialog({ open: true, userId: p.user_id, name: p.full_name })} disabled={!isOwnerOrAdmin}>
                             <KeyRound className="w-3 h-3 mr-1" /> PIN
                           </Button>
@@ -316,6 +345,31 @@ export default function UsersAdmin() {
           <DialogFooter>
             <Button variant="outline" onClick={() => setPinDialog({ open: false, userId: null, name: "" })}>Cancelar</Button>
             <Button onClick={submitPin} disabled={pinValue.length < 4}>Guardar PIN</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit user dialog */}
+      <Dialog open={editDialog.open} onOpenChange={(v) => { if (!v) setEditDialog({ open: false, userId: null, full_name: "", email: "" }); }}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Editar usuario</DialogTitle>
+            <DialogDescription>Actualiza el nombre completo y/o el correo electrónico de inicio de sesión.</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3">
+            <div className="space-y-1.5">
+              <Label>Nombre completo</Label>
+              <Input value={editDialog.full_name} onChange={(e) => setEditDialog((p) => ({ ...p, full_name: e.target.value }))} />
+            </div>
+            <div className="space-y-1.5">
+              <Label>Correo electrónico</Label>
+              <Input type="email" value={editDialog.email} onChange={(e) => setEditDialog((p) => ({ ...p, email: e.target.value }))} />
+              <p className="text-xs text-muted-foreground">Cambiar el correo modifica también el usuario de inicio de sesión.</p>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditDialog({ open: false, userId: null, full_name: "", email: "" })}>Cancelar</Button>
+            <Button onClick={submitEdit} disabled={editLoading}>{editLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : "Guardar cambios"}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
