@@ -17,6 +17,7 @@ import {
   Stethoscope, ClipboardList, FileText, DollarSign, LogIn, RotateCw, RotateCcw,
   Armchair, Sofa, Bed, Square, DoorClosed, Bath, Droplet, Package,
   Coffee, Refrigerator, Monitor, BookOpen, Archive, Wind,
+  BarChart3, Users, Wallet, Calendar as CalendarIcon, Calculator, LayoutDashboard,
 } from "lucide-react";
 import synapsiaIcon from "@/assets/synapsia-icon.svg";
 import { format, formatDistanceToNow } from "date-fns";
