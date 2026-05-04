@@ -443,7 +443,17 @@ export default function FloorPlan() {
         <div className="bg-muted/50 border-b">
           <div className="max-w-[1600px] mx-auto px-4 py-2 flex items-center gap-2 flex-wrap">
             <span className="text-xs font-semibold text-muted-foreground mr-2">Agregar mobiliario:</span>
-            {FURNITURE_TYPES.map(t => {
+            {FURNITURE_TYPES.filter(t => !t.decorative).map(t => {
+              const Icon = t.icon;
+              return (
+                <Button key={t.value} variant="outline" size="sm" onClick={() => addFurniture(t.value)} className="h-8">
+                  <Icon className="w-3.5 h-3.5 mr-1" /> {t.label}
+                </Button>
+              );
+            })}
+            <span className="w-px h-6 bg-border mx-1" />
+            <span className="text-xs font-semibold text-muted-foreground mr-1">Layout:</span>
+            {FURNITURE_TYPES.filter(t => t.decorative).map(t => {
               const Icon = t.icon;
               return (
                 <Button key={t.value} variant="outline" size="sm" onClick={() => addFurniture(t.value)} className="h-8">
