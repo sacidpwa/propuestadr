@@ -184,7 +184,7 @@ export default function FloorPlan() {
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [editMode, selectedFurniture, selectedZone]);
+  }, [editMode, selectedFurniture, selectedZone, selectedZoneIds, selectedFurnIds]);
 
   const fetchAll = async () => { await Promise.all([fetchZones(), fetchFurniture(), fetchFlows(), fetchSpecialists(), fetchPatients()]); };
   const fetchZones = async () => {
