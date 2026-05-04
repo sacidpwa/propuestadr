@@ -171,6 +171,7 @@ export default function FloorPlan() {
       if (tag === "INPUT" || tag === "TEXTAREA" || (e.target as HTMLElement)?.isContentEditable) return;
 
       if ((e.key === "Delete" || e.key === "Backspace")) {
+        if (selectedZoneIds.size + selectedFurnIds.size > 1) { e.preventDefault(); await deleteSelection(); return; }
         if (selectedFurniture) { e.preventDefault(); await deleteFurniture(selectedFurniture); return; }
         if (selectedZone) { e.preventDefault(); await deleteZone(selectedZone); return; }
       }
