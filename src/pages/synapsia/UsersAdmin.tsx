@@ -348,6 +348,31 @@ export default function UsersAdmin() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Edit user dialog */}
+      <Dialog open={editDialog.open} onOpenChange={(v) => { if (!v) setEditDialog({ open: false, userId: null, full_name: "", email: "" }); }}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Editar usuario</DialogTitle>
+            <DialogDescription>Actualiza el nombre completo y/o el correo electrónico de inicio de sesión.</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3">
+            <div className="space-y-1.5">
+              <Label>Nombre completo</Label>
+              <Input value={editDialog.full_name} onChange={(e) => setEditDialog((p) => ({ ...p, full_name: e.target.value }))} />
+            </div>
+            <div className="space-y-1.5">
+              <Label>Correo electrónico</Label>
+              <Input type="email" value={editDialog.email} onChange={(e) => setEditDialog((p) => ({ ...p, email: e.target.value }))} />
+              <p className="text-xs text-muted-foreground">Cambiar el correo modifica también el usuario de inicio de sesión.</p>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditDialog({ open: false, userId: null, full_name: "", email: "" })}>Cancelar</Button>
+            <Button onClick={submitEdit} disabled={editLoading}>{editLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : "Guardar cambios"}</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
