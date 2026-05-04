@@ -768,7 +768,7 @@ export default function FloorPlan() {
       </Dialog>
 
       {/* === Patient flow side panel === */}
-      <Sheet open={!!selectedFlow} onOpenChange={(o) => !o && setSelectedFlow(null)}>
+      <Sheet open={!!selectedFlow && !editMode} onOpenChange={(o) => !o && setSelectedFlow(null)}>
         <SheetContent className="w-[380px] sm:w-[420px]">
           {selectedFlow && (
             <>
