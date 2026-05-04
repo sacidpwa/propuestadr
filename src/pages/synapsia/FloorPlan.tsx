@@ -101,7 +101,9 @@ const STAGE_COLOR: Record<string, string> = {
 };
 
 export default function FloorPlan() {
-  const { user, signOut } = useAuth();
+  const { user, signOut, hasRole } = useAuth();
+  const isOwner = hasRole("dueno") || hasRole("admin");
+  const isReception = hasRole("recepcion");
   const { toast } = useToast();
   const navigate = useNavigate();
   const canvasRef = useRef<HTMLDivElement>(null);
