@@ -562,9 +562,8 @@ export default function FloorPlan() {
   return (
     <div className="min-h-screen bg-background">
       <header className="border-b bg-card shadow-sm">
-        <div className="max-w-[1600px] mx-auto px-4 py-3 flex items-center justify-between">
+        <div className="max-w-[1800px] mx-auto px-4 py-3 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <Button variant="ghost" size="icon" onClick={() => navigate("/synapsia")}><ArrowLeft className="w-4 h-4" /></Button>
             <img src={synapsiaIcon} alt="" className="w-9 h-9" />
             <div>
               <h1 className="text-lg font-bold">Synapsia · Planta en vivo</h1>
@@ -572,13 +571,15 @@ export default function FloorPlan() {
             </div>
           </div>
           <div className="flex items-center gap-2">
-            <Button variant={editMode ? "default" : "outline"} size="sm" onClick={() => setEditMode(!editMode)}>
-              {editMode ? <Unlock className="w-4 h-4 mr-1" /> : <Lock className="w-4 h-4 mr-1" />}
-              {editMode ? "Modo edición" : "Bloqueado"}
-            </Button>
+            {(isOwner || isReception) && (
+              <Button variant={editMode ? "default" : "outline"} size="sm" onClick={() => setEditMode(!editMode)}>
+                {editMode ? <Unlock className="w-4 h-4 mr-1" /> : <Lock className="w-4 h-4 mr-1" />}
+                {editMode ? "Modo edición" : "Bloqueado"}
+              </Button>
+            )}
             {editMode && <Button size="sm" onClick={openNewZone}><Plus className="w-4 h-4 mr-1" /> Nueva zona</Button>}
             <Button size="sm" variant="secondary" onClick={() => openIntake()}><LogIn className="w-4 h-4 mr-1" /> Registrar llegada</Button>
-            <Button variant="ghost" size="icon" onClick={signOut}><LogOut className="w-4 h-4" /></Button>
+            <Button variant="ghost" size="icon" onClick={signOut} title="Cerrar sesión"><LogOut className="w-4 h-4" /></Button>
           </div>
         </div>
       </header>
