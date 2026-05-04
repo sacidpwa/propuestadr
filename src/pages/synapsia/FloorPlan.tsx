@@ -134,6 +134,24 @@ export default function FloorPlan() {
   // drag/resize/rotate state for FURNITURE
   const fDragRef = useRef<{ id: string; mode: "move" | "resize" | "rotate"; startX: number; startY: number; orig: Furniture; latest: Furniture; cx?: number; cy?: number; startAngle?: number } | null>(null);
 
+  // Tamaño de canvas (persistente)
+  const [canvasSize, setCanvasSize] = useState<{ w: number; h: number }>(() => {
+    try { const s = JSON.parse(localStorage.getItem("synapsia_canvas_size") || "null"); if (s?.w && s?.h) return s; } catch {}
+    return { w: 1800, h: 1200 };
+  });
+  useEffect(() => { localStorage.setItem("synapsia_canvas_size", JSON.stringify(canvasSize)); }, [canvasSize]);
+
+  // Selección múltiple
+  const [selectedZoneIds, setSelectedZoneIds] = useState<Set<string>>(new Set());
+  const [selectedFurnIds, setSelectedFurnIds] = useState<Set<string>>(new Set());
+
+  // Multi-drag (mover grupo)
+  const groupDragRef = useRef<{ startX: number; startY: number; zones: Map<string, { x: number; y: number }>; furn: Map<string, { x: number; y: number }>; latestZ: Map<string, { x: number; y: number }>; latestF: Map<string, { x: number; y: number }>; } | null>(null);
+
+  // Marquee de selección
+  const [marquee, setMarquee] = useState<{ x: number; y: number; w: number; h: number } | null>(null);
+  const marqueeRef = useRef<{ startX: number; startY: number; additive: boolean } | null>(null);
+
   useEffect(() => { fetchAll(); }, []);
   useEffect(() => {
     const ch = supabase
