@@ -117,6 +117,30 @@ export default function UsersAdmin() {
     else { toast({ title: "PIN establecido" }); setPinDialog({ open: false, userId: null, name: "" }); setPinValue(""); fetchAll(); }
   };
 
+  const submitEdit = async () => {
+    if (!editDialog.userId) return;
+    if (!editDialog.full_name.trim()) {
+      toast({ variant: "destructive", title: "Nombre requerido" });
+      return;
+    }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(editDialog.email)) {
+      toast({ variant: "destructive", title: "Email inválido" });
+      return;
+    }
+    setEditLoading(true);
+    const { data, error } = await supabase.functions.invoke("admin-update-user", {
+      body: { user_id: editDialog.userId, full_name: editDialog.full_name.trim(), email: editDialog.email.trim().toLowerCase() },
+    });
+    if (error || (data as any)?.error) {
+      toast({ variant: "destructive", title: "No se pudo actualizar", description: (data as any)?.error || error?.message });
+    } else {
+      toast({ title: "Usuario actualizado" });
+      setEditDialog({ open: false, userId: null, full_name: "", email: "" });
+      fetchAll();
+    }
+    setEditLoading(false);
+  };
+
   const togglePartner = async (id: string, v: boolean) => { await supabase.from("specialists").update({ is_partner: v }).eq("id", id); fetchAll(); };
   const toggleActive = async (id: string, v: boolean) => { await supabase.from("specialists").update({ is_active: v }).eq("id", id); fetchAll(); };
   const linkUser = async (specialistId: string, userId: string) => {
