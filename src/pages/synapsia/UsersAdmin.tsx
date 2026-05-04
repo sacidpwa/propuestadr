@@ -12,7 +12,7 @@ import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
-import { ArrowLeft, LogOut, Loader2, UserPlus, KeyRound, ShieldCheck, BarChart3, Users as UsersIcon } from "lucide-react";
+import { ArrowLeft, LogOut, Loader2, UserPlus, KeyRound, ShieldCheck, BarChart3, Users as UsersIcon, Pencil } from "lucide-react";
 import synapsiaIcon from "@/assets/synapsia-icon.svg";
 
 type Role = "admin" | "recepcion" | "especialista" | "administrativo" | "dueno";
