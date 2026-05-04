@@ -282,6 +282,7 @@ export default function FloorPlan() {
   const onMouseDownFurn = (e: React.MouseEvent, f: Furniture, mode: "move" | "resize" | "rotate") => {
     if (!editMode) return;
     e.preventDefault(); e.stopPropagation();
+    setSelectedFurniture(f);
     const rect = canvasRef.current?.querySelector(".canvas-inner")?.getBoundingClientRect();
     const cx = (rect?.left ?? 0) + f.x + f.width / 2;
     const cy = (rect?.top ?? 0) + f.y + f.height / 2;
