@@ -664,7 +664,7 @@ export default function FloorPlan() {
                       onMouseDown={(e) => onMouseDownZone(e, z, "move")}
                       onClick={(e) => { if (!editMode) { e.stopPropagation(); setSelectedZone(z); } }}
                       onDoubleClick={() => editMode && openEditZone(z)}
-                      className={`absolute rounded-xl shadow-sm border-2 ${editMode ? "cursor-move" : "cursor-pointer"} transition-shadow hover:shadow-md`}
+                      className={`absolute rounded-xl shadow-sm border-2 ${editMode ? "cursor-move" : "cursor-pointer"} transition-shadow hover:shadow-md ${editMode && selectedZoneIds.has(z.id) ? "ring-2 ring-primary ring-offset-2" : ""}`}
                       style={{
                         left: z.x, top: z.y, width: z.width, height: z.height,
                         background: `${z.color}10`, borderColor: z.color,
