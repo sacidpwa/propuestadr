@@ -773,6 +773,12 @@ export default function FloorPlan() {
                   );
                 })}
 
+                {marquee && (
+                  <div
+                    className="absolute pointer-events-none border-2 border-dashed border-primary bg-primary/10 rounded-sm"
+                    style={{ left: marquee.x, top: marquee.y, width: marquee.w, height: marquee.h }}
+                  />
+                )}
                 {zones.length === 0 && furniture.length === 0 && (
                   <div className="absolute inset-0 flex items-center justify-center text-sm text-muted-foreground">
                     Activa el modo edición y crea tu primera zona o agrega mobiliario.
