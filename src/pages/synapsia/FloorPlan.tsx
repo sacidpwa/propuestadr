@@ -131,6 +131,24 @@ export default function FloorPlan() {
     return () => { supabase.removeChannel(ch); };
   }, []);
 
+  // Rotación 90° con flechas izquierda/derecha sobre el mueble seleccionado (modo edición)
+  useEffect(() => {
+    if (!editMode || !selectedFurniture) return;
+    const onKey = async (e: KeyboardEvent) => {
+      if (e.key !== "ArrowLeft" && e.key !== "ArrowRight") return;
+      const tag = (e.target as HTMLElement)?.tagName;
+      if (tag === "INPUT" || tag === "TEXTAREA" || (e.target as HTMLElement)?.isContentEditable) return;
+      e.preventDefault();
+      const delta = e.key === "ArrowRight" ? 90 : -90;
+      const newRot = (selectedFurniture.rotation || 0) + delta;
+      setFurniture(prev => prev.map(x => x.id === selectedFurniture.id ? { ...x, rotation: newRot } : x));
+      setSelectedFurniture({ ...selectedFurniture, rotation: newRot });
+      await supabase.from("floor_furniture" as any).update({ rotation: newRot }).eq("id", selectedFurniture.id);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [editMode, selectedFurniture]);
+
   const fetchAll = async () => { await Promise.all([fetchZones(), fetchFurniture(), fetchFlows(), fetchSpecialists(), fetchPatients()]); };
   const fetchZones = async () => {
     const { data } = await supabase.from("floor_zones").select("*").eq("is_active", true).order("created_at");
