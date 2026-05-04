@@ -350,6 +350,115 @@ export default function FloorPlan() {
     await supabase.from("floor_zones").update({ rotation: newRot }).eq("id", z.id);
   };
 
+  // ===== Selección múltiple helpers =====
+  const toggleSelectZone = (z: Zone, additive: boolean) => {
+    setSelectedZoneIds(prev => {
+      const next = new Set(additive ? prev : []);
+      if (additive && next.has(z.id)) next.delete(z.id); else next.add(z.id);
+      return next;
+    });
+    if (!additive) setSelectedFurnIds(new Set());
+    setSelectedZone(z); setSelectedFurniture(null);
+  };
+  const toggleSelectFurn = (f: Furniture, additive: boolean) => {
+    setSelectedFurnIds(prev => {
+      const next = new Set(additive ? prev : []);
+      if (additive && next.has(f.id)) next.delete(f.id); else next.add(f.id);
+      return next;
+    });
+    if (!additive) setSelectedZoneIds(new Set());
+    setSelectedFurniture(f); setSelectedZone(null);
+  };
+  const clearSelection = () => {
+    setSelectedZoneIds(new Set()); setSelectedFurnIds(new Set());
+    setSelectedZone(null); setSelectedFurniture(null);
+  };
+
+  // Mover grupo
+  const startGroupDrag = (e: React.MouseEvent, zoneIds: Set<string>, furnIds: Set<string>) => {
+    const zMap = new Map<string, { x: number; y: number }>();
+    const fMap = new Map<string, { x: number; y: number }>();
+    zones.forEach(z => { if (zoneIds.has(z.id)) zMap.set(z.id, { x: z.x, y: z.y }); });
+    furniture.forEach(f => { if (furnIds.has(f.id)) fMap.set(f.id, { x: f.x, y: f.y }); });
+    groupDragRef.current = {
+      startX: e.clientX, startY: e.clientY,
+      zones: zMap, furn: fMap,
+      latestZ: new Map(zMap), latestF: new Map(fMap),
+    };
+    document.addEventListener("mousemove", onGroupMove);
+    document.addEventListener("mouseup", onGroupUp);
+  };
+  const onGroupMove = (e: MouseEvent) => {
+    const g = groupDragRef.current; if (!g) return;
+    const dx = e.clientX - g.startX, dy = e.clientY - g.startY;
+    const nz = new Map<string, { x: number; y: number }>();
+    g.zones.forEach((p, id) => nz.set(id, { x: Math.max(0, p.x + dx), y: Math.max(0, p.y + dy) }));
+    const nf = new Map<string, { x: number; y: number }>();
+    g.furn.forEach((p, id) => nf.set(id, { x: Math.max(0, p.x + dx), y: Math.max(0, p.y + dy) }));
+    g.latestZ = nz; g.latestF = nf;
+    setZones(prev => prev.map(z => nz.has(z.id) ? { ...z, ...nz.get(z.id)! } : z));
+    setFurniture(prev => prev.map(f => nf.has(f.id) ? { ...f, ...nf.get(f.id)! } : f));
+  };
+  const onGroupUp = async () => {
+    document.removeEventListener("mousemove", onGroupMove);
+    document.removeEventListener("mouseup", onGroupUp);
+    const g = groupDragRef.current; if (!g) return;
+    groupDragRef.current = null;
+    const zUpdates = Array.from(g.latestZ.entries()).map(([id, p]) =>
+      supabase.from("floor_zones").update({ x: p.x, y: p.y }).eq("id", id));
+    const fUpdates = Array.from(g.latestF.entries()).map(([id, p]) =>
+      supabase.from("floor_furniture" as any).update({ x: p.x, y: p.y }).eq("id", id));
+    await Promise.all([...zUpdates, ...fUpdates]);
+  };
+
+  // Eliminar selección múltiple
+  const deleteSelection = async () => {
+    if (selectedZoneIds.size === 0 && selectedFurnIds.size === 0) return;
+    if (!confirm(`¿Eliminar ${selectedZoneIds.size} zona(s) y ${selectedFurnIds.size} mueble(s) seleccionados?`)) return;
+    if (selectedZoneIds.size > 0)
+      await supabase.from("floor_zones").update({ is_active: false }).in("id", Array.from(selectedZoneIds));
+    if (selectedFurnIds.size > 0)
+      await supabase.from("floor_furniture" as any).update({ is_active: false }).in("id", Array.from(selectedFurnIds));
+    clearSelection(); fetchZones(); fetchFurniture();
+  };
+
+  // Marquee selection
+  const onCanvasMouseDown = (e: React.MouseEvent) => {
+    if (!editMode) return;
+    if (e.target !== e.currentTarget) return; // solo si clickeo el fondo
+    const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+    const sx = e.clientX - rect.left, sy = e.clientY - rect.top;
+    marqueeRef.current = { startX: sx, startY: sy, additive: e.shiftKey || e.metaKey || e.ctrlKey };
+    setMarquee({ x: sx, y: sy, w: 0, h: 0 });
+    const move = (ev: MouseEvent) => {
+      const m = marqueeRef.current; if (!m) return;
+      const cx = ev.clientX - rect.left, cy = ev.clientY - rect.top;
+      setMarquee({
+        x: Math.min(m.startX, cx), y: Math.min(m.startY, cy),
+        w: Math.abs(cx - m.startX), h: Math.abs(cy - m.startY),
+      });
+    };
+    const up = (ev: MouseEvent) => {
+      document.removeEventListener("mousemove", move);
+      document.removeEventListener("mouseup", up);
+      const m = marqueeRef.current; if (!m) { setMarquee(null); return; }
+      const cx = ev.clientX - rect.left, cy = ev.clientY - rect.top;
+      const x1 = Math.min(m.startX, cx), y1 = Math.min(m.startY, cy);
+      const x2 = Math.max(m.startX, cx), y2 = Math.max(m.startY, cy);
+      const within = (ix: number, iy: number, iw: number, ih: number) =>
+        ix < x2 && ix + iw > x1 && iy < y2 && iy + ih > y1;
+      const newZ = new Set(m.additive ? selectedZoneIds : []);
+      const newF = new Set(m.additive ? selectedFurnIds : []);
+      zones.forEach(z => { if (within(z.x, z.y, z.width, z.height)) newZ.add(z.id); });
+      furniture.forEach(f => { if (within(f.x, f.y, f.width, f.height)) newF.add(f.id); });
+      setSelectedZoneIds(newZ); setSelectedFurnIds(newF);
+      setMarquee(null); marqueeRef.current = null;
+      if (newZ.size + newF.size === 0) clearSelection();
+    };
+    document.addEventListener("mousemove", move);
+    document.addEventListener("mouseup", up);
+  };
+
   const onMouseDownFurn = (e: React.MouseEvent, f: Furniture, mode: "move" | "resize" | "rotate") => {
     if (!editMode) return;
     e.preventDefault(); e.stopPropagation();
