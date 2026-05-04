@@ -14,7 +14,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import {
   ArrowLeft, LogOut, Plus, Trash2, Lock, Unlock, User, UserCheck,
-  Stethoscope, ClipboardList, FileText, DollarSign, LogIn, RotateCw,
+  Stethoscope, ClipboardList, FileText, DollarSign, LogIn, RotateCw, RotateCcw,
   Armchair, Sofa, Bed, Square,
 } from "lucide-react";
 import synapsiaIcon from "@/assets/synapsia-icon.svg";
