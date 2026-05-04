@@ -56,7 +56,7 @@ const App = () => (
             <Route path="/synapsia/patients" element={<ProtectedRoute requiredRole={["admin", "dueno", "recepcion", "especialista"]}><Patients /></ProtectedRoute>} />
             <Route path="/synapsia/records/:patientId" element={<ProtectedRoute requiredRole={["admin", "dueno", "especialista"]}><MedicalRecord /></ProtectedRoute>} />
             <Route path="/synapsia/expenses" element={<ProtectedRoute requiredRole={["admin", "dueno", "administrativo"]}><Expenses /></ProtectedRoute>} />
-            <Route path="/synapsia/users" element={<ProtectedRoute requiredRole={["admin", "dueno"]}><UsersAdmin /></ProtectedRoute>} />
+            <Route path="/synapsia/users" element={<ProtectedRoute requiredRole={["admin", "dueno", "recepcion"]}><UsersAdmin /></ProtectedRoute>} />
             <Route path="/synapsia/metrics" element={<ProtectedRoute><Metrics /></ProtectedRoute>} />
             <Route path="/synapsia/floor" element={<ProtectedRoute requiredRole={["admin", "dueno", "recepcion"]}><FloorPlan /></ProtectedRoute>} />
             <Route path="*" element={<NotFound />} />
