@@ -272,6 +272,9 @@ export default function UsersAdmin() {
                       </TableCell>
                       <TableCell className="text-right">
                         <div className="flex justify-end gap-2">
+                          <Button size="sm" variant="outline" onClick={() => setEditDialog({ open: true, userId: p.user_id, full_name: p.full_name, email: p.email ?? "" })} disabled={!isOwnerOrAdmin}>
+                            <Pencil className="w-3 h-3 mr-1" /> Editar
+                          </Button>
                           <Button size="sm" variant="outline" onClick={() => setPinDialog({ open: true, userId: p.user_id, name: p.full_name })} disabled={!isOwnerOrAdmin}>
                             <KeyRound className="w-3 h-3 mr-1" /> PIN
                           </Button>
