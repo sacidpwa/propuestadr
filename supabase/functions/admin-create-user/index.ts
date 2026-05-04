@@ -90,17 +90,14 @@ Deno.serve(async (req) => {
     const { error: roleErr } = await admin.from("user_roles").insert(rolesToInsert);
     if (roleErr) return json({ error: `usuario creado pero rol fallo: ${roleErr.message}`, user_id: newUserId }, 200);
 
-    // Optionally set PIN
+    // Optionally set PIN — call RPC as the caller (admin/dueno) so RLS check passes
     if (pin) {
-      const { error: pinErr } = await admin.rpc("admin_set_user_pin", { _user_id: newUserId, _pin: pin });
-      // RPC requires authenticated context as admin; fallback to direct update via service role
+      const { error: pinErr } = await userClient.rpc("admin_set_user_pin", {
+        _user_id: newUserId,
+        _pin: pin,
+      });
       if (pinErr) {
-        const { data: hashRow } = await admin.rpc("crypt_pin_helper" as any, { _pin: pin }).maybeSingle?.() ?? { data: null };
-        // Fallback: use direct update with extensions.crypt via SQL is not exposed; accept that PIN can be set by user later
-        await admin
-          .from("profiles")
-          .update({ pin_set_at: null })
-          .eq("user_id", newUserId);
+        return json({ ok: true, user_id: newUserId, warning: `PIN no establecido: ${pinErr.message}` });
       }
     }
 
