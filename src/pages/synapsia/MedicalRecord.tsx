@@ -295,7 +295,7 @@ export default function MedicalRecord() {
     const payload = { ...consentForm, patient_id: patientId, created_by: user?.id };
     const { data, error } = await supabase.from("informed_consents").insert(payload).select().single();
     if (error) toast({ variant: "destructive", title: "Error", description: error.message });
-    else { toast({ title: "Consentimiento registrado" }); logAudit("create", "informed_consent", (data as any)?.id); try { localStorage.removeItem(kConsent); } catch {}; setHasConsentDraft(false); setConsentOpen(false); setConsentForm(emptyConsent); load(); }
+    else { toast({ title: "Consentimiento registrado" }); logAudit("create", "informed_consent", (data as any)?.id); await removeDraft("consent"); setHasConsentDraft(false); setConsentOpen(false); setConsentForm(emptyConsent); load(); }
     setLoading(false);
   };
 
