@@ -157,6 +157,69 @@ export default function CalendarPage() {
     setLoading(false);
   };
 
+  const handleDelete = async () => {
+    if (!editing) return;
+    if (!confirm("¿Eliminar esta cita? Esta acción no se puede deshacer.")) return;
+    setLoading(true);
+    const { error } = await supabase.from("appointments").delete().eq("id", editing.id);
+    if (error) toast({ variant: "destructive", title: "Error", description: error.message });
+    else { toast({ title: "Cita eliminada" }); setOpen(false); fetchAppointments(); }
+    setLoading(false);
+  };
+
+  const handleCancel = async () => {
+    if (!editing) return;
+    setLoading(true);
+    const { error } = await supabase.from("appointments").update({ status: "cancelada" }).eq("id", editing.id);
+    if (error) toast({ variant: "destructive", title: "Error", description: error.message });
+    else { toast({ title: "Cita cancelada" }); setOpen(false); fetchAppointments(); }
+    setLoading(false);
+  };
+
+  // Filter patients by selected specialist (patients who have had appointments with that specialist)
+  useEffect(() => {
+    const loadFiltered = async () => {
+      if (!form.specialist_id) { setFilteredPatients([]); return; }
+      const { data } = await supabase
+        .from("appointments")
+        .select("patient_id, patients(id, full_name)")
+        .eq("specialist_id", form.specialist_id);
+      const map = new Map<string, Patient>();
+      (data as any[] || []).forEach((r) => {
+        if (r.patients) map.set(r.patients.id, { id: r.patients.id, full_name: r.patients.full_name });
+      });
+      // Always include the currently selected patient even if not in history
+      if (form.patient_id && !map.has(form.patient_id)) {
+        const p = patients.find(x => x.id === form.patient_id);
+        if (p) map.set(p.id, p);
+      }
+      const list = Array.from(map.values()).sort((a, b) => a.full_name.localeCompare(b.full_name));
+      setFilteredPatients(list);
+    };
+    loadFiltered();
+    // eslint-disable-next-line
+  }, [form.specialist_id, patients]);
+
+  const handleNewPatient = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSavingPatient(true);
+    const { data, error } = await supabase
+      .from("patients")
+      .insert({ full_name: newPatient.full_name, phone: newPatient.phone || null, email: newPatient.email || null })
+      .select("id, full_name").single();
+    if (error) toast({ variant: "destructive", title: "Error", description: error.message });
+    else if (data) {
+      toast({ title: "Paciente registrado" });
+      const p = { id: data.id, full_name: data.full_name };
+      setPatients(prev => [...prev, p].sort((a,b) => a.full_name.localeCompare(b.full_name)));
+      setFilteredPatients(prev => [...prev, p].sort((a,b) => a.full_name.localeCompare(b.full_name)));
+      setForm(f => ({ ...f, patient_id: data.id }));
+      setNewPatient({ full_name: "", phone: "", email: "" });
+      setNewPatientOpen(false);
+    }
+    setSavingPatient(false);
+  };
+
   const goBack = () => {
     if (hasRole("admin")) navigate("/synapsia");
     else if (hasRole("recepcion")) navigate("/synapsia");
