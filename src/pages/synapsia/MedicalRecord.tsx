@@ -10,7 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
-import { ArrowLeft, Brain, FileSignature, HeartPulse, Loader2, Lock, LogOut, NotebookPen, Pill, Plus, Save, Trash2 } from "lucide-react";
+import { ArrowLeft, Brain, FileSignature, HeartPulse, Loader2, Lock, LogOut, NotebookPen, Pill, Plus, RotateCcw, Save, Trash2 } from "lucide-react";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 
@@ -82,7 +82,78 @@ export default function MedicalRecord() {
   const [prescItems, setPrescItems] = useState<PrescItem[]>([{ ...emptyPItem }]);
   const [specialistId, setSpecialistId] = useState<string | null>(null);
 
+  // Claves de autoguardado local por paciente
+  const kRecord = patientId ? `draft:record:${patientId}` : "";
+  const kNote = patientId ? `draft:note:${patientId}` : "";
+  const kVital = patientId ? `draft:vital:${patientId}` : "";
+  const kConsent = patientId ? `draft:consent:${patientId}` : "";
+  const kPresc = patientId ? `draft:presc:${patientId}` : "";
+  const kPrescItems = patientId ? `draft:prescItems:${patientId}` : "";
+  const [hasNoteDraft, setHasNoteDraft] = useState(false);
+  const [hasPrescDraft, setHasPrescDraft] = useState(false);
+  const [hasVitalDraft, setHasVitalDraft] = useState(false);
+  const [hasConsentDraft, setHasConsentDraft] = useState(false);
+
   useEffect(() => { if (patientId) load(); /* eslint-disable-next-line */ }, [patientId]);
+
+  // Detectar borradores existentes al cargar
+  useEffect(() => {
+    if (!patientId) return;
+    setHasNoteDraft(!!localStorage.getItem(kNote));
+    setHasPrescDraft(!!localStorage.getItem(kPresc));
+    setHasVitalDraft(!!localStorage.getItem(kVital));
+    setHasConsentDraft(!!localStorage.getItem(kConsent));
+  }, [patientId]);
+
+  // Autoguardado local del expediente principal
+  useEffect(() => {
+    if (!patientId) return;
+    const t = setTimeout(() => {
+      try { localStorage.setItem(kRecord, JSON.stringify(record)); } catch {}
+    }, 400);
+    return () => clearTimeout(t);
+  }, [record, patientId]);
+
+  // Autoguardado de la nota en edición
+  useEffect(() => {
+    if (!patientId || !noteOpen) return;
+    const t = setTimeout(() => {
+      try { localStorage.setItem(kNote, JSON.stringify(noteForm)); setHasNoteDraft(true); } catch {}
+    }, 400);
+    return () => clearTimeout(t);
+  }, [noteForm, noteOpen, patientId]);
+
+  // Autoguardado vitales
+  useEffect(() => {
+    if (!patientId || !vitalOpen) return;
+    const t = setTimeout(() => {
+      try { localStorage.setItem(kVital, JSON.stringify(vitalForm)); setHasVitalDraft(true); } catch {}
+    }, 400);
+    return () => clearTimeout(t);
+  }, [vitalForm, vitalOpen, patientId]);
+
+  // Autoguardado consentimiento
+  useEffect(() => {
+    if (!patientId || !consentOpen) return;
+    const t = setTimeout(() => {
+      try { localStorage.setItem(kConsent, JSON.stringify(consentForm)); setHasConsentDraft(true); } catch {}
+    }, 400);
+    return () => clearTimeout(t);
+  }, [consentForm, consentOpen, patientId]);
+
+  // Autoguardado receta
+  useEffect(() => {
+    if (!patientId || !prescOpen) return;
+    const t = setTimeout(() => {
+      try {
+        localStorage.setItem(kPresc, JSON.stringify(prescForm));
+        localStorage.setItem(kPrescItems, JSON.stringify(prescItems));
+        setHasPrescDraft(true);
+      } catch {}
+    }, 400);
+    return () => clearTimeout(t);
+  }, [prescForm, prescItems, prescOpen, patientId]);
+
 
   const load = async () => {
     const [{ data: p }, { data: r }, { data: n }, { data: sp }, { data: cs }, { data: vs }, { data: pr }] = await Promise.all([
@@ -95,13 +166,69 @@ export default function MedicalRecord() {
       supabase.from("prescriptions").select("*, prescription_items(*)").eq("patient_id", patientId!).order("issued_at", { ascending: false }),
     ]);
     setPatient(p as any);
-    setRecord((r as any) ?? { patient_id: patientId });
+    const serverRecord = (r as any) ?? { patient_id: patientId };
+    // Fusionar con borrador local si existe (solo campos no vacíos del borrador)
+    try {
+      const draft = localStorage.getItem(kRecord);
+      if (draft) {
+        const d = JSON.parse(draft);
+        setRecord({ ...serverRecord, ...Object.fromEntries(Object.entries(d).filter(([_, v]) => v !== "" && v != null)) });
+      } else {
+        setRecord(serverRecord);
+      }
+    } catch { setRecord(serverRecord); }
     setNotes((n as any) ?? []);
     setSpecialistId((sp as any)?.id ?? null);
     setConsents((cs as any) ?? []);
     setVitals((vs as any) ?? []);
     setPrescriptions((pr as any) ?? []);
     if (patientId) logAudit("view", "patient_record", patientId);
+  };
+
+  // Abrir nueva nota: si hay borrador, preguntar si recuperar
+  const openNewNote = () => {
+    if (hasNoteDraft) {
+      const recover = window.confirm("Hay una nota inconclusa guardada en este dispositivo. ¿Deseas recuperarla?");
+      if (recover) {
+        try { setNoteForm({ ...emptyNote, ...JSON.parse(localStorage.getItem(kNote) || "{}") }); }
+        catch { setNoteForm(emptyNote); }
+      } else {
+        localStorage.removeItem(kNote); setHasNoteDraft(false); setNoteForm(emptyNote);
+      }
+    } else { setNoteForm(emptyNote); }
+    setNoteOpen(true);
+  };
+  const openNewVital = () => {
+    if (hasVitalDraft) {
+      const recover = window.confirm("Hay un registro de signos vitales inconcluso. ¿Recuperar?");
+      if (recover) { try { setVitalForm({ ...emptyVital, ...JSON.parse(localStorage.getItem(kVital) || "{}") }); } catch {} }
+      else { localStorage.removeItem(kVital); setHasVitalDraft(false); setVitalForm(emptyVital); }
+    } else { setVitalForm(emptyVital); }
+    setVitalOpen(true);
+  };
+  const openNewConsent = () => {
+    if (hasConsentDraft) {
+      const recover = window.confirm("Hay un consentimiento inconcluso. ¿Recuperar?");
+      if (recover) { try { setConsentForm({ ...emptyConsent, ...JSON.parse(localStorage.getItem(kConsent) || "{}") }); } catch {} }
+      else { localStorage.removeItem(kConsent); setHasConsentDraft(false); setConsentForm(emptyConsent); }
+    } else { setConsentForm(emptyConsent); }
+    setConsentOpen(true);
+  };
+  const openNewPresc = () => {
+    if (hasPrescDraft) {
+      const recover = window.confirm("Hay una receta inconclusa. ¿Recuperar?");
+      if (recover) {
+        try { setPrescForm({ ...emptyPresc, ...JSON.parse(localStorage.getItem(kPresc) || "{}") }); } catch {}
+        try {
+          const items = JSON.parse(localStorage.getItem(kPrescItems) || "[]");
+          setPrescItems(items.length ? items : [{ ...emptyPItem }]);
+        } catch { setPrescItems([{ ...emptyPItem }]); }
+      } else {
+        localStorage.removeItem(kPresc); localStorage.removeItem(kPrescItems);
+        setHasPrescDraft(false); setPrescForm(emptyPresc); setPrescItems([{ ...emptyPItem }]);
+      }
+    } else { setPrescForm(emptyPresc); setPrescItems([{ ...emptyPItem }]); }
+    setPrescOpen(true);
   };
 
   const saveRecord = async () => {
@@ -111,7 +238,7 @@ export default function MedicalRecord() {
     if (record.id) ({ error } = await supabase.from("medical_records").update(payload).eq("id", record.id));
     else ({ error } = await supabase.from("medical_records").upsert(payload, { onConflict: "patient_id" }));
     if (error) toast({ variant: "destructive", title: "Error", description: error.message });
-    else { toast({ title: "Expediente guardado" }); logAudit("update", "medical_record", record.id); load(); }
+    else { toast({ title: "Expediente guardado" }); logAudit("update", "medical_record", record.id); try { localStorage.removeItem(kRecord); } catch {} load(); }
     setLoading(false);
   };
 
@@ -129,6 +256,7 @@ export default function MedicalRecord() {
     else {
       toast({ title: lock ? "Nota firmada y bloqueada" : "Nota guardada (borrador)" });
       logAudit(lock ? "lock_note" : "create_note", "medical_note", (data as any)?.id);
+      try { localStorage.removeItem(kNote); } catch {}; setHasNoteDraft(false);
       setNoteOpen(false); setNoteForm(emptyNote); load();
     }
     setLoading(false);
@@ -149,7 +277,7 @@ export default function MedicalRecord() {
     };
     const { data, error } = await supabase.from("vital_signs").insert(payload).select().single();
     if (error) toast({ variant: "destructive", title: "Error", description: error.message });
-    else { toast({ title: "Signos vitales registrados" }); logAudit("create", "vital_signs", (data as any)?.id); setVitalOpen(false); setVitalForm(emptyVital); load(); }
+    else { toast({ title: "Signos vitales registrados" }); logAudit("create", "vital_signs", (data as any)?.id); try { localStorage.removeItem(kVital); } catch {}; setHasVitalDraft(false); setVitalOpen(false); setVitalForm(emptyVital); load(); }
     setLoading(false);
   };
 
@@ -159,7 +287,7 @@ export default function MedicalRecord() {
     const payload = { ...consentForm, patient_id: patientId, created_by: user?.id };
     const { data, error } = await supabase.from("informed_consents").insert(payload).select().single();
     if (error) toast({ variant: "destructive", title: "Error", description: error.message });
-    else { toast({ title: "Consentimiento registrado" }); logAudit("create", "informed_consent", (data as any)?.id); setConsentOpen(false); setConsentForm(emptyConsent); load(); }
+    else { toast({ title: "Consentimiento registrado" }); logAudit("create", "informed_consent", (data as any)?.id); try { localStorage.removeItem(kConsent); } catch {}; setHasConsentDraft(false); setConsentOpen(false); setConsentForm(emptyConsent); load(); }
     setLoading(false);
   };
 
@@ -181,6 +309,7 @@ export default function MedicalRecord() {
     }
     toast({ title: lock ? "Receta emitida y bloqueada" : "Receta guardada (borrador)" });
     logAudit(lock ? "issue_prescription" : "draft_prescription", "prescription", (pres as any).id);
+    try { localStorage.removeItem(kPresc); localStorage.removeItem(kPrescItems); } catch {}; setHasPrescDraft(false);
     setPrescOpen(false); setPrescForm(emptyPresc); setPrescItems([{ ...emptyPItem }]); load();
     setLoading(false);
   };
@@ -261,7 +390,7 @@ export default function MedicalRecord() {
           <TabsContent value="vitales" className="space-y-4">
             <div className="flex justify-end">
               <Dialog open={vitalOpen} onOpenChange={setVitalOpen}>
-                <DialogTrigger asChild><Button><Plus className="w-4 h-4 mr-1" /> Registrar signos vitales</Button></DialogTrigger>
+                <Button onClick={openNewVital}>{hasVitalDraft ? <RotateCcw className="w-4 h-4 mr-1" /> : <Plus className="w-4 h-4 mr-1" />} {hasVitalDraft ? "Recuperar / Nuevo" : "Registrar signos vitales"}</Button>
                 <DialogContent className="max-w-2xl">
                   <DialogHeader><DialogTitle>Signos vitales</DialogTitle></DialogHeader>
                   <form onSubmit={saveVital} className="grid grid-cols-2 md:grid-cols-3 gap-3">
@@ -298,7 +427,7 @@ export default function MedicalRecord() {
           <TabsContent value="notas" className="space-y-4">
             <div className="flex justify-end">
               <Dialog open={noteOpen} onOpenChange={setNoteOpen}>
-                <DialogTrigger asChild><Button><NotebookPen className="w-4 h-4 mr-1" /> Nueva nota</Button></DialogTrigger>
+                <Button onClick={openNewNote}>{hasNoteDraft ? <RotateCcw className="w-4 h-4 mr-1" /> : <NotebookPen className="w-4 h-4 mr-1" />} {hasNoteDraft ? "Recuperar / Nueva nota" : "Nueva nota"}</Button>
                 <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
                   <DialogHeader><DialogTitle>Nota de evolución</DialogTitle></DialogHeader>
                   <form onSubmit={(e) => saveNote(e, false)} className="space-y-3">
@@ -358,7 +487,7 @@ export default function MedicalRecord() {
           <TabsContent value="recetas" className="space-y-4">
             <div className="flex justify-end">
               <Dialog open={prescOpen} onOpenChange={setPrescOpen}>
-                <DialogTrigger asChild><Button><Pill className="w-4 h-4 mr-1" /> Nueva receta</Button></DialogTrigger>
+                <Button onClick={openNewPresc}>{hasPrescDraft ? <RotateCcw className="w-4 h-4 mr-1" /> : <Pill className="w-4 h-4 mr-1" />} {hasPrescDraft ? "Recuperar / Nueva receta" : "Nueva receta"}</Button>
                 <DialogContent className="max-w-3xl max-h-[85vh] overflow-y-auto">
                   <DialogHeader><DialogTitle>Receta médica</DialogTitle></DialogHeader>
                   <form onSubmit={(e) => savePrescription(e, false)} className="space-y-3">
@@ -420,7 +549,7 @@ export default function MedicalRecord() {
           <TabsContent value="consentimientos" className="space-y-4">
             <div className="flex justify-end">
               <Dialog open={consentOpen} onOpenChange={setConsentOpen}>
-                <DialogTrigger asChild><Button><FileSignature className="w-4 h-4 mr-1" /> Nuevo consentimiento</Button></DialogTrigger>
+                <Button onClick={openNewConsent}>{hasConsentDraft ? <RotateCcw className="w-4 h-4 mr-1" /> : <FileSignature className="w-4 h-4 mr-1" />} {hasConsentDraft ? "Recuperar / Nuevo" : "Nuevo consentimiento"}</Button>
                 <DialogContent className="max-w-2xl">
                   <DialogHeader><DialogTitle>Consentimiento informado</DialogTitle></DialogHeader>
                   <form onSubmit={saveConsent} className="space-y-3">
