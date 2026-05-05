@@ -82,77 +82,89 @@ export default function MedicalRecord() {
   const [prescItems, setPrescItems] = useState<PrescItem[]>([{ ...emptyPItem }]);
   const [specialistId, setSpecialistId] = useState<string | null>(null);
 
-  // Claves de autoguardado local por paciente
-  const kRecord = patientId ? `draft:record:${patientId}` : "";
-  const kNote = patientId ? `draft:note:${patientId}` : "";
-  const kVital = patientId ? `draft:vital:${patientId}` : "";
-  const kConsent = patientId ? `draft:consent:${patientId}` : "";
-  const kPresc = patientId ? `draft:presc:${patientId}` : "";
-  const kPrescItems = patientId ? `draft:prescItems:${patientId}` : "";
+  // Autoguardado en la nube por (usuario, paciente, tipo)
   const [hasNoteDraft, setHasNoteDraft] = useState(false);
   const [hasPrescDraft, setHasPrescDraft] = useState(false);
   const [hasVitalDraft, setHasVitalDraft] = useState(false);
   const [hasConsentDraft, setHasConsentDraft] = useState(false);
+  const [savingDraft, setSavingDraft] = useState(false);
+
+  const upsertDraft = async (kind: string, payload: any) => {
+    if (!patientId || !user?.id) return;
+    setSavingDraft(true);
+    await supabase.from("draft_documents").upsert(
+      { user_id: user.id, patient_id: patientId, kind, payload },
+      { onConflict: "user_id,patient_id,kind" }
+    );
+    setSavingDraft(false);
+  };
+
+  const fetchDraft = async (kind: string) => {
+    if (!patientId || !user?.id) return null;
+    const { data } = await supabase.from("draft_documents")
+      .select("payload")
+      .eq("user_id", user.id).eq("patient_id", patientId).eq("kind", kind)
+      .maybeSingle();
+    return (data as any)?.payload ?? null;
+  };
+
+  const removeDraft = async (kind: string) => {
+    if (!patientId || !user?.id) return;
+    await supabase.from("draft_documents").delete()
+      .eq("user_id", user.id).eq("patient_id", patientId).eq("kind", kind);
+  };
 
   useEffect(() => { if (patientId) load(); /* eslint-disable-next-line */ }, [patientId]);
 
-  // Detectar borradores existentes al cargar
+  // Detectar borradores existentes en la nube al cargar
   useEffect(() => {
-    if (!patientId) return;
-    setHasNoteDraft(!!localStorage.getItem(kNote));
-    setHasPrescDraft(!!localStorage.getItem(kPresc));
-    setHasVitalDraft(!!localStorage.getItem(kVital));
-    setHasConsentDraft(!!localStorage.getItem(kConsent));
-  }, [patientId]);
+    if (!patientId || !user?.id) return;
+    (async () => {
+      const { data } = await supabase.from("draft_documents")
+        .select("kind")
+        .eq("user_id", user.id).eq("patient_id", patientId);
+      const kinds = new Set((data ?? []).map((d: any) => d.kind));
+      setHasNoteDraft(kinds.has("note"));
+      setHasPrescDraft(kinds.has("prescription"));
+      setHasVitalDraft(kinds.has("vital"));
+      setHasConsentDraft(kinds.has("consent"));
+    })();
+  }, [patientId, user?.id]);
 
-  // Autoguardado local del expediente principal
+  // Autoguardado del expediente principal (cada cambio)
   useEffect(() => {
-    if (!patientId) return;
-    const t = setTimeout(() => {
-      try { localStorage.setItem(kRecord, JSON.stringify(record)); } catch {}
-    }, 400);
+    if (!patientId || !user?.id) return;
+    const t = setTimeout(() => { upsertDraft("record", record); }, 600);
     return () => clearTimeout(t);
-  }, [record, patientId]);
+  }, [record, patientId, user?.id]);
 
-  // Autoguardado de la nota en edición
+  // Autoguardado nota
   useEffect(() => {
-    if (!patientId || !noteOpen) return;
-    const t = setTimeout(() => {
-      try { localStorage.setItem(kNote, JSON.stringify(noteForm)); setHasNoteDraft(true); } catch {}
-    }, 400);
+    if (!patientId || !noteOpen || !user?.id) return;
+    const t = setTimeout(() => { upsertDraft("note", noteForm); setHasNoteDraft(true); }, 600);
     return () => clearTimeout(t);
-  }, [noteForm, noteOpen, patientId]);
+  }, [noteForm, noteOpen, patientId, user?.id]);
 
   // Autoguardado vitales
   useEffect(() => {
-    if (!patientId || !vitalOpen) return;
-    const t = setTimeout(() => {
-      try { localStorage.setItem(kVital, JSON.stringify(vitalForm)); setHasVitalDraft(true); } catch {}
-    }, 400);
+    if (!patientId || !vitalOpen || !user?.id) return;
+    const t = setTimeout(() => { upsertDraft("vital", vitalForm); setHasVitalDraft(true); }, 600);
     return () => clearTimeout(t);
-  }, [vitalForm, vitalOpen, patientId]);
+  }, [vitalForm, vitalOpen, patientId, user?.id]);
 
   // Autoguardado consentimiento
   useEffect(() => {
-    if (!patientId || !consentOpen) return;
-    const t = setTimeout(() => {
-      try { localStorage.setItem(kConsent, JSON.stringify(consentForm)); setHasConsentDraft(true); } catch {}
-    }, 400);
+    if (!patientId || !consentOpen || !user?.id) return;
+    const t = setTimeout(() => { upsertDraft("consent", consentForm); setHasConsentDraft(true); }, 600);
     return () => clearTimeout(t);
-  }, [consentForm, consentOpen, patientId]);
+  }, [consentForm, consentOpen, patientId, user?.id]);
 
   // Autoguardado receta
   useEffect(() => {
-    if (!patientId || !prescOpen) return;
-    const t = setTimeout(() => {
-      try {
-        localStorage.setItem(kPresc, JSON.stringify(prescForm));
-        localStorage.setItem(kPrescItems, JSON.stringify(prescItems));
-        setHasPrescDraft(true);
-      } catch {}
-    }, 400);
+    if (!patientId || !prescOpen || !user?.id) return;
+    const t = setTimeout(() => { upsertDraft("prescription", { form: prescForm, items: prescItems }); setHasPrescDraft(true); }, 600);
     return () => clearTimeout(t);
-  }, [prescForm, prescItems, prescOpen, patientId]);
+  }, [prescForm, prescItems, prescOpen, patientId, user?.id]);
 
 
   const load = async () => {
@@ -167,16 +179,13 @@ export default function MedicalRecord() {
     ]);
     setPatient(p as any);
     const serverRecord = (r as any) ?? { patient_id: patientId };
-    // Fusionar con borrador local si existe (solo campos no vacíos del borrador)
-    try {
-      const draft = localStorage.getItem(kRecord);
-      if (draft) {
-        const d = JSON.parse(draft);
-        setRecord({ ...serverRecord, ...Object.fromEntries(Object.entries(d).filter(([_, v]) => v !== "" && v != null)) });
-      } else {
-        setRecord(serverRecord);
-      }
-    } catch { setRecord(serverRecord); }
+    // Fusionar con borrador en la nube si existe (solo campos no vacíos)
+    const draft = await fetchDraft("record");
+    if (draft && typeof draft === "object") {
+      setRecord({ ...serverRecord, ...Object.fromEntries(Object.entries(draft).filter(([_, v]) => v !== "" && v != null)) });
+    } else {
+      setRecord(serverRecord);
+    }
     setNotes((n as any) ?? []);
     setSpecialistId((sp as any)?.id ?? null);
     setConsents((cs as any) ?? []);
@@ -185,46 +194,45 @@ export default function MedicalRecord() {
     if (patientId) logAudit("view", "patient_record", patientId);
   };
 
-  // Abrir nueva nota: si hay borrador, preguntar si recuperar
-  const openNewNote = () => {
+  // Abrir nuevos: si hay borrador, preguntar si recuperar
+  const openNewNote = async () => {
     if (hasNoteDraft) {
-      const recover = window.confirm("Hay una nota inconclusa guardada en este dispositivo. ¿Deseas recuperarla?");
+      const recover = window.confirm("Hay una nota inconclusa autoguardada. ¿Deseas recuperarla?");
       if (recover) {
-        try { setNoteForm({ ...emptyNote, ...JSON.parse(localStorage.getItem(kNote) || "{}") }); }
-        catch { setNoteForm(emptyNote); }
+        const d = await fetchDraft("note");
+        setNoteForm({ ...emptyNote, ...(d ?? {}) });
       } else {
-        localStorage.removeItem(kNote); setHasNoteDraft(false); setNoteForm(emptyNote);
+        await removeDraft("note"); setHasNoteDraft(false); setNoteForm(emptyNote);
       }
     } else { setNoteForm(emptyNote); }
     setNoteOpen(true);
   };
-  const openNewVital = () => {
+  const openNewVital = async () => {
     if (hasVitalDraft) {
       const recover = window.confirm("Hay un registro de signos vitales inconcluso. ¿Recuperar?");
-      if (recover) { try { setVitalForm({ ...emptyVital, ...JSON.parse(localStorage.getItem(kVital) || "{}") }); } catch {} }
-      else { localStorage.removeItem(kVital); setHasVitalDraft(false); setVitalForm(emptyVital); }
+      if (recover) { const d = await fetchDraft("vital"); setVitalForm({ ...emptyVital, ...(d ?? {}) }); }
+      else { await removeDraft("vital"); setHasVitalDraft(false); setVitalForm(emptyVital); }
     } else { setVitalForm(emptyVital); }
     setVitalOpen(true);
   };
-  const openNewConsent = () => {
+  const openNewConsent = async () => {
     if (hasConsentDraft) {
       const recover = window.confirm("Hay un consentimiento inconcluso. ¿Recuperar?");
-      if (recover) { try { setConsentForm({ ...emptyConsent, ...JSON.parse(localStorage.getItem(kConsent) || "{}") }); } catch {} }
-      else { localStorage.removeItem(kConsent); setHasConsentDraft(false); setConsentForm(emptyConsent); }
+      if (recover) { const d = await fetchDraft("consent"); setConsentForm({ ...emptyConsent, ...(d ?? {}) }); }
+      else { await removeDraft("consent"); setHasConsentDraft(false); setConsentForm(emptyConsent); }
     } else { setConsentForm(emptyConsent); }
     setConsentOpen(true);
   };
-  const openNewPresc = () => {
+  const openNewPresc = async () => {
     if (hasPrescDraft) {
       const recover = window.confirm("Hay una receta inconclusa. ¿Recuperar?");
       if (recover) {
-        try { setPrescForm({ ...emptyPresc, ...JSON.parse(localStorage.getItem(kPresc) || "{}") }); } catch {}
-        try {
-          const items = JSON.parse(localStorage.getItem(kPrescItems) || "[]");
-          setPrescItems(items.length ? items : [{ ...emptyPItem }]);
-        } catch { setPrescItems([{ ...emptyPItem }]); }
+        const d = await fetchDraft("prescription");
+        setPrescForm({ ...emptyPresc, ...(d?.form ?? {}) });
+        const items = Array.isArray(d?.items) && d.items.length ? d.items : [{ ...emptyPItem }];
+        setPrescItems(items);
       } else {
-        localStorage.removeItem(kPresc); localStorage.removeItem(kPrescItems);
+        await removeDraft("prescription");
         setHasPrescDraft(false); setPrescForm(emptyPresc); setPrescItems([{ ...emptyPItem }]);
       }
     } else { setPrescForm(emptyPresc); setPrescItems([{ ...emptyPItem }]); }
@@ -238,7 +246,7 @@ export default function MedicalRecord() {
     if (record.id) ({ error } = await supabase.from("medical_records").update(payload).eq("id", record.id));
     else ({ error } = await supabase.from("medical_records").upsert(payload, { onConflict: "patient_id" }));
     if (error) toast({ variant: "destructive", title: "Error", description: error.message });
-    else { toast({ title: "Expediente guardado" }); logAudit("update", "medical_record", record.id); try { localStorage.removeItem(kRecord); } catch {} load(); }
+    else { toast({ title: "Expediente guardado" }); logAudit("update", "medical_record", record.id); await removeDraft("record"); load(); }
     setLoading(false);
   };
 
@@ -256,7 +264,7 @@ export default function MedicalRecord() {
     else {
       toast({ title: lock ? "Nota firmada y bloqueada" : "Nota guardada (borrador)" });
       logAudit(lock ? "lock_note" : "create_note", "medical_note", (data as any)?.id);
-      try { localStorage.removeItem(kNote); } catch {}; setHasNoteDraft(false);
+      await removeDraft("note"); setHasNoteDraft(false);
       setNoteOpen(false); setNoteForm(emptyNote); load();
     }
     setLoading(false);
@@ -277,7 +285,7 @@ export default function MedicalRecord() {
     };
     const { data, error } = await supabase.from("vital_signs").insert(payload).select().single();
     if (error) toast({ variant: "destructive", title: "Error", description: error.message });
-    else { toast({ title: "Signos vitales registrados" }); logAudit("create", "vital_signs", (data as any)?.id); try { localStorage.removeItem(kVital); } catch {}; setHasVitalDraft(false); setVitalOpen(false); setVitalForm(emptyVital); load(); }
+    else { toast({ title: "Signos vitales registrados" }); logAudit("create", "vital_signs", (data as any)?.id); await removeDraft("vital"); setHasVitalDraft(false); setVitalOpen(false); setVitalForm(emptyVital); load(); }
     setLoading(false);
   };
 
@@ -287,7 +295,7 @@ export default function MedicalRecord() {
     const payload = { ...consentForm, patient_id: patientId, created_by: user?.id };
     const { data, error } = await supabase.from("informed_consents").insert(payload).select().single();
     if (error) toast({ variant: "destructive", title: "Error", description: error.message });
-    else { toast({ title: "Consentimiento registrado" }); logAudit("create", "informed_consent", (data as any)?.id); try { localStorage.removeItem(kConsent); } catch {}; setHasConsentDraft(false); setConsentOpen(false); setConsentForm(emptyConsent); load(); }
+    else { toast({ title: "Consentimiento registrado" }); logAudit("create", "informed_consent", (data as any)?.id); await removeDraft("consent"); setHasConsentDraft(false); setConsentOpen(false); setConsentForm(emptyConsent); load(); }
     setLoading(false);
   };
 
@@ -309,7 +317,7 @@ export default function MedicalRecord() {
     }
     toast({ title: lock ? "Receta emitida y bloqueada" : "Receta guardada (borrador)" });
     logAudit(lock ? "issue_prescription" : "draft_prescription", "prescription", (pres as any).id);
-    try { localStorage.removeItem(kPresc); localStorage.removeItem(kPrescItems); } catch {}; setHasPrescDraft(false);
+    await removeDraft("prescription"); setHasPrescDraft(false);
     setPrescOpen(false); setPrescForm(emptyPresc); setPrescItems([{ ...emptyPItem }]); load();
     setLoading(false);
   };

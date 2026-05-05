@@ -101,6 +101,36 @@ export type Database = {
         }
         Relationships: []
       }
+      draft_documents: {
+        Row: {
+          created_at: string
+          id: string
+          kind: string
+          patient_id: string | null
+          payload: Json
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          kind: string
+          patient_id?: string | null
+          payload?: Json
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          kind?: string
+          patient_id?: string | null
+          payload?: Json
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       expense_entries: {
         Row: {
           amount: number
