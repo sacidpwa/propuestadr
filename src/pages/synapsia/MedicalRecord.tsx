@@ -427,7 +427,7 @@ export default function MedicalRecord() {
           <TabsContent value="notas" className="space-y-4">
             <div className="flex justify-end">
               <Dialog open={noteOpen} onOpenChange={setNoteOpen}>
-                <DialogTrigger asChild><Button><NotebookPen className="w-4 h-4 mr-1" /> Nueva nota</Button></DialogTrigger>
+                <Button onClick={openNewNote}>{hasNoteDraft ? <RotateCcw className="w-4 h-4 mr-1" /> : <NotebookPen className="w-4 h-4 mr-1" />} {hasNoteDraft ? "Recuperar / Nueva nota" : "Nueva nota"}</Button>
                 <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
                   <DialogHeader><DialogTitle>Nota de evolución</DialogTitle></DialogHeader>
                   <form onSubmit={(e) => saveNote(e, false)} className="space-y-3">
