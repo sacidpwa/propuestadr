@@ -317,7 +317,7 @@ export default function MedicalRecord() {
     }
     toast({ title: lock ? "Receta emitida y bloqueada" : "Receta guardada (borrador)" });
     logAudit(lock ? "issue_prescription" : "draft_prescription", "prescription", (pres as any).id);
-    try { localStorage.removeItem(kPresc); localStorage.removeItem(kPrescItems); } catch {}; setHasPrescDraft(false);
+    await removeDraft("prescription"); setHasPrescDraft(false);
     setPrescOpen(false); setPrescForm(emptyPresc); setPrescItems([{ ...emptyPItem }]); load();
     setLoading(false);
   };
