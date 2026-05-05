@@ -82,7 +82,78 @@ export default function MedicalRecord() {
   const [prescItems, setPrescItems] = useState<PrescItem[]>([{ ...emptyPItem }]);
   const [specialistId, setSpecialistId] = useState<string | null>(null);
 
+  // Claves de autoguardado local por paciente
+  const kRecord = patientId ? `draft:record:${patientId}` : "";
+  const kNote = patientId ? `draft:note:${patientId}` : "";
+  const kVital = patientId ? `draft:vital:${patientId}` : "";
+  const kConsent = patientId ? `draft:consent:${patientId}` : "";
+  const kPresc = patientId ? `draft:presc:${patientId}` : "";
+  const kPrescItems = patientId ? `draft:prescItems:${patientId}` : "";
+  const [hasNoteDraft, setHasNoteDraft] = useState(false);
+  const [hasPrescDraft, setHasPrescDraft] = useState(false);
+  const [hasVitalDraft, setHasVitalDraft] = useState(false);
+  const [hasConsentDraft, setHasConsentDraft] = useState(false);
+
   useEffect(() => { if (patientId) load(); /* eslint-disable-next-line */ }, [patientId]);
+
+  // Detectar borradores existentes al cargar
+  useEffect(() => {
+    if (!patientId) return;
+    setHasNoteDraft(!!localStorage.getItem(kNote));
+    setHasPrescDraft(!!localStorage.getItem(kPresc));
+    setHasVitalDraft(!!localStorage.getItem(kVital));
+    setHasConsentDraft(!!localStorage.getItem(kConsent));
+  }, [patientId]);
+
+  // Autoguardado local del expediente principal
+  useEffect(() => {
+    if (!patientId) return;
+    const t = setTimeout(() => {
+      try { localStorage.setItem(kRecord, JSON.stringify(record)); } catch {}
+    }, 400);
+    return () => clearTimeout(t);
+  }, [record, patientId]);
+
+  // Autoguardado de la nota en edición
+  useEffect(() => {
+    if (!patientId || !noteOpen) return;
+    const t = setTimeout(() => {
+      try { localStorage.setItem(kNote, JSON.stringify(noteForm)); setHasNoteDraft(true); } catch {}
+    }, 400);
+    return () => clearTimeout(t);
+  }, [noteForm, noteOpen, patientId]);
+
+  // Autoguardado vitales
+  useEffect(() => {
+    if (!patientId || !vitalOpen) return;
+    const t = setTimeout(() => {
+      try { localStorage.setItem(kVital, JSON.stringify(vitalForm)); setHasVitalDraft(true); } catch {}
+    }, 400);
+    return () => clearTimeout(t);
+  }, [vitalForm, vitalOpen, patientId]);
+
+  // Autoguardado consentimiento
+  useEffect(() => {
+    if (!patientId || !consentOpen) return;
+    const t = setTimeout(() => {
+      try { localStorage.setItem(kConsent, JSON.stringify(consentForm)); setHasConsentDraft(true); } catch {}
+    }, 400);
+    return () => clearTimeout(t);
+  }, [consentForm, consentOpen, patientId]);
+
+  // Autoguardado receta
+  useEffect(() => {
+    if (!patientId || !prescOpen) return;
+    const t = setTimeout(() => {
+      try {
+        localStorage.setItem(kPresc, JSON.stringify(prescForm));
+        localStorage.setItem(kPrescItems, JSON.stringify(prescItems));
+        setHasPrescDraft(true);
+      } catch {}
+    }, 400);
+    return () => clearTimeout(t);
+  }, [prescForm, prescItems, prescOpen, patientId]);
+
 
   const load = async () => {
     const [{ data: p }, { data: r }, { data: n }, { data: sp }, { data: cs }, { data: vs }, { data: pr }] = await Promise.all([
