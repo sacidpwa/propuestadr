@@ -238,7 +238,7 @@ export default function MedicalRecord() {
     if (record.id) ({ error } = await supabase.from("medical_records").update(payload).eq("id", record.id));
     else ({ error } = await supabase.from("medical_records").upsert(payload, { onConflict: "patient_id" }));
     if (error) toast({ variant: "destructive", title: "Error", description: error.message });
-    else { toast({ title: "Expediente guardado" }); logAudit("update", "medical_record", record.id); load(); }
+    else { toast({ title: "Expediente guardado" }); logAudit("update", "medical_record", record.id); try { localStorage.removeItem(kRecord); } catch {} load(); }
     setLoading(false);
   };
 
