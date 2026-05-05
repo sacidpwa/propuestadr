@@ -13,7 +13,8 @@ import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { format, addDays, startOfWeek, isSameDay, parseISO } from "date-fns";
 import { es } from "date-fns/locale";
-import { ArrowLeft, Brain, CalendarPlus, ChevronLeft, ChevronRight, LogOut, Loader2 } from "lucide-react";
+import { ArrowLeft, Brain, CalendarPlus, ChevronLeft, ChevronRight, LogOut, Loader2, Trash2, UserPlus, XCircle } from "lucide-react";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 interface Specialist { id: string; full_name: string; specialty: string; user_id: string | null; }
 interface Patient { id: string; full_name: string; }
