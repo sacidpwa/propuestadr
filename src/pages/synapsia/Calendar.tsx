@@ -302,45 +302,88 @@ export default function CalendarPage() {
       </main>
 
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="max-w-md">
-          <DialogHeader><DialogTitle>{editing ? "Editar cita" : "Nueva cita"}</DialogTitle></DialogHeader>
-          <form onSubmit={handleSubmit} className="space-y-3">
-            <div className="space-y-2">
-              <Label>Paciente *</Label>
-              <Select value={form.patient_id} onValueChange={(v) => setForm({ ...form, patient_id: v })}>
-                <SelectTrigger><SelectValue placeholder="Seleccionar paciente" /></SelectTrigger>
-                <SelectContent>{patients.map(p => <SelectItem key={p.id} value={p.id}>{p.full_name}</SelectItem>)}</SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-2">
-              <Label>Especialista *</Label>
-              <Select value={form.specialist_id} onValueChange={(v) => setForm({ ...form, specialist_id: v })} disabled={!isClinical}>
-                <SelectTrigger><SelectValue placeholder="Seleccionar especialista" /></SelectTrigger>
-                <SelectContent>
-                  {specialists.map(s => (
-                    <SelectItem key={s.id} value={s.id}>{s.full_name} — {s.specialty}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="grid grid-cols-3 gap-2">
-              <div className="space-y-2 col-span-1"><Label>Fecha *</Label><Input type="date" required value={form.date} onChange={e => setForm({ ...form, date: e.target.value })} /></div>
-              <div className="space-y-2 col-span-1"><Label>Hora *</Label><Input type="time" required value={form.time} onChange={e => setForm({ ...form, time: e.target.value })} /></div>
-              <div className="space-y-2 col-span-1"><Label>Min</Label><Input type="number" min="15" step="15" value={form.duration_minutes} onChange={e => setForm({ ...form, duration_minutes: e.target.value })} /></div>
-            </div>
-            <div className="space-y-2">
-              <Label>Estado</Label>
-              <Select value={form.status} onValueChange={(v) => setForm({ ...form, status: v })}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  {Object.entries(STATUS_LABEL).map(([k, l]) => <SelectItem key={k} value={k}>{l}</SelectItem>)}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-2"><Label>Motivo</Label><Input value={form.reason} onChange={e => setForm({ ...form, reason: e.target.value })} /></div>
-            <div className="space-y-2"><Label>Notas</Label><Textarea rows={2} value={form.notes} onChange={e => setForm({ ...form, notes: e.target.value })} /></div>
-            <Button type="submit" className="w-full" disabled={loading || !form.patient_id || !form.specialist_id}>
+        <DialogContent className="max-w-md max-h-[85vh] flex flex-col p-0 gap-0">
+          <DialogHeader className="p-6 pb-2 border-b">
+            <DialogTitle>{editing ? "Editar cita" : "Nueva cita"}</DialogTitle>
+          </DialogHeader>
+          <ScrollArea className="flex-1 px-6 py-4">
+            <form id="appt-form" onSubmit={handleSubmit} className="space-y-3">
+              <div className="space-y-2">
+                <Label>Especialista *</Label>
+                <Select value={form.specialist_id} onValueChange={(v) => setForm({ ...form, specialist_id: v, patient_id: "" })} disabled={!isClinical}>
+                  <SelectTrigger><SelectValue placeholder="Seleccionar especialista" /></SelectTrigger>
+                  <SelectContent>
+                    {specialists.map(s => (
+                      <SelectItem key={s.id} value={s.id}>{s.full_name} — {s.specialty}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <Label>Paciente *</Label>
+                  <Button type="button" size="sm" variant="outline" className="h-7" onClick={() => setNewPatientOpen(true)}>
+                    <UserPlus className="w-3 h-3 mr-1" /> Nuevo
+                  </Button>
+                </div>
+                <Select value={form.patient_id} onValueChange={(v) => setForm({ ...form, patient_id: v })} disabled={!form.specialist_id}>
+                  <SelectTrigger>
+                    <SelectValue placeholder={form.specialist_id ? "Seleccionar paciente" : "Primero elige especialista"} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {filteredPatients.length === 0 ? (
+                      <div className="p-2 text-xs text-muted-foreground text-center">
+                        Sin pacientes previos. Usa "Nuevo".
+                      </div>
+                    ) : filteredPatients.map(p => <SelectItem key={p.id} value={p.id}>{p.full_name}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="grid grid-cols-3 gap-2">
+                <div className="space-y-2 col-span-1"><Label>Fecha *</Label><Input type="date" required value={form.date} onChange={e => setForm({ ...form, date: e.target.value })} /></div>
+                <div className="space-y-2 col-span-1"><Label>Hora *</Label><Input type="time" required value={form.time} onChange={e => setForm({ ...form, time: e.target.value })} /></div>
+                <div className="space-y-2 col-span-1"><Label>Min</Label><Input type="number" min="15" step="15" value={form.duration_minutes} onChange={e => setForm({ ...form, duration_minutes: e.target.value })} /></div>
+              </div>
+              <div className="space-y-2">
+                <Label>Estado</Label>
+                <Select value={form.status} onValueChange={(v) => setForm({ ...form, status: v })}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {Object.entries(STATUS_LABEL).map(([k, l]) => <SelectItem key={k} value={k}>{l}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2"><Label>Motivo</Label><Input value={form.reason} onChange={e => setForm({ ...form, reason: e.target.value })} /></div>
+              <div className="space-y-2"><Label>Notas</Label><Textarea rows={2} value={form.notes} onChange={e => setForm({ ...form, notes: e.target.value })} /></div>
+            </form>
+          </ScrollArea>
+          <div className="border-t p-4 space-y-2">
+            <Button type="submit" form="appt-form" className="w-full" disabled={loading || !form.patient_id || !form.specialist_id}>
               {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : editing ? "Guardar cambios" : "Agendar"}
+            </Button>
+            {editing && (
+              <div className="grid grid-cols-2 gap-2">
+                <Button type="button" variant="outline" onClick={handleCancel} disabled={loading || form.status === "cancelada"}>
+                  <XCircle className="w-4 h-4 mr-1" /> Cancelar cita
+                </Button>
+                <Button type="button" variant="destructive" onClick={handleDelete} disabled={loading}>
+                  <Trash2 className="w-4 h-4 mr-1" /> Eliminar
+                </Button>
+              </div>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={newPatientOpen} onOpenChange={setNewPatientOpen}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader><DialogTitle>Nuevo paciente</DialogTitle></DialogHeader>
+          <form onSubmit={handleNewPatient} className="space-y-3">
+            <div className="space-y-2"><Label>Nombre completo *</Label><Input required value={newPatient.full_name} onChange={e => setNewPatient({ ...newPatient, full_name: e.target.value })} /></div>
+            <div className="space-y-2"><Label>Teléfono</Label><Input value={newPatient.phone} onChange={e => setNewPatient({ ...newPatient, phone: e.target.value })} /></div>
+            <div className="space-y-2"><Label>Email</Label><Input type="email" value={newPatient.email} onChange={e => setNewPatient({ ...newPatient, email: e.target.value })} /></div>
+            <Button type="submit" className="w-full" disabled={savingPatient || !newPatient.full_name}>
+              {savingPatient ? <Loader2 className="w-4 h-4 animate-spin" /> : "Registrar"}
             </Button>
           </form>
         </DialogContent>
