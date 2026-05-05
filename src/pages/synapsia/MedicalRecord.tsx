@@ -277,7 +277,7 @@ export default function MedicalRecord() {
     };
     const { data, error } = await supabase.from("vital_signs").insert(payload).select().single();
     if (error) toast({ variant: "destructive", title: "Error", description: error.message });
-    else { toast({ title: "Signos vitales registrados" }); logAudit("create", "vital_signs", (data as any)?.id); setVitalOpen(false); setVitalForm(emptyVital); load(); }
+    else { toast({ title: "Signos vitales registrados" }); logAudit("create", "vital_signs", (data as any)?.id); try { localStorage.removeItem(kVital); } catch {}; setHasVitalDraft(false); setVitalOpen(false); setVitalForm(emptyVital); load(); }
     setLoading(false);
   };
 
