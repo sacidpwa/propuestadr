@@ -52,7 +52,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setLoading(false);
     });
 
-    return () => subscription.unsubscribe();
+    // Mantener la sesión viva: refrescar al volver a la pestaña / recuperar foco / reconectar red
+    const refresh = () => {
+      supabase.auth.getSession().then(({ data }) => {
+        if (data.session) supabase.auth.refreshSession().catch(() => {});
+      });
+    };
+    const onVisibility = () => { if (document.visibilityState === "visible") refresh(); };
+    window.addEventListener("focus", refresh);
+    window.addEventListener("online", refresh);
+    document.addEventListener("visibilitychange", onVisibility);
+    // Refresco proactivo cada 10 minutos para evitar expiraciones por inactividad
+    const interval = window.setInterval(refresh, 10 * 60 * 1000);
+
+    return () => {
+      subscription.unsubscribe();
+      window.removeEventListener("focus", refresh);
+      window.removeEventListener("online", refresh);
+      document.removeEventListener("visibilitychange", onVisibility);
+      window.clearInterval(interval);
+    };
   }, []);
 
   const signIn = async (email: string, password: string) => {
