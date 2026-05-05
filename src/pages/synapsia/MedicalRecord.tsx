@@ -166,13 +166,69 @@ export default function MedicalRecord() {
       supabase.from("prescriptions").select("*, prescription_items(*)").eq("patient_id", patientId!).order("issued_at", { ascending: false }),
     ]);
     setPatient(p as any);
-    setRecord((r as any) ?? { patient_id: patientId });
+    const serverRecord = (r as any) ?? { patient_id: patientId };
+    // Fusionar con borrador local si existe (solo campos no vacíos del borrador)
+    try {
+      const draft = localStorage.getItem(kRecord);
+      if (draft) {
+        const d = JSON.parse(draft);
+        setRecord({ ...serverRecord, ...Object.fromEntries(Object.entries(d).filter(([_, v]) => v !== "" && v != null)) });
+      } else {
+        setRecord(serverRecord);
+      }
+    } catch { setRecord(serverRecord); }
     setNotes((n as any) ?? []);
     setSpecialistId((sp as any)?.id ?? null);
     setConsents((cs as any) ?? []);
     setVitals((vs as any) ?? []);
     setPrescriptions((pr as any) ?? []);
     if (patientId) logAudit("view", "patient_record", patientId);
+  };
+
+  // Abrir nueva nota: si hay borrador, preguntar si recuperar
+  const openNewNote = () => {
+    if (hasNoteDraft) {
+      const recover = window.confirm("Hay una nota inconclusa guardada en este dispositivo. ¿Deseas recuperarla?");
+      if (recover) {
+        try { setNoteForm({ ...emptyNote, ...JSON.parse(localStorage.getItem(kNote) || "{}") }); }
+        catch { setNoteForm(emptyNote); }
+      } else {
+        localStorage.removeItem(kNote); setHasNoteDraft(false); setNoteForm(emptyNote);
+      }
+    } else { setNoteForm(emptyNote); }
+    setNoteOpen(true);
+  };
+  const openNewVital = () => {
+    if (hasVitalDraft) {
+      const recover = window.confirm("Hay un registro de signos vitales inconcluso. ¿Recuperar?");
+      if (recover) { try { setVitalForm({ ...emptyVital, ...JSON.parse(localStorage.getItem(kVital) || "{}") }); } catch {} }
+      else { localStorage.removeItem(kVital); setHasVitalDraft(false); setVitalForm(emptyVital); }
+    } else { setVitalForm(emptyVital); }
+    setVitalOpen(true);
+  };
+  const openNewConsent = () => {
+    if (hasConsentDraft) {
+      const recover = window.confirm("Hay un consentimiento inconcluso. ¿Recuperar?");
+      if (recover) { try { setConsentForm({ ...emptyConsent, ...JSON.parse(localStorage.getItem(kConsent) || "{}") }); } catch {} }
+      else { localStorage.removeItem(kConsent); setHasConsentDraft(false); setConsentForm(emptyConsent); }
+    } else { setConsentForm(emptyConsent); }
+    setConsentOpen(true);
+  };
+  const openNewPresc = () => {
+    if (hasPrescDraft) {
+      const recover = window.confirm("Hay una receta inconclusa. ¿Recuperar?");
+      if (recover) {
+        try { setPrescForm({ ...emptyPresc, ...JSON.parse(localStorage.getItem(kPresc) || "{}") }); } catch {}
+        try {
+          const items = JSON.parse(localStorage.getItem(kPrescItems) || "[]");
+          setPrescItems(items.length ? items : [{ ...emptyPItem }]);
+        } catch { setPrescItems([{ ...emptyPItem }]); }
+      } else {
+        localStorage.removeItem(kPresc); localStorage.removeItem(kPrescItems);
+        setHasPrescDraft(false); setPrescForm(emptyPresc); setPrescItems([{ ...emptyPItem }]);
+      }
+    } else { setPrescForm(emptyPresc); setPrescItems([{ ...emptyPItem }]); }
+    setPrescOpen(true);
   };
 
   const saveRecord = async () => {
