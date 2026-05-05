@@ -549,7 +549,7 @@ export default function MedicalRecord() {
           <TabsContent value="consentimientos" className="space-y-4">
             <div className="flex justify-end">
               <Dialog open={consentOpen} onOpenChange={setConsentOpen}>
-                <DialogTrigger asChild><Button><FileSignature className="w-4 h-4 mr-1" /> Nuevo consentimiento</Button></DialogTrigger>
+                <Button onClick={openNewConsent}>{hasConsentDraft ? <RotateCcw className="w-4 h-4 mr-1" /> : <FileSignature className="w-4 h-4 mr-1" />} {hasConsentDraft ? "Recuperar / Nuevo" : "Nuevo consentimiento"}</Button>
                 <DialogContent className="max-w-2xl">
                   <DialogHeader><DialogTitle>Consentimiento informado</DialogTitle></DialogHeader>
                   <form onSubmit={saveConsent} className="space-y-3">
