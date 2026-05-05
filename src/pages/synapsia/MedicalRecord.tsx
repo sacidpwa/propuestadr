@@ -487,7 +487,7 @@ export default function MedicalRecord() {
           <TabsContent value="recetas" className="space-y-4">
             <div className="flex justify-end">
               <Dialog open={prescOpen} onOpenChange={setPrescOpen}>
-                <DialogTrigger asChild><Button><Pill className="w-4 h-4 mr-1" /> Nueva receta</Button></DialogTrigger>
+                <Button onClick={openNewPresc}>{hasPrescDraft ? <RotateCcw className="w-4 h-4 mr-1" /> : <Pill className="w-4 h-4 mr-1" />} {hasPrescDraft ? "Recuperar / Nueva receta" : "Nueva receta"}</Button>
                 <DialogContent className="max-w-3xl max-h-[85vh] overflow-y-auto">
                   <DialogHeader><DialogTitle>Receta médica</DialogTitle></DialogHeader>
                   <form onSubmit={(e) => savePrescription(e, false)} className="space-y-3">
