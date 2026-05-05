@@ -256,6 +256,7 @@ export default function MedicalRecord() {
     else {
       toast({ title: lock ? "Nota firmada y bloqueada" : "Nota guardada (borrador)" });
       logAudit(lock ? "lock_note" : "create_note", "medical_note", (data as any)?.id);
+      try { localStorage.removeItem(kNote); } catch {}; setHasNoteDraft(false);
       setNoteOpen(false); setNoteForm(emptyNote); load();
     }
     setLoading(false);
