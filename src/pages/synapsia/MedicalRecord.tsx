@@ -390,7 +390,7 @@ export default function MedicalRecord() {
           <TabsContent value="vitales" className="space-y-4">
             <div className="flex justify-end">
               <Dialog open={vitalOpen} onOpenChange={setVitalOpen}>
-                <DialogTrigger asChild><Button><Plus className="w-4 h-4 mr-1" /> Registrar signos vitales</Button></DialogTrigger>
+                <Button onClick={openNewVital}>{hasVitalDraft ? <RotateCcw className="w-4 h-4 mr-1" /> : <Plus className="w-4 h-4 mr-1" />} {hasVitalDraft ? "Recuperar / Nuevo" : "Registrar signos vitales"}</Button>
                 <DialogContent className="max-w-2xl">
                   <DialogHeader><DialogTitle>Signos vitales</DialogTitle></DialogHeader>
                   <form onSubmit={saveVital} className="grid grid-cols-2 md:grid-cols-3 gap-3">
