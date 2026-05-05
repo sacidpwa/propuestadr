@@ -10,7 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
-import { ArrowLeft, Brain, FileSignature, HeartPulse, Loader2, Lock, LogOut, NotebookPen, Pill, Plus, Save, Trash2 } from "lucide-react";
+import { ArrowLeft, Brain, FileSignature, HeartPulse, Loader2, Lock, LogOut, NotebookPen, Pill, Plus, RotateCcw, Save, Trash2 } from "lucide-react";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 
