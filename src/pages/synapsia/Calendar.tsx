@@ -56,6 +56,8 @@ export default function CalendarPage() {
   const [specialists, setSpecialists] = useState<Specialist[]>([]);
   const [patients, setPatients] = useState<Patient[]>([]);
   const [filteredPatients, setFilteredPatients] = useState<Patient[]>([]);
+  const [showAllPatients, setShowAllPatients] = useState(false);
+  const [patientSearch, setPatientSearch] = useState("");
   const [loading, setLoading] = useState(false);
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<Appointment | null>(null);
