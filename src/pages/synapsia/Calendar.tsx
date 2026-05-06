@@ -56,7 +56,7 @@ export default function CalendarPage() {
   const [specialists, setSpecialists] = useState<Specialist[]>([]);
   const [patients, setPatients] = useState<Patient[]>([]);
   const [filteredPatients, setFilteredPatients] = useState<Patient[]>([]);
-  const [showAllPatients, setShowAllPatients] = useState(false);
+  const [showAllPatients, setShowAllPatients] = useState(true);
   const [patientSearch, setPatientSearch] = useState("");
   const [loading, setLoading] = useState(false);
   const [open, setOpen] = useState(false);
@@ -339,9 +339,9 @@ export default function CalendarPage() {
                   onChange={(e) => setPatientSearch(e.target.value)}
                   className="h-9"
                 />
-                <Select value={form.patient_id} onValueChange={(v) => setForm({ ...form, patient_id: v })} disabled={!form.specialist_id}>
+                <Select value={form.patient_id} onValueChange={(v) => setForm({ ...form, patient_id: v })}>
                   <SelectTrigger>
-                    <SelectValue placeholder={form.specialist_id ? "Seleccionar paciente" : "Primero elige especialista"} />
+                    <SelectValue placeholder="Seleccionar paciente" />
                   </SelectTrigger>
                   <SelectContent className="max-h-64">
                     {(() => {
