@@ -56,6 +56,8 @@ export default function CalendarPage() {
   const [specialists, setSpecialists] = useState<Specialist[]>([]);
   const [patients, setPatients] = useState<Patient[]>([]);
   const [filteredPatients, setFilteredPatients] = useState<Patient[]>([]);
+  const [showAllPatients, setShowAllPatients] = useState(false);
+  const [patientSearch, setPatientSearch] = useState("");
   const [loading, setLoading] = useState(false);
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<Appointment | null>(null);
@@ -320,22 +322,39 @@ export default function CalendarPage() {
                 </Select>
               </div>
               <div className="space-y-2">
-                <div className="flex items-center justify-between">
+                <div className="flex items-center justify-between flex-wrap gap-2">
                   <Label>Paciente *</Label>
-                  <Button type="button" size="sm" variant="outline" className="h-7" onClick={() => setNewPatientOpen(true)}>
-                    <UserPlus className="w-3 h-3 mr-1" /> Nuevo
-                  </Button>
+                  <div className="flex items-center gap-2">
+                    <Button type="button" size="sm" variant="ghost" className="h-7 text-xs" onClick={() => setShowAllPatients(s => !s)}>
+                      {showAllPatients ? "Solo del especialista" : "Ver todos"}
+                    </Button>
+                    <Button type="button" size="sm" variant="outline" className="h-7" onClick={() => setNewPatientOpen(true)}>
+                      <UserPlus className="w-3 h-3 mr-1" /> Nuevo
+                    </Button>
+                  </div>
                 </div>
+                <Input
+                  placeholder="Buscar paciente..."
+                  value={patientSearch}
+                  onChange={(e) => setPatientSearch(e.target.value)}
+                  className="h-9"
+                />
                 <Select value={form.patient_id} onValueChange={(v) => setForm({ ...form, patient_id: v })} disabled={!form.specialist_id}>
                   <SelectTrigger>
                     <SelectValue placeholder={form.specialist_id ? "Seleccionar paciente" : "Primero elige especialista"} />
                   </SelectTrigger>
-                  <SelectContent>
-                    {filteredPatients.length === 0 ? (
-                      <div className="p-2 text-xs text-muted-foreground text-center">
-                        Sin pacientes previos. Usa "Nuevo".
-                      </div>
-                    ) : filteredPatients.map(p => <SelectItem key={p.id} value={p.id}>{p.full_name}</SelectItem>)}
+                  <SelectContent className="max-h-64">
+                    {(() => {
+                      const base = showAllPatients ? patients : filteredPatients;
+                      const q = patientSearch.trim().toLowerCase();
+                      const list = q ? base.filter(p => p.full_name.toLowerCase().includes(q)) : base;
+                      if (list.length === 0) return (
+                        <div className="p-2 text-xs text-muted-foreground text-center">
+                          {showAllPatients ? "Sin coincidencias." : 'Sin pacientes previos. Usa "Ver todos" o "Nuevo".'}
+                        </div>
+                      );
+                      return list.map(p => <SelectItem key={p.id} value={p.id}>{p.full_name}</SelectItem>);
+                    })()}
                   </SelectContent>
                 </Select>
               </div>
