@@ -139,7 +139,8 @@ export default function Patients() {
                     <TableCell className="font-medium">{p.full_name}</TableCell>
                     <TableCell>{p.phone || "—"}</TableCell>
                     <TableCell>{p.email || "—"}</TableCell>
-                    <TableCell className="text-right">
+                    <TableCell className="text-right space-x-2">
+                      <Button size="sm" variant="ghost" onClick={() => openEdit(p.id)}><Pencil className="w-3 h-3 mr-1" /> Editar</Button>
                       <Link to={`/synapsia/records/${p.id}`}><Button size="sm" variant="outline"><FileText className="w-3 h-3 mr-1" /> Expediente</Button></Link>
                     </TableCell>
                   </TableRow>
