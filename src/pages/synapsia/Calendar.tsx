@@ -375,8 +375,8 @@ export default function CalendarPage() {
               <div className="space-y-2"><Label>Motivo</Label><Input value={form.reason} onChange={e => setForm({ ...form, reason: e.target.value })} /></div>
               <div className="space-y-2"><Label>Notas</Label><Textarea rows={2} value={form.notes} onChange={e => setForm({ ...form, notes: e.target.value })} /></div>
             </form>
-          </ScrollArea>
-          <div className="border-t p-4 space-y-2">
+          </div>
+          <div className="border-t p-4 space-y-2 shrink-0">
             <Button type="submit" form="appt-form" className="w-full" disabled={loading || !form.patient_id || !form.specialist_id}>
               {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : editing ? "Guardar cambios" : "Agendar"}
             </Button>
