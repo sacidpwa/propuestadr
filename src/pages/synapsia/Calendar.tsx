@@ -304,11 +304,11 @@ export default function CalendarPage() {
       </main>
 
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="max-w-md max-h-[85vh] flex flex-col p-0 gap-0">
-          <DialogHeader className="p-6 pb-2 border-b">
+        <DialogContent className="max-w-md max-h-[90vh] flex flex-col p-0 gap-0">
+          <DialogHeader className="p-4 sm:p-6 pb-2 border-b shrink-0">
             <DialogTitle>{editing ? "Editar cita" : "Nueva cita"}</DialogTitle>
           </DialogHeader>
-          <ScrollArea className="flex-1 px-6 py-4">
+          <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-4 min-h-0">
             <form id="appt-form" onSubmit={handleSubmit} className="space-y-3">
               <div className="space-y-2">
                 <Label>Especialista *</Label>
