@@ -21,13 +21,51 @@ export default function Patients() {
   const [patients, setPatients] = useState<Patient[]>([]);
   const [search, setSearch] = useState("");
   const [open, setOpen] = useState(false);
+  const [editOpen, setEditOpen] = useState(false);
+  const [editId, setEditId] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [form, setForm] = useState({ full_name: "", phone: "", email: "", date_of_birth: "", notes: "" });
+  const [editForm, setEditForm] = useState({ full_name: "", phone: "", email: "", date_of_birth: "", notes: "" });
 
   useEffect(() => { fetchPatients(); }, []);
   const fetchPatients = async () => {
     const { data } = await supabase.from("patients").select("id, full_name, phone, email, date_of_birth").order("full_name");
     setPatients((data as any) || []);
+  };
+
+  const openEdit = async (id: string) => {
+    const { data, error } = await supabase.from("patients").select("full_name, phone, email, date_of_birth, notes").eq("id", id).single();
+    if (error) { toast({ variant: "destructive", title: "Error", description: error.message }); return; }
+    setEditId(id);
+    setEditForm({
+      full_name: data.full_name || "",
+      phone: data.phone || "",
+      email: data.email || "",
+      date_of_birth: data.date_of_birth || "",
+      notes: (data as any).notes || "",
+    });
+    setEditOpen(true);
+  };
+
+  const handleEdit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editId) return;
+    setLoading(true);
+    const { error } = await supabase.from("patients").update({
+      full_name: editForm.full_name,
+      phone: editForm.phone || null,
+      email: editForm.email || null,
+      date_of_birth: editForm.date_of_birth || null,
+      notes: editForm.notes || null,
+    }).eq("id", editId);
+    if (error) toast({ variant: "destructive", title: "Error", description: error.message });
+    else {
+      toast({ title: "Paciente actualizado" });
+      setEditOpen(false);
+      setEditId(null);
+      fetchPatients();
+    }
+    setLoading(false);
   };
 
   const handleNew = async (e: React.FormEvent) => {
