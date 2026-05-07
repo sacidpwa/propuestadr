@@ -149,6 +149,21 @@ export default function Patients() {
             </Table>
           </CardContent>
         </Card>
+        <Dialog open={editOpen} onOpenChange={setEditOpen}>
+          <DialogContent>
+            <DialogHeader><DialogTitle>Editar paciente</DialogTitle></DialogHeader>
+            <form onSubmit={handleEdit} className="space-y-3">
+              <div className="space-y-2"><Label>Nombre completo *</Label><Input required value={editForm.full_name} onChange={e => setEditForm({ ...editForm, full_name: e.target.value })} /></div>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-2"><Label>Teléfono</Label><Input value={editForm.phone} onChange={e => setEditForm({ ...editForm, phone: e.target.value })} /></div>
+                <div className="space-y-2"><Label>Email</Label><Input type="email" value={editForm.email} onChange={e => setEditForm({ ...editForm, email: e.target.value })} /></div>
+              </div>
+              <div className="space-y-2"><Label>Fecha de nacimiento</Label><Input type="date" value={editForm.date_of_birth} onChange={e => setEditForm({ ...editForm, date_of_birth: e.target.value })} /></div>
+              <div className="space-y-2"><Label>Notas</Label><Textarea value={editForm.notes} onChange={e => setEditForm({ ...editForm, notes: e.target.value })} /></div>
+              <Button type="submit" className="w-full" disabled={loading}>{loading ? <Loader2 className="w-4 h-4 animate-spin" /> : "Guardar cambios"}</Button>
+            </form>
+          </DialogContent>
+        </Dialog>
       </main>
     </div>
   );
