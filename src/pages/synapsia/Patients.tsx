@@ -10,7 +10,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
-import { ArrowLeft, Brain, FileText, Loader2, LogOut, Search, UserPlus } from "lucide-react";
+import { ArrowLeft, Brain, FileText, Loader2, LogOut, Pencil, Search, UserPlus } from "lucide-react";
 
 interface Patient { id: string; full_name: string; phone: string | null; email: string | null; date_of_birth: string | null; }
 
