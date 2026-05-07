@@ -1,0 +1,1 @@
+CREATE POLICY "Dueno can view all appointments" ON public.appointments FOR SELECT USING (has_role(auth.uid(), 'dueno'::app_role));
