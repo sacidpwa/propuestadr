@@ -669,6 +669,9 @@ export default function Cotizador() {
                       </TableCell>
                       <TableCell className="text-right font-semibold">{formatCurrency(q.base_monthly_price)}</TableCell>
                       <TableCell className="text-right">
+                        <Button variant="ghost" size="sm" onClick={() => openEdit(q)}>
+                          <Pencil className="w-4 h-4 mr-1" /> Editar
+                        </Button>
                         <Button variant="ghost" size="sm" onClick={() => handleDownload(q)}>
                           <Download className="w-4 h-4 mr-1" /> PDF
                         </Button>
