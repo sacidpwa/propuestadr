@@ -2,6 +2,25 @@ import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
+import logoBenesse from "@/assets/logo-benesse.jpg";
+import logoAlcatraces from "@/assets/logo-alcatraces.jpg";
+import logoSenior from "@/assets/logo-senior-living.jpg";
+
+const LOGO_BY_SERVICE: Record<string, string> = {
+  senior_living: logoSenior,
+  centro_benesse: logoBenesse,
+  personalizado: logoAlcatraces,
+};
+
+function loadImage(src: string): Promise<HTMLImageElement> {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.crossOrigin = "anonymous";
+    img.onload = () => resolve(img);
+    img.onerror = reject;
+    img.src = src;
+  });
+}
 
 interface CostItem {
   concept: string;
