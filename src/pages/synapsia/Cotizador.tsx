@@ -375,9 +375,9 @@ export default function Cotizador() {
     void isCustom;
   };
 
-  const handleDownload = (q: Quote) => {
+  const handleDownload = async (q: Quote) => {
     const custom = parseCustomMeta(q.notes) || {};
-    generateQuotePDF({
+    await generateQuotePDF({
       ...(q as any),
       base_period: custom.base_period ?? null,
       custom_period: custom.period ?? null,
