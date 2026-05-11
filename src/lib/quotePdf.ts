@@ -28,6 +28,7 @@ interface QuoteData {
   custom_unit_price?: number | null;
   custom_quantity?: number | null;
   custom_concept?: string | null;
+  base_period?: "dia" | "semana" | "mes" | null;
 }
 
 const SERVICE_LABELS: Record<string, string> = {
