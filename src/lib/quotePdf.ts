@@ -328,7 +328,12 @@ export async function generateQuotePDF(quote: QuoteData) {
   doc.text(nota, margin + 16, y + 34);
   y += 70;
   // ===== NOTES =====
-  if (quote.notes) {
+  const cleanNotes = (quote.notes || "")
+    .replace(/__CUSTOM__.*?__END__/gs, "")
+    .replace(/[ \t]+\n/g, "\n")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
+  if (cleanNotes) {
     if (y > pageH - 120) {
       doc.addPage();
       y = margin;
@@ -341,7 +346,7 @@ export async function generateQuotePDF(quote: QuoteData) {
     doc.setTextColor(...TEXT);
     doc.setFont("helvetica", "normal");
     doc.setFontSize(9);
-    const noteLines = doc.splitTextToSize(quote.notes, pageW - margin * 2);
+    const noteLines = doc.splitTextToSize(cleanNotes, pageW - margin * 2);
     doc.text(noteLines, margin, y);
     y += noteLines.length * 11 + 10;
   }
