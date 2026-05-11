@@ -153,6 +153,7 @@ export default function Cotizador() {
 
   // Al cambiar de servicio o tipo de habitación, sugiere el precio del catálogo y recarga conceptos
   useEffect(() => {
+    if (skipAutoLoad.current) { skipAutoLoad.current = false; return; }
     setForm((prev) => ({
       ...prev,
       base_monthly_price: SERVICE_PRICES[prev.service_type][prev.room_type],
@@ -162,6 +163,7 @@ export default function Cotizador() {
   }, [form.service_type]);
 
   useEffect(() => {
+    if (editId) return;
     setForm((prev) => ({
       ...prev,
       base_monthly_price: SERVICE_PRICES[prev.service_type][prev.room_type],
