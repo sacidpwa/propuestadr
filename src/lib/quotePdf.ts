@@ -77,33 +77,53 @@ const GOLD: [number, number, number] = [191, 154, 79];
 const TEXT: [number, number, number] = [40, 40, 40];
 const MUTED: [number, number, number] = [110, 110, 110];
 
-export function generateQuotePDF(quote: QuoteData) {
+export async function generateQuotePDF(quote: QuoteData) {
   const doc = new jsPDF({ unit: "pt", format: "letter" });
   const pageW = doc.internal.pageSize.getWidth();
   const pageH = doc.internal.pageSize.getHeight();
   const margin = 48;
 
-  // ===== HEADER =====
-  doc.setFillColor(...NAVY);
-  doc.rect(0, 0, pageW, 90, "F");
+  // ===== HEADER (white background for logos) =====
+  doc.setFillColor(255, 255, 255);
+  doc.rect(0, 0, pageW, 100, "F");
   doc.setFillColor(...GOLD);
-  doc.rect(0, 90, pageW, 3, "F");
+  doc.rect(0, 100, pageW, 3, "F");
 
-  doc.setTextColor(255, 255, 255);
+  // Logo on the left
+  try {
+    const logo = await loadImage(LOGO_BY_SERVICE[quote.service_type]);
+    const maxH = 56;
+    const maxW = 220;
+    const ratio = logo.width / logo.height;
+    let h = maxH;
+    let w = h * ratio;
+    if (w > maxW) {
+      w = maxW;
+      h = w / ratio;
+    }
+    doc.addImage(logo, "JPEG", margin, (100 - h) / 2, w, h);
+  } catch {
+    // ignore if logo fails to load
+  }
+
+  // Title block on the right (navy text on white)
+  doc.setTextColor(...NAVY);
   doc.setFont("helvetica", "bold");
-  doc.setFontSize(22);
-  doc.text("Cotización", margin, 45);
+  doc.setFontSize(20);
+  doc.text("Cotización", pageW - margin, 38, { align: "right" });
 
   doc.setFont("helvetica", "normal");
   doc.setFontSize(10);
-  doc.text(SERVICE_LABELS[quote.service_type], margin, 65);
+  doc.setTextColor(...MUTED);
+  doc.text(SERVICE_LABELS[quote.service_type], pageW - margin, 54, { align: "right" });
 
   doc.setFontSize(9);
-  doc.text(`Folio: ${quote.quote_number}`, pageW - margin, 45, { align: "right" });
+  doc.setTextColor(...TEXT);
+  doc.text(`Folio: ${quote.quote_number}`, pageW - margin, 70, { align: "right" });
   doc.text(
     `Fecha: ${format(new Date(quote.created_at), "dd 'de' MMMM, yyyy", { locale: es })}`,
     pageW - margin,
-    60,
+    84,
     { align: "right" },
   );
 
