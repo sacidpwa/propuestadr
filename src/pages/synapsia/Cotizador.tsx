@@ -256,14 +256,15 @@ export default function Cotizador() {
       ? (form.custom_unit_price || 0) * (form.custom_quantity || 0)
       : form.base_monthly_price;
 
-    const customMeta = isCustom
-      ? `__CUSTOM__${JSON.stringify({
+    const metaPayload: any = isCustom
+      ? {
           period: form.custom_period,
           unit_price: form.custom_unit_price,
           quantity: form.custom_quantity,
           concept: form.custom_concept,
-        })}__END__`
-      : "";
+        }
+      : { base_period: form.base_period };
+    const customMeta = `__CUSTOM__${JSON.stringify(metaPayload)}__END__`;
 
     const cleanNotes = (form.notes || "").replace(/__CUSTOM__.*?__END__/gs, "").trim();
 
