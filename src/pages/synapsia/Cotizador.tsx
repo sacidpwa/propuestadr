@@ -522,7 +522,7 @@ export default function Cotizador() {
                         Sugerido mensual: {formatCurrency(suggestedBasePrice)}
                       </p>
                     </div>
-                  </div>)
+                  </div>
                 ) : (
                   <div className="border rounded-lg p-4 space-y-3 bg-muted/30">
                     <h3 className="font-semibold text-sm">Cotización personalizada</h3>
