@@ -628,7 +628,7 @@ export default function Cotizador() {
                 />
 
                 <Button type="submit" className="w-full" disabled={loading}>
-                  {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : (<><FileText className="w-4 h-4 mr-2" /> Guardar y generar PDF</>)}
+                  {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : (<><FileText className="w-4 h-4 mr-2" /> {editId ? "Actualizar y generar PDF" : "Guardar y generar PDF"}</>)}
                 </Button>
               </form>
             </DialogContent>
