@@ -249,7 +249,6 @@ export default function Cotizador() {
     e.preventDefault();
     setLoading(true);
 
-    const quote_number = generateQuoteNumber();
     const isCustom = form.service_type === "personalizado";
     const base_monthly_price = isCustom
       ? (form.custom_unit_price || 0) * (form.custom_quantity || 0)
@@ -264,8 +263,9 @@ export default function Cotizador() {
         })}__END__`
       : "";
 
-    const payload: any = {
-      quote_number,
+    const cleanNotes = (form.notes || "").replace(/__CUSTOM__.*?__END__/gs, "").trim();
+
+    const basePayload: any = {
       service_type: form.service_type,
       base_monthly_price,
       client_name: form.client_name,
@@ -275,7 +275,7 @@ export default function Cotizador() {
       resident_age: form.resident_age ? parseInt(form.resident_age) : null,
       estimated_admission_date: form.estimated_admission_date || null,
       notes: [
-        form.notes,
+        cleanNotes,
         isCustom
           ? `Servicio personalizado: ${form.custom_concept || "—"} · ${form.custom_quantity} ${PERIOD_LABELS[form.custom_period].plural} × ${formatCurrency(form.custom_unit_price)} por ${PERIOD_LABELS[form.custom_period].singular}`
           : `Tipo de habitación: ${form.room_type === "compartida" ? "Compartida" : "Individual"}`,
@@ -283,10 +283,25 @@ export default function Cotizador() {
       ].filter(Boolean).join("\n"),
       additional_costs: form.additional_costs,
       other_to_quote: form.other_to_quote,
-      created_by: user?.id,
     };
 
-    const { data, error } = await supabase.from("quotes").insert(payload).select().single();
+    let data: any;
+    let error: any;
+    if (editId) {
+      ({ data, error } = await supabase
+        .from("quotes")
+        .update(basePayload)
+        .eq("id", editId)
+        .select()
+        .single());
+    } else {
+      const quote_number = generateQuoteNumber();
+      ({ data, error } = await supabase
+        .from("quotes")
+        .insert({ ...basePayload, quote_number, created_by: user?.id })
+        .select()
+        .single());
+    }
 
     if (error) {
       toast({ variant: "destructive", title: "Error", description: error.message });
@@ -294,7 +309,10 @@ export default function Cotizador() {
       return;
     }
 
-    toast({ title: "Cotización guardada", description: `Folio ${quote_number}` });
+    toast({
+      title: editId ? "Cotización actualizada" : "Cotización guardada",
+      description: `Folio ${data.quote_number}`,
+    });
     generateQuotePDF({
       ...(data as any),
       room_type: isCustom ? null : form.room_type,
@@ -304,17 +322,56 @@ export default function Cotizador() {
       custom_concept: isCustom ? form.custom_concept : null,
     });
     resetForm();
+    setEditId(null);
     setIsOpen(false);
     fetchQuotes();
     setLoading(false);
   };
 
+  const parseCustomMeta = (notes: string | null) => {
+    const m = notes?.match(/__CUSTOM__(.+?)__END__/);
+    if (!m) return null;
+    try { return JSON.parse(m[1]); } catch { return null; }
+  };
+
+  const openEdit = (q: Quote) => {
+    const custom = parseCustomMeta(q.notes);
+    const isCustom = q.service_type === "personalizado";
+    // Detect room_type from notes for legacy records
+    let roomType: RoomType = "compartida";
+    if (q.notes?.includes("Individual")) roomType = "individual";
+    const cleanNotes = (q.notes || "")
+      .replace(/__CUSTOM__.*?__END__/gs, "")
+      .replace(/Tipo de habitación:.*$/gm, "")
+      .replace(/Servicio personalizado:.*$/gm, "")
+      .trim();
+
+    skipAutoLoad.current = true;
+    setEditId(q.id);
+    setForm({
+      service_type: q.service_type,
+      room_type: roomType,
+      base_monthly_price: q.base_monthly_price,
+      custom_period: (custom?.period as CustomPeriod) || "dia",
+      custom_unit_price: custom?.unit_price ?? 0,
+      custom_quantity: custom?.quantity ?? 1,
+      custom_concept: custom?.concept ?? "",
+      client_name: q.client_name,
+      client_phone: q.client_phone || "",
+      client_email: q.client_email || "",
+      resident_name: q.resident_name || "",
+      resident_age: q.resident_age != null ? String(q.resident_age) : "",
+      estimated_admission_date: q.estimated_admission_date || "",
+      notes: cleanNotes,
+      additional_costs: (q.additional_costs as CostItem[]) || [],
+      other_to_quote: (q.other_to_quote as CostItem[]) || [],
+    });
+    setIsOpen(true);
+    void isCustom;
+  };
+
   const handleDownload = (q: Quote) => {
-    let custom: any = {};
-    const m = q.notes?.match(/__CUSTOM__(.+?)__END__/);
-    if (m) {
-      try { custom = JSON.parse(m[1]); } catch { /* noop */ }
-    }
+    const custom = parseCustomMeta(q.notes) || {};
     generateQuotePDF({
       ...(q as any),
       custom_period: custom.period ?? null,
