@@ -172,13 +172,15 @@ export function generateQuotePDF(quote: QuoteData) {
   doc.setTextColor(...NAVY);
   doc.setFont("helvetica", "normal");
   doc.setFontSize(10);
-  let priceLabel = "Cuota mensual base";
-  let priceUnit = "MXN / mes";
+  const basePeriod = quote.base_period || "mes";
+  const baseAdj = basePeriod === "dia" ? "diaria" : basePeriod === "semana" ? "semanal" : "mensual";
+  let priceLabel = `Cuota ${baseAdj} base`;
+  let priceUnit = `MXN / ${PERIOD_SINGULAR[basePeriod]}`;
   if (isCustom) {
     priceLabel = `${quote.custom_concept || "Servicio personalizado"} · ${qty} ${periodWord} × ${fmt(unitPrice)} por ${PERIOD_SINGULAR[period]}`;
     priceUnit = "MXN total";
   } else if (quote.room_type) {
-    priceLabel = `Cuota mensual base · Habitación ${quote.room_type === "compartida" ? "compartida" : "individual"}`;
+    priceLabel = `Cuota ${baseAdj} base · Habitación ${quote.room_type === "compartida" ? "compartida" : "individual"}`;
   }
   doc.text(priceLabel, margin + 16, y + 22, { maxWidth: pageW - margin * 2 - 32 });
   doc.setFont("helvetica", "bold");
