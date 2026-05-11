@@ -60,7 +60,9 @@ const SERVICE_DESCRIPTIONS: Record<string, string> = {
   senior_living:
     "Residencia con acompañamiento personalizado, hospedaje, alimentación balanceada y supervisión continua orientada al bienestar integral del adulto mayor.",
   centro_benesse:
-    "Centro especializado con atención médica y psiquiátrica continua, cuidados terapéuticos, plan nutricional y programa integral de rehabilitación.",
+    "Centro Benesse es una institución especializada en salud mental y bienestar integral que cuenta con un equipo multidisciplinario de profesionales de la salud —psiquiatras, psicólogos clínicos, médicos internistas, personal de enfermería especializado, terapeutas ocupacionales, nutriólogos clínicos, trabajadores sociales y cuidadores capacitados— trabajando de forma coordinada bajo un mismo plan terapéutico. " +
+    "Brindamos atención integral a personas que cursan con trastornos psiquiátricos (depresión, ansiedad, trastorno bipolar, esquizofrenia y otros trastornos psicóticos), adicciones y problemas de uso de sustancias, deterioro cognitivo y demencias (Alzheimer, vascular, frontotemporal, cuerpos de Lewy), trastornos neurocognitivos, condiciones geriátricas complejas, secuelas de eventos vasculares cerebrales, así como pacientes en situación de crisis emocional, duelo, agotamiento o que requieren contención y estabilización clínica. " +
+    "El modelo de atención combina evaluación médica y psiquiátrica continua, ajuste y supervisión farmacológica, terapias individuales y grupales, rehabilitación cognitiva y funcional, intervención familiar, plan nutricional personalizado, actividades terapéuticas, recreativas y de reinserción, dentro de un entorno seguro, cálido y profesional, diseñado para promover la recuperación, la autonomía y la mejor calidad de vida posible para cada residente.",
   personalizado:
     "Esquema a la medida cotizado por periodo (día, semana o mes), con costo unitario y cantidad definidos según las necesidades del residente.",
 };
