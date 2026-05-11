@@ -26,8 +26,15 @@ interface CostItem {
   proposed?: boolean; // Marca conceptos cuyo precio fue propuesto y debe revisarse
 }
 
-type ServiceType = "senior_living" | "centro_benesse";
+type ServiceType = "senior_living" | "centro_benesse" | "personalizado";
 type RoomType = "compartida" | "individual";
+type CustomPeriod = "dia" | "semana" | "mes";
+
+const PERIOD_LABELS: Record<CustomPeriod, { singular: string; plural: string }> = {
+  dia: { singular: "día", plural: "días" },
+  semana: { singular: "semana", plural: "semanas" },
+  mes: { singular: "mes", plural: "meses" },
+};
 
 interface Quote {
   id: string;
@@ -50,6 +57,7 @@ interface Quote {
 const SERVICE_LABELS: Record<ServiceType, string> = {
   senior_living: "Senior Living",
   centro_benesse: "Centro Benesse",
+  personalizado: "Personalizado",
 };
 
 // Precios base extraídos del Excel Costos_2026_General
@@ -57,6 +65,7 @@ const SERVICE_LABELS: Record<ServiceType, string> = {
 const SERVICE_PRICES: Record<ServiceType, Record<RoomType, number>> = {
   senior_living: { compartida: 35000, individual: 50000 },
   centro_benesse: { compartida: 65000, individual: 85000 }, // individual = propuesta a revisar
+  personalizado: { compartida: 0, individual: 0 },
 };
 
 // Catálogos por defecto basados en el Excel del cliente.
@@ -93,6 +102,7 @@ const DEFAULT_COSTS: Record<ServiceType, CostItem[]> = {
     { concept: "Consulta psiquiátrica", unit: "por consulta", price: 2000 },
     { concept: "Consulta Dr. Rodrigo Márquez de la Serna", unit: "por consulta", price: 2500, proposed: true },
   ],
+  personalizado: [],
 };
 
 const DEFAULT_OTHER_TO_QUOTE: CostItem[] = [
@@ -120,6 +130,10 @@ export default function Cotizador() {
     service_type: "senior_living" as ServiceType,
     room_type: "compartida" as RoomType,
     base_monthly_price: SERVICE_PRICES.senior_living.compartida,
+    custom_period: "dia" as CustomPeriod,
+    custom_unit_price: 0,
+    custom_quantity: 1,
+    custom_concept: "",
     client_name: "",
     client_phone: "",
     client_email: "",
@@ -170,6 +184,10 @@ export default function Cotizador() {
       service_type: "senior_living",
       room_type: "compartida",
       base_monthly_price: SERVICE_PRICES.senior_living.compartida,
+      custom_period: "dia",
+      custom_unit_price: 0,
+      custom_quantity: 1,
+      custom_concept: "",
       client_name: "",
       client_phone: "",
       client_email: "",
@@ -228,7 +246,19 @@ export default function Cotizador() {
     setLoading(true);
 
     const quote_number = generateQuoteNumber();
-    const base_monthly_price = form.base_monthly_price;
+    const isCustom = form.service_type === "personalizado";
+    const base_monthly_price = isCustom
+      ? (form.custom_unit_price || 0) * (form.custom_quantity || 0)
+      : form.base_monthly_price;
+
+    const customMeta = isCustom
+      ? `__CUSTOM__${JSON.stringify({
+          period: form.custom_period,
+          unit_price: form.custom_unit_price,
+          quantity: form.custom_quantity,
+          concept: form.custom_concept,
+        })}__END__`
+      : "";
 
     const payload: any = {
       quote_number,
@@ -242,7 +272,10 @@ export default function Cotizador() {
       estimated_admission_date: form.estimated_admission_date || null,
       notes: [
         form.notes,
-        `Tipo de habitación: ${form.room_type === "compartida" ? "Compartida" : "Individual"}`,
+        isCustom
+          ? `Servicio personalizado: ${form.custom_concept || "—"} · ${form.custom_quantity} ${PERIOD_LABELS[form.custom_period].plural} × ${formatCurrency(form.custom_unit_price)} por ${PERIOD_LABELS[form.custom_period].singular}`
+          : `Tipo de habitación: ${form.room_type === "compartida" ? "Compartida" : "Individual"}`,
+        customMeta,
       ].filter(Boolean).join("\n"),
       additional_costs: form.additional_costs,
       other_to_quote: form.other_to_quote,
@@ -258,7 +291,14 @@ export default function Cotizador() {
     }
 
     toast({ title: "Cotización guardada", description: `Folio ${quote_number}` });
-    generateQuotePDF({ ...(data as any), room_type: form.room_type });
+    generateQuotePDF({
+      ...(data as any),
+      room_type: isCustom ? null : form.room_type,
+      custom_period: isCustom ? form.custom_period : null,
+      custom_unit_price: isCustom ? form.custom_unit_price : null,
+      custom_quantity: isCustom ? form.custom_quantity : null,
+      custom_concept: isCustom ? form.custom_concept : null,
+    });
     resetForm();
     setIsOpen(false);
     fetchQuotes();
@@ -266,7 +306,18 @@ export default function Cotizador() {
   };
 
   const handleDownload = (q: Quote) => {
-    generateQuotePDF(q);
+    let custom: any = {};
+    const m = q.notes?.match(/__CUSTOM__(.+?)__END__/);
+    if (m) {
+      try { custom = JSON.parse(m[1]); } catch { /* noop */ }
+    }
+    generateQuotePDF({
+      ...(q as any),
+      custom_period: custom.period ?? null,
+      custom_unit_price: custom.unit_price ?? null,
+      custom_quantity: custom.quantity ?? null,
+      custom_concept: custom.concept ?? null,
+    });
   };
 
   const suggestedBasePrice = SERVICE_PRICES[form.service_type][form.room_type];
@@ -335,56 +386,125 @@ export default function Cotizador() {
                 <DialogTitle>Nueva Cotización</DialogTitle>
               </DialogHeader>
               <form onSubmit={handleSubmit} className="space-y-5">
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div className="space-y-2">
-                    <Label>Servicio *</Label>
-                    <Select
-                      value={form.service_type}
-                      onValueChange={(v) => setForm((p) => ({ ...p, service_type: v as ServiceType }))}
-                    >
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="senior_living">Senior Living</SelectItem>
-                        <SelectItem value="centro_benesse">Centro Benesse</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Habitación *</Label>
-                    <Select
-                      value={form.room_type}
-                      onValueChange={(v) => setForm((p) => ({ ...p, room_type: v as RoomType }))}
-                    >
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="compartida">Compartida</SelectItem>
-                        <SelectItem value="individual">Individual</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Cuota mensual (MXN) *</Label>
-                    <Input
-                      type="number"
-                      min={0}
-                      step={500}
-                      required
-                      value={form.base_monthly_price}
-                      onChange={(e) =>
-                        setForm((p) => ({ ...p, base_monthly_price: parseFloat(e.target.value) || 0 }))
-                      }
-                      className="font-semibold"
-                    />
-                    <p className="text-xs text-muted-foreground">
-                      Sugerido: {formatCurrency(suggestedBasePrice)}
-                      {form.base_monthly_price !== suggestedBasePrice && " (editado)"}
-                    </p>
-                  </div>
+                <div className="space-y-2">
+                  <Label>Servicio *</Label>
+                  <Select
+                    value={form.service_type}
+                    onValueChange={(v) => setForm((p) => ({ ...p, service_type: v as ServiceType }))}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="senior_living">Senior Living</SelectItem>
+                      <SelectItem value="centro_benesse">Centro Benesse</SelectItem>
+                      <SelectItem value="personalizado">Personalizado</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
+
+                {form.service_type !== "personalizado" ? (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label>Habitación *</Label>
+                      <Select
+                        value={form.room_type}
+                        onValueChange={(v) => setForm((p) => ({ ...p, room_type: v as RoomType }))}
+                      >
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="compartida">Compartida</SelectItem>
+                          <SelectItem value="individual">Individual</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Cuota mensual (MXN) *</Label>
+                      <Input
+                        type="number"
+                        min={0}
+                        step={500}
+                        required
+                        value={form.base_monthly_price}
+                        onChange={(e) =>
+                          setForm((p) => ({ ...p, base_monthly_price: parseFloat(e.target.value) || 0 }))
+                        }
+                        className="font-semibold"
+                      />
+                      <p className="text-xs text-muted-foreground">
+                        Sugerido: {formatCurrency(suggestedBasePrice)}
+                        {form.base_monthly_price !== suggestedBasePrice && " (editado)"}
+                      </p>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="border rounded-lg p-4 space-y-3 bg-muted/30">
+                    <h3 className="font-semibold text-sm">Cotización personalizada</h3>
+                    <div className="space-y-2">
+                      <Label>Concepto del servicio</Label>
+                      <Input
+                        placeholder="Ej. Estancia temporal, acompañamiento nocturno…"
+                        value={form.custom_concept}
+                        onChange={(e) => setForm((p) => ({ ...p, custom_concept: e.target.value }))}
+                      />
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                      <div className="space-y-2">
+                        <Label>Periodo *</Label>
+                        <Select
+                          value={form.custom_period}
+                          onValueChange={(v) => setForm((p) => ({ ...p, custom_period: v as CustomPeriod }))}
+                        >
+                          <SelectTrigger>
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="dia">Día</SelectItem>
+                            <SelectItem value="semana">Semana</SelectItem>
+                            <SelectItem value="mes">Mes</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Costo unitario (MXN) *</Label>
+                        <Input
+                          type="number"
+                          min={0}
+                          step="0.01"
+                          required
+                          value={form.custom_unit_price}
+                          onChange={(e) =>
+                            setForm((p) => ({ ...p, custom_unit_price: parseFloat(e.target.value) || 0 }))
+                          }
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Cantidad de {PERIOD_LABELS[form.custom_period].plural} *</Label>
+                        <Input
+                          type="number"
+                          min={1}
+                          step={1}
+                          required
+                          value={form.custom_quantity}
+                          onChange={(e) =>
+                            setForm((p) => ({ ...p, custom_quantity: parseInt(e.target.value) || 0 }))
+                          }
+                        />
+                      </div>
+                    </div>
+                    <div className="flex items-center justify-between border-t pt-3">
+                      <span className="text-sm text-muted-foreground">
+                        {form.custom_quantity} {PERIOD_LABELS[form.custom_period].plural} ×{" "}
+                        {formatCurrency(form.custom_unit_price)}
+                      </span>
+                      <span className="text-lg font-bold text-primary">
+                        Total: {formatCurrency((form.custom_unit_price || 0) * (form.custom_quantity || 0))}
+                      </span>
+                    </div>
+                  </div>
+                )}
 
                 <div className="border rounded-lg p-4 space-y-4">
                   <h3 className="font-semibold text-sm">Datos del cliente</h3>

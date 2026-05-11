@@ -11,7 +11,7 @@ interface CostItem {
 
 interface QuoteData {
   quote_number: string;
-  service_type: "senior_living" | "centro_benesse";
+  service_type: "senior_living" | "centro_benesse" | "personalizado";
   base_monthly_price: number;
   room_type?: "compartida" | "individual" | null;
   client_name: string;
@@ -24,11 +24,16 @@ interface QuoteData {
   additional_costs: CostItem[];
   other_to_quote: CostItem[];
   created_at: string;
+  custom_period?: "dia" | "semana" | "mes" | null;
+  custom_unit_price?: number | null;
+  custom_quantity?: number | null;
+  custom_concept?: string | null;
 }
 
 const SERVICE_LABELS: Record<string, string> = {
   senior_living: "Senior Living",
   centro_benesse: "Centro Benesse",
+  personalizado: "Servicio Personalizado",
 };
 
 const SERVICE_DESCRIPTIONS: Record<string, string> = {
@@ -36,7 +41,12 @@ const SERVICE_DESCRIPTIONS: Record<string, string> = {
     "Residencia con acompañamiento personalizado, hospedaje, alimentación balanceada y supervisión continua orientada al bienestar integral del adulto mayor.",
   centro_benesse:
     "Centro especializado con atención médica y psiquiátrica continua, cuidados terapéuticos, plan nutricional y programa integral de rehabilitación.",
+  personalizado:
+    "Esquema a la medida cotizado por periodo (día, semana o mes), con costo unitario y cantidad definidos según las necesidades del residente.",
 };
+
+const PERIOD_SINGULAR: Record<string, string> = { dia: "día", semana: "semana", mes: "mes" };
+const PERIOD_PLURAL: Record<string, string> = { dia: "días", semana: "semanas", mes: "meses" };
 
 const fmt = (n: number) =>
   new Intl.NumberFormat("es-MX", { style: "currency", currency: "MXN", minimumFractionDigits: 0 }).format(n);
@@ -150,15 +160,26 @@ export function generateQuotePDF(quote: QuoteData) {
   y += desc.length * 12 + 10;
 
   // Highlighted price box
+  const isCustom = quote.service_type === "personalizado";
+  const period = quote.custom_period || "mes";
+  const qty = Number(quote.custom_quantity || 0);
+  const unitPrice = Number(quote.custom_unit_price || 0);
+  const periodWord = qty === 1 ? PERIOD_SINGULAR[period] : PERIOD_PLURAL[period];
+
   doc.setFillColor(248, 245, 237);
   doc.roundedRect(margin, y, pageW - margin * 2, 50, 4, 4, "F");
   doc.setTextColor(...NAVY);
   doc.setFont("helvetica", "normal");
   doc.setFontSize(10);
-  const roomLabel = quote.room_type
-    ? `Cuota mensual base · Habitación ${quote.room_type === "compartida" ? "compartida" : "individual"}`
-    : "Cuota mensual base";
-  doc.text(roomLabel, margin + 16, y + 22);
+  let priceLabel = "Cuota mensual base";
+  let priceUnit = "MXN / mes";
+  if (isCustom) {
+    priceLabel = `${quote.custom_concept || "Servicio personalizado"} · ${qty} ${periodWord} × ${fmt(unitPrice)} por ${PERIOD_SINGULAR[period]}`;
+    priceUnit = "MXN total";
+  } else if (quote.room_type) {
+    priceLabel = `Cuota mensual base · Habitación ${quote.room_type === "compartida" ? "compartida" : "individual"}`;
+  }
+  doc.text(priceLabel, margin + 16, y + 22, { maxWidth: pageW - margin * 2 - 32 });
   doc.setFont("helvetica", "bold");
   doc.setFontSize(20);
   doc.setTextColor(...GOLD);
@@ -166,7 +187,7 @@ export function generateQuotePDF(quote: QuoteData) {
   doc.setFontSize(9);
   doc.setFont("helvetica", "normal");
   doc.setTextColor(...MUTED);
-  doc.text("MXN / mes", pageW - margin - 16, y + 44, { align: "right" });
+  doc.text(priceUnit, pageW - margin - 16, y + 44, { align: "right" });
 
   y += 70;
 
@@ -190,25 +211,68 @@ export function generateQuotePDF(quote: QuoteData) {
     y = (doc as any).lastAutoTable.finalY + 18;
   }
 
-  // ===== OTHER TO QUOTE TABLE =====
-  if (quote.other_to_quote && quote.other_to_quote.length > 0) {
-    if (y > pageH - 200) {
-      doc.addPage();
-      y = margin;
-    }
-    autoTable(doc, {
-      startY: y,
-      head: [["Otros conceptos a cotizar", "Detalle"]],
-      body: quote.other_to_quote.map((c) => [c.concept || "—", c.unit || "Según evaluación"]),
-      margin: { left: margin, right: margin },
-      headStyles: { fillColor: GOLD, textColor: 255, fontStyle: "bold", fontSize: 10 },
-      bodyStyles: { fontSize: 9, textColor: TEXT },
-      alternateRowStyles: { fillColor: [252, 250, 244] },
-      theme: "grid",
-    });
-    y = (doc as any).lastAutoTable.finalY + 18;
-  }
+  // ===== SEGUNDA HOJA: NO INCLUIDO / SUJETO A VALORACIÓN =====
+  doc.addPage();
+  y = margin;
 
+  doc.setTextColor(...NAVY);
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(16);
+  doc.text("Conceptos no incluidos en la cuota", margin, y);
+  doc.setDrawColor(...GOLD);
+  doc.setLineWidth(1);
+  doc.line(margin, y + 6, margin + 260, y + 6);
+
+  y += 28;
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(10);
+  doc.setTextColor(...TEXT);
+  const introText =
+    "Los siguientes servicios y conceptos no están considerados dentro de la cuota base de esta cotización. " +
+    "Su costo se determinará una vez realizada la valoración integral de salud del residente, ya que dependen " +
+    "de su condición clínica, nivel de dependencia y necesidades específicas de atención.";
+  const introLines = doc.splitTextToSize(introText, pageW - margin * 2);
+  doc.text(introLines, margin, y);
+  y += introLines.length * 13 + 14;
+
+  const otherRows =
+    quote.other_to_quote && quote.other_to_quote.length > 0
+      ? quote.other_to_quote
+      : [{ concept: "Servicios complementarios", unit: "Sujeto a valoración de salud", price: null }];
+
+  autoTable(doc, {
+    startY: y,
+    head: [["Concepto", "Detalle / Forma de cotización"]],
+    body: otherRows.map((c) => [c.concept || "—", c.unit || "Sujeto a valoración de salud"]),
+    margin: { left: margin, right: margin },
+    headStyles: { fillColor: GOLD, textColor: 255, fontStyle: "bold", fontSize: 10 },
+    bodyStyles: { fontSize: 9, textColor: TEXT },
+    alternateRowStyles: { fillColor: [252, 250, 244] },
+    theme: "grid",
+  });
+  y = (doc as any).lastAutoTable.finalY + 18;
+
+  // Nota destacada
+  if (y > pageH - 120) {
+    doc.addPage();
+    y = margin;
+  }
+  doc.setFillColor(248, 245, 237);
+  doc.roundedRect(margin, y, pageW - margin * 2, 60, 4, 4, "F");
+  doc.setTextColor(...NAVY);
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(10);
+  doc.text("Importante", margin + 16, y + 20);
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(9);
+  doc.setTextColor(...TEXT);
+  const nota = doc.splitTextToSize(
+    "Estos conceptos serán cotizados de manera personalizada únicamente después de realizar la valoración de salud del residente. " +
+      "El equipo médico determinará los servicios necesarios y la frecuencia de cada uno para emitir un costo definitivo.",
+    pageW - margin * 2 - 32,
+  );
+  doc.text(nota, margin + 16, y + 34);
+  y += 70;
   // ===== NOTES =====
   if (quote.notes) {
     if (y > pageH - 120) {
