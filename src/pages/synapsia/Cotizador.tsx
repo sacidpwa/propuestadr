@@ -125,6 +125,8 @@ export default function Cotizador() {
   const [quotes, setQuotes] = useState<Quote[]>([]);
   const [loading, setLoading] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
+  const [editId, setEditId] = useState<string | null>(null);
+  const skipAutoLoad = useRef(false);
 
   const [form, setForm] = useState({
     service_type: "senior_living" as ServiceType,
