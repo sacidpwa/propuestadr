@@ -436,7 +436,7 @@ export default function Cotizador() {
 
         <div className="flex justify-between items-center">
           <h2 className="text-lg font-semibold">Cotizaciones generadas</h2>
-          <Dialog open={isOpen} onOpenChange={(open) => { setIsOpen(open); if (!open) resetForm(); }}>
+          <Dialog open={isOpen} onOpenChange={(open) => { setIsOpen(open); if (!open) { resetForm(); setEditId(null); } }}>
             <DialogTrigger asChild>
               <Button size="sm">
                 <Plus className="w-4 h-4 mr-1" /> Nueva Cotización
@@ -444,7 +444,7 @@ export default function Cotizador() {
             </DialogTrigger>
             <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
               <DialogHeader>
-                <DialogTitle>Nueva Cotización</DialogTitle>
+                <DialogTitle>{editId ? "Editar Cotización" : "Nueva Cotización"}</DialogTitle>
               </DialogHeader>
               <form onSubmit={handleSubmit} className="space-y-5">
                 <div className="space-y-2">
