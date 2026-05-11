@@ -270,12 +270,24 @@ export async function generateQuotePDF(quote: QuoteData) {
   doc.setFontSize(10);
   doc.setTextColor(...TEXT);
   const introText =
-    "Los siguientes servicios y conceptos no están considerados dentro de la cuota base de esta cotización. " +
-    "Su costo se determinará una vez realizada la valoración integral de salud del residente, ya que dependen " +
-    "de su condición clínica, nivel de dependencia y necesidades específicas de atención.";
+    "La cuota base cubre exclusivamente hospedaje, alimentación estándar, supervisión general y uso de instalaciones comunes. " +
+    "Los siguientes conceptos NO están incluidos y se cotizan por separado, ya que dependen de la condición clínica, " +
+    "el nivel de dependencia y las necesidades específicas de cada residente:\n\n" +
+    "•  Atención médica y psiquiátrica especializada (consultas, seguimiento, ajustes de tratamiento).\n" +
+    "•  Medicamentos, insumos médicos, material de curación y estudios de laboratorio o gabinete.\n" +
+    "•  Terapias individuales: psicológica, ocupacional, física, de lenguaje y rehabilitación.\n" +
+    "•  Cuidado uno a uno o asistencia personalizada para residentes con alta dependencia.\n" +
+    "•  Atención de enfermería especializada fuera del esquema general (curaciones, sondas, oxígeno, etc.).\n" +
+    "•  Dietas especiales, suplementos alimenticios y nutrición clínica indicada por valoración.\n" +
+    "•  Pañales, productos de higiene personal y artículos de uso individual.\n" +
+    "•  Lavandería de prendas personales y tintorería.\n" +
+    "•  Acompañamiento médico a citas externas y traslados especializados o ambulancia.\n" +
+    "•  Hospitalizaciones, urgencias y procedimientos médicos fuera de las instalaciones.\n" +
+    "•  Actividades recreativas externas, salidas o eventos especiales.\n" +
+    "•  Cualquier servicio adicional solicitado por el residente o su familia no contemplado en la cuota base.";
   const introLines = doc.splitTextToSize(introText, pageW - margin * 2);
   doc.text(introLines, margin, y);
-  y += introLines.length * 13 + 14;
+  y += introLines.length * 12 + 14;
 
   const otherRows =
     quote.other_to_quote && quote.other_to_quote.length > 0
@@ -316,7 +328,12 @@ export async function generateQuotePDF(quote: QuoteData) {
   doc.text(nota, margin + 16, y + 34);
   y += 70;
   // ===== NOTES =====
-  if (quote.notes) {
+  const cleanNotes = (quote.notes || "")
+    .replace(/__CUSTOM__.*?__END__/gs, "")
+    .replace(/[ \t]+\n/g, "\n")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
+  if (cleanNotes) {
     if (y > pageH - 120) {
       doc.addPage();
       y = margin;
@@ -329,7 +346,7 @@ export async function generateQuotePDF(quote: QuoteData) {
     doc.setTextColor(...TEXT);
     doc.setFont("helvetica", "normal");
     doc.setFontSize(9);
-    const noteLines = doc.splitTextToSize(quote.notes, pageW - margin * 2);
+    const noteLines = doc.splitTextToSize(cleanNotes, pageW - margin * 2);
     doc.text(noteLines, margin, y);
     y += noteLines.length * 11 + 10;
   }
