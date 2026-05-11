@@ -379,6 +379,7 @@ export default function Cotizador() {
     const custom = parseCustomMeta(q.notes) || {};
     generateQuotePDF({
       ...(q as any),
+      base_period: custom.base_period ?? null,
       custom_period: custom.period ?? null,
       custom_unit_price: custom.unit_price ?? null,
       custom_quantity: custom.quantity ?? null,
