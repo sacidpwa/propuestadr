@@ -15,7 +15,7 @@ import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import {
-  LogOut, FileText, Plus, Trash2, Loader2, Download, Calculator, ArrowLeft, Building2,
+  LogOut, FileText, Plus, Trash2, Loader2, Download, Calculator, ArrowLeft, Building2, Pencil,
 } from "lucide-react";
 import { generateQuotePDF } from "@/lib/quotePdf";
 
