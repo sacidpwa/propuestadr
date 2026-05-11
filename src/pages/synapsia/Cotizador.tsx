@@ -26,8 +26,15 @@ interface CostItem {
   proposed?: boolean; // Marca conceptos cuyo precio fue propuesto y debe revisarse
 }
 
-type ServiceType = "senior_living" | "centro_benesse";
+type ServiceType = "senior_living" | "centro_benesse" | "personalizado";
 type RoomType = "compartida" | "individual";
+type CustomPeriod = "dia" | "semana" | "mes";
+
+const PERIOD_LABELS: Record<CustomPeriod, { singular: string; plural: string }> = {
+  dia: { singular: "día", plural: "días" },
+  semana: { singular: "semana", plural: "semanas" },
+  mes: { singular: "mes", plural: "meses" },
+};
 
 interface Quote {
   id: string;
