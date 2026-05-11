@@ -246,7 +246,19 @@ export default function Cotizador() {
     setLoading(true);
 
     const quote_number = generateQuoteNumber();
-    const base_monthly_price = form.base_monthly_price;
+    const isCustom = form.service_type === "personalizado";
+    const base_monthly_price = isCustom
+      ? (form.custom_unit_price || 0) * (form.custom_quantity || 0)
+      : form.base_monthly_price;
+
+    const customMeta = isCustom
+      ? `__CUSTOM__${JSON.stringify({
+          period: form.custom_period,
+          unit_price: form.custom_unit_price,
+          quantity: form.custom_quantity,
+          concept: form.custom_concept,
+        })}__END__`
+      : "";
 
     const payload: any = {
       quote_number,
@@ -260,7 +272,10 @@ export default function Cotizador() {
       estimated_admission_date: form.estimated_admission_date || null,
       notes: [
         form.notes,
-        `Tipo de habitación: ${form.room_type === "compartida" ? "Compartida" : "Individual"}`,
+        isCustom
+          ? `Servicio personalizado: ${form.custom_concept || "—"} · ${form.custom_quantity} ${PERIOD_LABELS[form.custom_period].plural} × ${formatCurrency(form.custom_unit_price)} por ${PERIOD_LABELS[form.custom_period].singular}`
+          : `Tipo de habitación: ${form.room_type === "compartida" ? "Compartida" : "Individual"}`,
+        customMeta,
       ].filter(Boolean).join("\n"),
       additional_costs: form.additional_costs,
       other_to_quote: form.other_to_quote,
@@ -276,7 +291,14 @@ export default function Cotizador() {
     }
 
     toast({ title: "Cotización guardada", description: `Folio ${quote_number}` });
-    generateQuotePDF({ ...(data as any), room_type: form.room_type });
+    generateQuotePDF({
+      ...(data as any),
+      room_type: isCustom ? null : form.room_type,
+      custom_period: isCustom ? form.custom_period : null,
+      custom_unit_price: isCustom ? form.custom_unit_price : null,
+      custom_quantity: isCustom ? form.custom_quantity : null,
+      custom_concept: isCustom ? form.custom_concept : null,
+    });
     resetForm();
     setIsOpen(false);
     fetchQuotes();
@@ -284,7 +306,18 @@ export default function Cotizador() {
   };
 
   const handleDownload = (q: Quote) => {
-    generateQuotePDF(q);
+    let custom: any = {};
+    const m = q.notes?.match(/__CUSTOM__(.+?)__END__/);
+    if (m) {
+      try { custom = JSON.parse(m[1]); } catch { /* noop */ }
+    }
+    generateQuotePDF({
+      ...(q as any),
+      custom_period: custom.period ?? null,
+      custom_unit_price: custom.unit_price ?? null,
+      custom_quantity: custom.quantity ?? null,
+      custom_concept: custom.concept ?? null,
+    });
   };
 
   const suggestedBasePrice = SERVICE_PRICES[form.service_type][form.room_type];
