@@ -11,7 +11,7 @@ interface CostItem {
 
 interface QuoteData {
   quote_number: string;
-  service_type: "senior_living" | "centro_benesse";
+  service_type: "senior_living" | "centro_benesse" | "personalizado";
   base_monthly_price: number;
   room_type?: "compartida" | "individual" | null;
   client_name: string;
@@ -24,11 +24,16 @@ interface QuoteData {
   additional_costs: CostItem[];
   other_to_quote: CostItem[];
   created_at: string;
+  custom_period?: "dia" | "semana" | "mes" | null;
+  custom_unit_price?: number | null;
+  custom_quantity?: number | null;
+  custom_concept?: string | null;
 }
 
 const SERVICE_LABELS: Record<string, string> = {
   senior_living: "Senior Living",
   centro_benesse: "Centro Benesse",
+  personalizado: "Servicio Personalizado",
 };
 
 const SERVICE_DESCRIPTIONS: Record<string, string> = {
@@ -36,7 +41,12 @@ const SERVICE_DESCRIPTIONS: Record<string, string> = {
     "Residencia con acompañamiento personalizado, hospedaje, alimentación balanceada y supervisión continua orientada al bienestar integral del adulto mayor.",
   centro_benesse:
     "Centro especializado con atención médica y psiquiátrica continua, cuidados terapéuticos, plan nutricional y programa integral de rehabilitación.",
+  personalizado:
+    "Esquema a la medida cotizado por periodo (día, semana o mes), con costo unitario y cantidad definidos según las necesidades del residente.",
 };
+
+const PERIOD_SINGULAR: Record<string, string> = { dia: "día", semana: "semana", mes: "mes" };
+const PERIOD_PLURAL: Record<string, string> = { dia: "días", semana: "semanas", mes: "meses" };
 
 const fmt = (n: number) =>
   new Intl.NumberFormat("es-MX", { style: "currency", currency: "MXN", minimumFractionDigits: 0 }).format(n);
