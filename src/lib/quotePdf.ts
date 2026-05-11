@@ -288,7 +288,7 @@ export async function generateQuotePDF(quote: QuoteData) {
     "•  Actividades recreativas externas, salidas o eventos especiales.\n" +
     "•  Cualquier servicio adicional solicitado por el residente o su familia no contemplado en la cuota base.";
   const introLines = doc.splitTextToSize(introText, pageW - margin * 2);
-  doc.text(introLines, margin, y, { align: "justify", maxWidth: pageW - margin * 2 });
+  doc.text(introLines, margin, y);
   y += introLines.length * 12 + 14;
 
   const otherRows =
@@ -327,7 +327,7 @@ export async function generateQuotePDF(quote: QuoteData) {
       "El equipo médico determinará los servicios necesarios y la frecuencia de cada uno para emitir un costo definitivo.",
     pageW - margin * 2 - 32,
   );
-  doc.text(nota, margin + 16, y + 34, { align: "justify", maxWidth: pageW - margin * 2 - 32 });
+  doc.text(nota, margin + 16, y + 34);
   y += 70;
   // ===== NOTES =====
   const cleanNotes = (quote.notes || "")
@@ -349,7 +349,7 @@ export async function generateQuotePDF(quote: QuoteData) {
     doc.setFont("helvetica", "normal");
     doc.setFontSize(9);
     const noteLines = doc.splitTextToSize(cleanNotes, pageW - margin * 2);
-    doc.text(noteLines, margin, y, { align: "justify", maxWidth: pageW - margin * 2 });
+    doc.text(noteLines, margin, y);
     y += noteLines.length * 11 + 10;
   }
 
