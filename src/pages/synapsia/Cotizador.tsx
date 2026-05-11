@@ -316,7 +316,7 @@ export default function Cotizador() {
       title: editId ? "Cotización actualizada" : "Cotización guardada",
       description: `Folio ${data.quote_number}`,
     });
-    generateQuotePDF({
+    await generateQuotePDF({
       ...(data as any),
       room_type: isCustom ? null : form.room_type,
       base_period: isCustom ? null : form.base_period,
