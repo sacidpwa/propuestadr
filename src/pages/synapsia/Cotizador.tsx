@@ -189,6 +189,7 @@ export default function Cotizador() {
       service_type: "senior_living",
       room_type: "compartida",
       base_monthly_price: SERVICE_PRICES.senior_living.compartida,
+      base_period: "mes",
       custom_period: "dia",
       custom_unit_price: 0,
       custom_quantity: 1,
