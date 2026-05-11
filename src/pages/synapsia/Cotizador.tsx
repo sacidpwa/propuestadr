@@ -132,6 +132,7 @@ export default function Cotizador() {
     service_type: "senior_living" as ServiceType,
     room_type: "compartida" as RoomType,
     base_monthly_price: SERVICE_PRICES.senior_living.compartida,
+    base_period: "mes" as CustomPeriod,
     custom_period: "dia" as CustomPeriod,
     custom_unit_price: 0,
     custom_quantity: 1,
@@ -188,6 +189,7 @@ export default function Cotizador() {
       service_type: "senior_living",
       room_type: "compartida",
       base_monthly_price: SERVICE_PRICES.senior_living.compartida,
+      base_period: "mes",
       custom_period: "dia",
       custom_unit_price: 0,
       custom_quantity: 1,
@@ -254,14 +256,15 @@ export default function Cotizador() {
       ? (form.custom_unit_price || 0) * (form.custom_quantity || 0)
       : form.base_monthly_price;
 
-    const customMeta = isCustom
-      ? `__CUSTOM__${JSON.stringify({
+    const metaPayload: any = isCustom
+      ? {
           period: form.custom_period,
           unit_price: form.custom_unit_price,
           quantity: form.custom_quantity,
           concept: form.custom_concept,
-        })}__END__`
-      : "";
+        }
+      : { base_period: form.base_period };
+    const customMeta = `__CUSTOM__${JSON.stringify(metaPayload)}__END__`;
 
     const cleanNotes = (form.notes || "").replace(/__CUSTOM__.*?__END__/gs, "").trim();
 
@@ -316,6 +319,7 @@ export default function Cotizador() {
     generateQuotePDF({
       ...(data as any),
       room_type: isCustom ? null : form.room_type,
+      base_period: isCustom ? null : form.base_period,
       custom_period: isCustom ? form.custom_period : null,
       custom_unit_price: isCustom ? form.custom_unit_price : null,
       custom_quantity: isCustom ? form.custom_quantity : null,
@@ -352,6 +356,7 @@ export default function Cotizador() {
       service_type: q.service_type,
       room_type: roomType,
       base_monthly_price: q.base_monthly_price,
+      base_period: (custom?.base_period as CustomPeriod) || "mes",
       custom_period: (custom?.period as CustomPeriod) || "dia",
       custom_unit_price: custom?.unit_price ?? 0,
       custom_quantity: custom?.quantity ?? 1,
@@ -374,6 +379,7 @@ export default function Cotizador() {
     const custom = parseCustomMeta(q.notes) || {};
     generateQuotePDF({
       ...(q as any),
+      base_period: custom.base_period ?? null,
       custom_period: custom.period ?? null,
       custom_unit_price: custom.unit_price ?? null,
       custom_quantity: custom.quantity ?? null,
@@ -465,7 +471,7 @@ export default function Cotizador() {
                 </div>
 
                 {form.service_type !== "personalizado" ? (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div className="space-y-2">
                       <Label>Habitación *</Label>
                       <Select
@@ -482,7 +488,25 @@ export default function Cotizador() {
                       </Select>
                     </div>
                     <div className="space-y-2">
-                      <Label>Cuota mensual (MXN) *</Label>
+                      <Label>Periodicidad *</Label>
+                      <Select
+                        value={form.base_period}
+                        onValueChange={(v) => setForm((p) => ({ ...p, base_period: v as CustomPeriod }))}
+                      >
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="dia">Diaria</SelectItem>
+                          <SelectItem value="semana">Semanal</SelectItem>
+                          <SelectItem value="mes">Mensual</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-2">
+                      <Label>
+                        Cuota {form.base_period === "dia" ? "diaria" : form.base_period === "semana" ? "semanal" : "mensual"} (MXN) *
+                      </Label>
                       <Input
                         type="number"
                         min={0}
@@ -495,8 +519,7 @@ export default function Cotizador() {
                         className="font-semibold"
                       />
                       <p className="text-xs text-muted-foreground">
-                        Sugerido: {formatCurrency(suggestedBasePrice)}
-                        {form.base_monthly_price !== suggestedBasePrice && " (editado)"}
+                        Sugerido mensual: {formatCurrency(suggestedBasePrice)}
                       </p>
                     </div>
                   </div>
