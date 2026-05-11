@@ -57,6 +57,7 @@ interface Quote {
 const SERVICE_LABELS: Record<ServiceType, string> = {
   senior_living: "Senior Living",
   centro_benesse: "Centro Benesse",
+  personalizado: "Personalizado",
 };
 
 // Precios base extraídos del Excel Costos_2026_General
@@ -64,6 +65,7 @@ const SERVICE_LABELS: Record<ServiceType, string> = {
 const SERVICE_PRICES: Record<ServiceType, Record<RoomType, number>> = {
   senior_living: { compartida: 35000, individual: 50000 },
   centro_benesse: { compartida: 65000, individual: 85000 }, // individual = propuesta a revisar
+  personalizado: { compartida: 0, individual: 0 },
 };
 
 // Catálogos por defecto basados en el Excel del cliente.
