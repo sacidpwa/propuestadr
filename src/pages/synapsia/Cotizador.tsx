@@ -471,7 +471,7 @@ export default function Cotizador() {
                 </div>
 
                 {form.service_type !== "personalizado" ? (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div className="space-y-2">
                       <Label>Habitación *</Label>
                       <Select
@@ -488,7 +488,25 @@ export default function Cotizador() {
                       </Select>
                     </div>
                     <div className="space-y-2">
-                      <Label>Cuota mensual (MXN) *</Label>
+                      <Label>Periodicidad *</Label>
+                      <Select
+                        value={form.base_period}
+                        onValueChange={(v) => setForm((p) => ({ ...p, base_period: v as CustomPeriod }))}
+                      >
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="dia">Diaria</SelectItem>
+                          <SelectItem value="semana">Semanal</SelectItem>
+                          <SelectItem value="mes">Mensual</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-2">
+                      <Label>
+                        Cuota {form.base_period === "dia" ? "diaria" : form.base_period === "semana" ? "semanal" : "mensual"} (MXN) *
+                      </Label>
                       <Input
                         type="number"
                         min={0}
@@ -501,11 +519,10 @@ export default function Cotizador() {
                         className="font-semibold"
                       />
                       <p className="text-xs text-muted-foreground">
-                        Sugerido: {formatCurrency(suggestedBasePrice)}
-                        {form.base_monthly_price !== suggestedBasePrice && " (editado)"}
+                        Sugerido mensual: {formatCurrency(suggestedBasePrice)}
                       </p>
                     </div>
-                  </div>
+                  </div>)
                 ) : (
                   <div className="border rounded-lg p-4 space-y-3 bg-muted/30">
                     <h3 className="font-semibold text-sm">Cotización personalizada</h3>
