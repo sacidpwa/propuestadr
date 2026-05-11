@@ -354,6 +354,7 @@ export default function Cotizador() {
       service_type: q.service_type,
       room_type: roomType,
       base_monthly_price: q.base_monthly_price,
+      base_period: (custom?.base_period as CustomPeriod) || "mes",
       custom_period: (custom?.period as CustomPeriod) || "dia",
       custom_unit_price: custom?.unit_price ?? 0,
       custom_quantity: custom?.quantity ?? 1,
