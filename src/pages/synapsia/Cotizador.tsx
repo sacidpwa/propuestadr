@@ -319,6 +319,7 @@ export default function Cotizador() {
     generateQuotePDF({
       ...(data as any),
       room_type: isCustom ? null : form.room_type,
+      base_period: isCustom ? null : form.base_period,
       custom_period: isCustom ? form.custom_period : null,
       custom_unit_price: isCustom ? form.custom_unit_price : null,
       custom_quantity: isCustom ? form.custom_quantity : null,
