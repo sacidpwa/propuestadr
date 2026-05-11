@@ -102,6 +102,7 @@ const DEFAULT_COSTS: Record<ServiceType, CostItem[]> = {
     { concept: "Consulta psiquiátrica", unit: "por consulta", price: 2000 },
     { concept: "Consulta Dr. Rodrigo Márquez de la Serna", unit: "por consulta", price: 2500, proposed: true },
   ],
+  personalizado: [],
 };
 
 const DEFAULT_OTHER_TO_QUOTE: CostItem[] = [
