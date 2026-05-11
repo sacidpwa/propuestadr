@@ -60,9 +60,9 @@ const SERVICE_DESCRIPTIONS: Record<string, string> = {
   senior_living:
     "Residencia con acompañamiento personalizado, hospedaje, alimentación balanceada y supervisión continua orientada al bienestar integral del adulto mayor.",
   centro_benesse:
-    "Centro Benesse es una institución especializada en salud mental y bienestar integral que cuenta con un equipo multidisciplinario de profesionales de la salud —psiquiatras, psicólogos clínicos, médicos internistas, personal de enfermería especializado, terapeutas ocupacionales, nutriólogos clínicos, trabajadores sociales y cuidadores capacitados— trabajando de forma coordinada bajo un mismo plan terapéutico. " +
-    "Brindamos atención integral a personas que cursan con trastornos psiquiátricos (depresión, ansiedad, trastorno bipolar, esquizofrenia y otros trastornos psicóticos), adicciones y problemas de uso de sustancias, deterioro cognitivo y demencias (Alzheimer, vascular, frontotemporal, cuerpos de Lewy), trastornos neurocognitivos, condiciones geriátricas complejas, secuelas de eventos vasculares cerebrales, así como pacientes en situación de crisis emocional, duelo, agotamiento o que requieren contención y estabilización clínica. " +
-    "El modelo de atención combina evaluación médica y psiquiátrica continua, ajuste y supervisión farmacológica, terapias individuales y grupales, rehabilitación cognitiva y funcional, intervención familiar, plan nutricional personalizado, actividades terapéuticas, recreativas y de reinserción, dentro de un entorno seguro, cálido y profesional, diseñado para promover la recuperación, la autonomía y la mejor calidad de vida posible para cada residente.",
+    "Centro Benesse es una institución especializada en el tratamiento integral de las adicciones y los trastornos por uso de sustancias, que cuenta con un equipo multidisciplinario de profesionales de la salud —médicos psiquiatras, médicos internistas, psicólogos clínicos especializados en adicciones, consejeros terapéuticos, personal de enfermería capacitado, terapeutas ocupacionales, nutriólogos clínicos, trabajadores sociales y cuidadores entrenados— trabajando de forma coordinada bajo un mismo plan terapéutico individualizado. " +
+    "Atendemos a personas que cursan con dependencia y uso problemático de alcohol, cocaína, cannabis, metanfetaminas, opioides, benzodiacepinas, tabaco y otras sustancias, así como adicciones conductuales (juego patológico, tecnologías) y los trastornos psiquiátricos asociados al consumo —depresión, ansiedad, trastornos del sueño, trastornos de personalidad y patología dual—, acompañando al paciente desde la desintoxicación supervisada hasta la rehabilitación y la prevención de recaídas. " +
+    "Nuestro modelo terapéutico combina desintoxicación médica supervisada, manejo farmacológico de la abstinencia y de la patología dual, psicoterapia individual y grupal, terapia cognitivo-conductual, prevención de recaídas, terapia familiar, grupos de apoyo, intervención motivacional, rehabilitación funcional, plan nutricional personalizado, actividades terapéuticas y recreativas, y un programa estructurado de reinserción social y seguimiento posterior al egreso, todo dentro de un entorno residencial seguro, cálido y profesional diseñado para promover la recuperación sostenida, la autonomía y la mejor calidad de vida posible para cada residente y su familia.",
   personalizado:
     "Esquema a la medida cotizado por periodo (día, semana o mes), con costo unitario y cantidad definidos según las necesidades del residente.",
 };
@@ -198,7 +198,7 @@ export async function generateQuotePDF(quote: QuoteData) {
   doc.setFontSize(10);
   doc.setTextColor(...MUTED);
   const desc = doc.splitTextToSize(SERVICE_DESCRIPTIONS[quote.service_type], pageW - margin * 2);
-  doc.text(desc, margin, y);
+  doc.text(desc, margin, y, { align: "justify", maxWidth: pageW - margin * 2 });
   y += desc.length * 12 + 10;
 
   // Highlighted price box
@@ -288,7 +288,7 @@ export async function generateQuotePDF(quote: QuoteData) {
     "•  Actividades recreativas externas, salidas o eventos especiales.\n" +
     "•  Cualquier servicio adicional solicitado por el residente o su familia no contemplado en la cuota base.";
   const introLines = doc.splitTextToSize(introText, pageW - margin * 2);
-  doc.text(introLines, margin, y);
+  doc.text(introLines, margin, y, { align: "justify", maxWidth: pageW - margin * 2 });
   y += introLines.length * 12 + 14;
 
   const otherRows =
@@ -327,7 +327,7 @@ export async function generateQuotePDF(quote: QuoteData) {
       "El equipo médico determinará los servicios necesarios y la frecuencia de cada uno para emitir un costo definitivo.",
     pageW - margin * 2 - 32,
   );
-  doc.text(nota, margin + 16, y + 34);
+  doc.text(nota, margin + 16, y + 34, { align: "justify", maxWidth: pageW - margin * 2 - 32 });
   y += 70;
   // ===== NOTES =====
   const cleanNotes = (quote.notes || "")
@@ -349,7 +349,7 @@ export async function generateQuotePDF(quote: QuoteData) {
     doc.setFont("helvetica", "normal");
     doc.setFontSize(9);
     const noteLines = doc.splitTextToSize(cleanNotes, pageW - margin * 2);
-    doc.text(noteLines, margin, y);
+    doc.text(noteLines, margin, y, { align: "justify", maxWidth: pageW - margin * 2 });
     y += noteLines.length * 11 + 10;
   }
 
