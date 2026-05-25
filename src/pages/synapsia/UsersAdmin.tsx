@@ -15,13 +15,14 @@ import { useToast } from "@/hooks/use-toast";
 import { ArrowLeft, LogOut, Loader2, UserPlus, KeyRound, ShieldCheck, BarChart3, Users as UsersIcon, Pencil, Stethoscope } from "lucide-react";
 import synapsiaIcon from "@/assets/synapsia-icon.svg";
 
-type Role = "admin" | "recepcion" | "especialista" | "administrativo" | "dueno";
+type Role = "admin" | "recepcion" | "especialista" | "administrativo" | "dueno" | "promotor";
 const ROLE_LABEL: Record<Role, string> = {
   admin: "Administrador (super)",
   dueno: "Dueño",
   especialista: "Especialista",
   recepcion: "Recepción",
   administrativo: "Administrativo",
+  promotor: "Promotor",
 };
 
 interface Specialist {
