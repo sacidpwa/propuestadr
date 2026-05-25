@@ -34,6 +34,7 @@ const SynapsiaHome = () => {
   }
   if (hasRole("especialista")) return <SpecialistHome />;
   if (hasRole("administrativo")) return <Navigate to="/synapsia/admin" replace />;
+  if (hasRole("promotor")) return <Navigate to="/synapsia/cotizador" replace />;
   return <Navigate to="/synapsia/floor" replace />;
 };
 
@@ -51,7 +52,7 @@ const App = () => (
             <Route path="/synapsia/login" element={<SynapsiaLogin />} />
             <Route path="/synapsia" element={<ProtectedRoute><SynapsiaHome /></ProtectedRoute>} />
             <Route path="/synapsia/admin" element={<ProtectedRoute requiredRole={["admin", "dueno", "administrativo"]}><AdminHome /></ProtectedRoute>} />
-            <Route path="/synapsia/cotizador" element={<ProtectedRoute requiredRole={["admin", "dueno", "administrativo"]}><Cotizador /></ProtectedRoute>} />
+            <Route path="/synapsia/cotizador" element={<ProtectedRoute requiredRole={["admin", "dueno", "administrativo", "promotor"]}><Cotizador /></ProtectedRoute>} />
             <Route path="/synapsia/calendar" element={<ProtectedRoute requiredRole={["admin", "dueno", "recepcion", "especialista"]}><CalendarPage /></ProtectedRoute>} />
             <Route path="/synapsia/patients" element={<ProtectedRoute requiredRole={["admin", "dueno", "recepcion", "especialista"]}><Patients /></ProtectedRoute>} />
             <Route path="/synapsia/records/:patientId" element={<ProtectedRoute requiredRole={["admin", "dueno", "especialista"]}><MedicalRecord /></ProtectedRoute>} />

@@ -1109,6 +1109,7 @@ export type Database = {
         | "especialista"
         | "administrativo"
         | "dueno"
+        | "promotor"
       appointment_status:
         | "programada"
         | "confirmada"
@@ -1251,6 +1252,7 @@ export const Constants = {
         "especialista",
         "administrativo",
         "dueno",
+        "promotor",
       ],
       appointment_status: [
         "programada",

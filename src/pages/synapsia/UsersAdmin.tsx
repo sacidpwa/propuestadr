@@ -15,13 +15,14 @@ import { useToast } from "@/hooks/use-toast";
 import { ArrowLeft, LogOut, Loader2, UserPlus, KeyRound, ShieldCheck, BarChart3, Users as UsersIcon, Pencil, Stethoscope } from "lucide-react";
 import synapsiaIcon from "@/assets/synapsia-icon.svg";
 
-type Role = "admin" | "recepcion" | "especialista" | "administrativo" | "dueno";
+type Role = "admin" | "recepcion" | "especialista" | "administrativo" | "dueno" | "promotor";
 const ROLE_LABEL: Record<Role, string> = {
   admin: "Administrador (super)",
   dueno: "Dueño",
   especialista: "Especialista",
   recepcion: "Recepción",
   administrativo: "Administrativo",
+  promotor: "Promotor",
 };
 
 interface Specialist {
@@ -217,7 +218,7 @@ export default function UsersAdmin() {
                     <Select value={newUser.role} onValueChange={(v) => setNewUser((p) => ({ ...p, role: v as Role }))}>
                       <SelectTrigger><SelectValue /></SelectTrigger>
                       <SelectContent>
-                        {(["dueno", "especialista", "recepcion", "administrativo", "admin"] as Role[]).map((r) => (
+                        {(["dueno", "especialista", "recepcion", "administrativo", "promotor", "admin"] as Role[]).map((r) => (
                           <SelectItem key={r} value={r}>{ROLE_LABEL[r]}</SelectItem>
                         ))}
                       </SelectContent>
@@ -272,7 +273,7 @@ export default function UsersAdmin() {
                         <Select value={primary || ""} onValueChange={(v) => setPrimaryRole(p.user_id, v as Role)} disabled={!isOwnerOrAdmin}>
                           <SelectTrigger className="w-44"><SelectValue placeholder="Sin rol" /></SelectTrigger>
                           <SelectContent>
-                            {(["dueno", "especialista", "recepcion", "administrativo", "admin"] as Role[]).map((r) => (
+                            {(["dueno", "especialista", "recepcion", "administrativo", "promotor", "admin"] as Role[]).map((r) => (
                               <SelectItem key={r} value={r}>{ROLE_LABEL[r]}</SelectItem>
                             ))}
                           </SelectContent>
@@ -280,7 +281,7 @@ export default function UsersAdmin() {
                       </TableCell>
                       <TableCell>
                         <div className="flex flex-wrap gap-1">
-                          {(["especialista", "recepcion", "administrativo", "dueno"] as Role[]).filter((r) => r !== primary).map((r) => {
+                          {(["especialista", "recepcion", "administrativo", "promotor", "dueno"] as Role[]).filter((r) => r !== primary).map((r) => {
                             const has = userRoles.includes(r);
                             return (
                               <Badge
