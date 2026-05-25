@@ -14,7 +14,7 @@ const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY") ?? Deno.env.get("SUPABASE_PUBLISHABLE_KEY")!;
 const SERVICE_ROLE = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
-const ALLOWED_ROLES = ["admin", "recepcion", "especialista", "administrativo", "dueno"] as const;
+const ALLOWED_ROLES = ["admin", "recepcion", "especialista", "administrativo", "dueno", "promotor"] as const;
 type Role = typeof ALLOWED_ROLES[number];
 
 Deno.serve(async (req) => {
