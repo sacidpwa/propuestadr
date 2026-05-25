@@ -394,7 +394,7 @@ export default function Cotizador() {
       <header className="border-b bg-card shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <Link to={hasRole("admin") ? "/synapsia" : "/synapsia/admin"}>
+            <Link to={hasRole("promotor") && !hasRole("admin") && !hasRole("administrativo") && !hasRole("dueno") ? "/synapsia/login" : (hasRole("admin") ? "/synapsia" : "/synapsia/admin")}>
               <Button variant="ghost" size="icon">
                 <ArrowLeft className="w-4 h-4" />
               </Button>
