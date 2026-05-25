@@ -16,6 +16,7 @@ const routeForRoles = (roles: string[]): string => {
   if (roles.includes("admin")) return "/synapsia";
   if (roles.includes("recepcion") || roles.includes("especialista")) return "/synapsia";
   if (roles.includes("administrativo")) return "/synapsia/admin";
+  if (roles.includes("promotor")) return "/synapsia/cotizador";
   return "/synapsia";
 };
 
