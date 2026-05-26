@@ -346,6 +346,9 @@ export default function UsersAdmin() {
                           <Button size="sm" variant="outline" onClick={() => setPinDialog({ open: true, userId: p.user_id, name: p.full_name })} disabled={!isOwnerOrAdmin}>
                             <KeyRound className="w-3 h-3 mr-1" /> PIN
                           </Button>
+                          <Button size="sm" variant="outline" onClick={() => setAssignDialog({ open: true, userId: p.user_id, name: p.full_name })} disabled={!isOwnerOrAdmin}>
+                            <Stethoscope className="w-3 h-3 mr-1" /> Unidades
+                          </Button>
                           <Button size="sm" variant="ghost" onClick={() => navigate(`/synapsia/metrics?user=${p.user_id}`)}>
                             <BarChart3 className="w-3 h-3 mr-1" /> Métricas
                           </Button>
