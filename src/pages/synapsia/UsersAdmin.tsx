@@ -15,7 +15,7 @@ import { useToast } from "@/hooks/use-toast";
 import { ArrowLeft, LogOut, Loader2, UserPlus, KeyRound, ShieldCheck, BarChart3, Users as UsersIcon, Pencil, Stethoscope } from "lucide-react";
 import synapsiaIcon from "@/assets/synapsia-icon.svg";
 
-type Role = "admin" | "recepcion" | "especialista" | "administrativo" | "dueno" | "promotor";
+type Role = "admin" | "recepcion" | "especialista" | "administrativo" | "dueno" | "promotor" | "enfermera" | "intendencia" | "mantenimiento" | "asistente_admin" | "contador" | "rrhh" | "empleado";
 const ROLE_LABEL: Record<Role, string> = {
   admin: "Administrador (super)",
   dueno: "Dueño",
@@ -23,7 +23,20 @@ const ROLE_LABEL: Record<Role, string> = {
   recepcion: "Recepción",
   administrativo: "Administrativo",
   promotor: "Promotor",
+  enfermera: "Enfermera",
+  intendencia: "Intendencia",
+  mantenimiento: "Mantenimiento",
+  asistente_admin: "Asistente administrativo",
+  contador: "Contador",
+  rrhh: "RRHH / Nómina",
+  empleado: "Empleado",
 };
+const PRIMARY_ROLE_OPTIONS: Role[] = ["dueno","especialista","recepcion","administrativo","promotor","enfermera","intendencia","mantenimiento","asistente_admin","contador","rrhh","empleado","admin"];
+const ADDITIONAL_ROLE_OPTIONS: Role[] = ["especialista","recepcion","administrativo","promotor","enfermera","intendencia","mantenimiento","asistente_admin","contador","rrhh","empleado","dueno"];
+type Area = "enfermeria"|"intendencia"|"administracion"|"abastecimiento"|"mantenimiento"|"contabilidad"|"rrhh"|"direccion";
+const AREA_LABEL: Record<Area,string> = { enfermeria:"Enfermería", intendencia:"Intendencia", administracion:"Administración", abastecimiento:"Abastecimiento", mantenimiento:"Mantenimiento", contabilidad:"Contabilidad", rrhh:"RRHH", direccion:"Dirección" };
+interface HealthUnit { id: string; name: string; is_active: boolean; }
+interface Assignment { id: string; user_id: string; health_unit_id: string; area: Area; is_active: boolean; }
 
 interface Specialist {
   id: string; full_name: string; specialty: string; consultation_fee: number;
