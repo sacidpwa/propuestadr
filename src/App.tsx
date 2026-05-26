@@ -26,6 +26,7 @@ import Requisiciones from "./pages/synapsia/Requisiciones";
 import GastosUnidad from "./pages/synapsia/GastosUnidad";
 import Facturas from "./pages/synapsia/Facturas";
 import Cartera from "./pages/synapsia/Cartera";
+import Nomina from "./pages/synapsia/Nomina";
 import ProtectedRoute from "./components/synapsia/ProtectedRoute";
 import OwnerOnlyRoute from "./components/synapsia/OwnerOnlyRoute";
 import { AuthProvider, useAuth } from "./hooks/useAuth";
