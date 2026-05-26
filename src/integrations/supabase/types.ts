@@ -1149,6 +1149,139 @@ export type Database = {
         }
         Relationships: []
       }
+      requisition_items: {
+        Row: {
+          created_at: string
+          description: string
+          id: string
+          image_path: string | null
+          notes: string | null
+          quantity: number
+          requisition_id: string
+          status: Database["public"]["Enums"]["requisition_status"]
+          unit: string | null
+          unit_price: number | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description: string
+          id?: string
+          image_path?: string | null
+          notes?: string | null
+          quantity?: number
+          requisition_id: string
+          status?: Database["public"]["Enums"]["requisition_status"]
+          unit?: string | null
+          unit_price?: number | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string
+          id?: string
+          image_path?: string | null
+          notes?: string | null
+          quantity?: number
+          requisition_id?: string
+          status?: Database["public"]["Enums"]["requisition_status"]
+          unit?: string | null
+          unit_price?: number | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "requisition_items_requisition_id_fkey"
+            columns: ["requisition_id"]
+            isOneToOne: false
+            referencedRelation: "requisitions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      requisitions: {
+        Row: {
+          area: Database["public"]["Enums"]["work_area"] | null
+          assigned_to: string | null
+          authorized_at: string | null
+          authorized_by: string | null
+          created_at: string
+          description: string | null
+          executed_at: string | null
+          executed_by: string | null
+          health_unit_id: string
+          id: string
+          paid_at: string | null
+          payment_method: string | null
+          payment_reference: string | null
+          priority: Database["public"]["Enums"]["requisition_priority"]
+          rejected_reason: string | null
+          req_type: Database["public"]["Enums"]["requisition_type"]
+          requested_by: string
+          status: Database["public"]["Enums"]["requisition_status"]
+          title: string
+          total_amount: number | null
+          updated_at: string
+          vendor_name: string | null
+        }
+        Insert: {
+          area?: Database["public"]["Enums"]["work_area"] | null
+          assigned_to?: string | null
+          authorized_at?: string | null
+          authorized_by?: string | null
+          created_at?: string
+          description?: string | null
+          executed_at?: string | null
+          executed_by?: string | null
+          health_unit_id: string
+          id?: string
+          paid_at?: string | null
+          payment_method?: string | null
+          payment_reference?: string | null
+          priority?: Database["public"]["Enums"]["requisition_priority"]
+          rejected_reason?: string | null
+          req_type: Database["public"]["Enums"]["requisition_type"]
+          requested_by: string
+          status?: Database["public"]["Enums"]["requisition_status"]
+          title: string
+          total_amount?: number | null
+          updated_at?: string
+          vendor_name?: string | null
+        }
+        Update: {
+          area?: Database["public"]["Enums"]["work_area"] | null
+          assigned_to?: string | null
+          authorized_at?: string | null
+          authorized_by?: string | null
+          created_at?: string
+          description?: string | null
+          executed_at?: string | null
+          executed_by?: string | null
+          health_unit_id?: string
+          id?: string
+          paid_at?: string | null
+          payment_method?: string | null
+          payment_reference?: string | null
+          priority?: Database["public"]["Enums"]["requisition_priority"]
+          rejected_reason?: string | null
+          req_type?: Database["public"]["Enums"]["requisition_type"]
+          requested_by?: string
+          status?: Database["public"]["Enums"]["requisition_status"]
+          title?: string
+          total_amount?: number | null
+          updated_at?: string
+          vendor_name?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "requisitions_health_unit_id_fkey"
+            columns: ["health_unit_id"]
+            isOneToOne: false
+            referencedRelation: "health_units"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       specialists: {
         Row: {
           consultation_fee: number
@@ -1393,6 +1526,20 @@ export type Database = {
         | "salida"
         | "otro"
       payment_method: "efectivo" | "transferencia" | "tarjeta"
+      requisition_priority: "baja" | "media" | "alta" | "urgente"
+      requisition_status:
+        | "pendiente"
+        | "autorizada"
+        | "rechazada"
+        | "comprada"
+        | "pagada"
+        | "cancelada"
+      requisition_type:
+        | "medicamentos"
+        | "limpieza"
+        | "mantenimiento"
+        | "servicio_mantenimiento"
+        | "pago_proveedor"
       specialty_type: "psiquiatra" | "psicologo"
       visit_status: "en_espera" | "en_consulta" | "atendido" | "cancelado"
       work_area:
@@ -1561,6 +1708,22 @@ export const Constants = {
         "otro",
       ],
       payment_method: ["efectivo", "transferencia", "tarjeta"],
+      requisition_priority: ["baja", "media", "alta", "urgente"],
+      requisition_status: [
+        "pendiente",
+        "autorizada",
+        "rechazada",
+        "comprada",
+        "pagada",
+        "cancelada",
+      ],
+      requisition_type: [
+        "medicamentos",
+        "limpieza",
+        "mantenimiento",
+        "servicio_mantenimiento",
+        "pago_proveedor",
+      ],
       specialty_type: ["psiquiatra", "psicologo"],
       visit_status: ["en_espera", "en_consulta", "atendido", "cancelado"],
       work_area: [
