@@ -78,10 +78,12 @@ export default function UsersAdmin() {
   useEffect(() => { fetchAll(); }, []);
 
   const fetchAll = async () => {
-    const [{ data: s }, { data: p }, { data: r }] = await Promise.all([
+    const [{ data: s }, { data: p }, { data: r }, { data: u }, { data: a }] = await Promise.all([
       supabase.from("specialists").select("*").order("full_name"),
       supabase.from("profiles").select("user_id, full_name, email, pin_set_at, is_active").order("full_name"),
       supabase.from("user_roles").select("user_id, role"),
+      (supabase.from as any)("health_units").select("id,name,is_active").order("name"),
+      (supabase.from as any)("employee_assignments").select("id,user_id,health_unit_id,area,is_active"),
     ]);
     setSpecialists((s as any) || []);
     setProfiles((p as any) || []);
@@ -90,6 +92,22 @@ export default function UsersAdmin() {
       map[row.user_id] = [...(map[row.user_id] || []), row.role];
     });
     setRolesByUser(map);
+    setUnits((u as any) || []);
+    setAssignments((a as any) || []);
+  };
+
+  const addAssignment = async () => {
+    if (!assignDialog.userId || !newAssign.unit) return;
+    const { error } = await (supabase.from as any)("employee_assignments").insert({
+      user_id: assignDialog.userId, health_unit_id: newAssign.unit, area: newAssign.area,
+    });
+    if (error) toast({ variant: "destructive", title: "Error", description: error.message });
+    else { toast({ title: "Asignación agregada" }); fetchAll(); }
+  };
+  const removeAssignment = async (id: string) => {
+    const { error } = await (supabase.from as any)("employee_assignments").delete().eq("id", id);
+    if (error) toast({ variant: "destructive", title: "Error", description: error.message });
+    else fetchAll();
   };
 
   const handleCreateUser = async (e: React.FormEvent) => {
