@@ -13,15 +13,15 @@ interface HealthUnit { id: string; name: string; description: string | null; }
 const APPS = [
   { key: "medicamentos", label: "Control de medicamentos", desc: "Hoja por paciente (enfermería)", icon: Pill, route: "enfermeria", ready: true },
   { key: "menus", label: "Menús semanales", desc: "Plan alimenticio y consumo", icon: ClipboardList, route: "enfermeria", ready: true },
-  { key: "gastos", label: "Control de gastos", desc: "Gastos, ingresos y órdenes de pago", icon: Wallet },
-  { key: "ingresos", label: "Ingresos (facturas)", desc: "Facturas de pacientes y verificación", icon: Receipt },
+  { key: "gastos", label: "Control de gastos", desc: "Gastos, ingresos y órdenes de pago", icon: Wallet, route: "gastos", ready: true },
+  { key: "ingresos", label: "Facturas de ingreso", desc: "Facturas de pacientes y verificación", icon: Receipt, route: "facturas", ready: true },
   { key: "nomina", label: "Nómina", desc: "Plantilla, incidencias y recibos", icon: Users },
   { key: "req-medicamentos", label: "Requisición de medicamentos", desc: "Solicitudes de insumos médicos", icon: ShoppingBag, route: "requisiciones/medicamentos", ready: true },
   { key: "req-limpieza", label: "Requisición de limpieza", desc: "Insumos de intendencia", icon: Sparkles, route: "requisiciones/limpieza", ready: true },
   { key: "req-mantenimiento", label: "Requisición de mantenimiento", desc: "Insumos de mantenimiento", icon: Wrench, route: "requisiciones/mantenimiento", ready: true },
   { key: "req-servicio", label: "Servicios de mantenimiento", desc: "Reparaciones y servicios externos", icon: Wrench, route: "requisiciones/servicio_mantenimiento", ready: true },
   { key: "pago-proveedores", label: "Pago a proveedores", desc: "Órdenes y verificación con PIN", icon: HandCoins, route: "requisiciones/pago_proveedor", ready: true },
-  { key: "cobranza", label: "Cartera de clientes", desc: "Cuotas y morosos", icon: FileText },
+  { key: "cobranza", label: "Cartera de clientes", desc: "Cuotas y morosos", icon: FileText, route: "cartera", ready: true },
 ];
 
 export default function UnidadDetalle() {
