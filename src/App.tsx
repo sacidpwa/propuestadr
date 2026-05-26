@@ -78,6 +78,7 @@ const App = () => (
             <Route path="/synapsia/unidades/:id/gastos" element={<ProtectedRoute requiredRole={["admin", "dueno", "administrativo", "asistente_admin"]}><GastosUnidad /></ProtectedRoute>} />
             <Route path="/synapsia/unidades/:id/facturas" element={<ProtectedRoute requiredRole={["admin", "dueno", "administrativo", "contador"]}><Facturas /></ProtectedRoute>} />
             <Route path="/synapsia/unidades/:id/cartera" element={<ProtectedRoute requiredRole={["admin", "dueno", "administrativo", "contador"]}><Cartera /></ProtectedRoute>} />
+            <Route path="/synapsia/unidades/:id/nomina" element={<ProtectedRoute requiredRole={["admin", "dueno", "administrativo", "asistente_admin", "contador", "rrhh"]}><Nomina /></ProtectedRoute>} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </AuthProvider>
