@@ -477,6 +477,56 @@ export default function UsersAdmin() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Assignments dialog */}
+      <Dialog open={assignDialog.open} onOpenChange={(v) => { if (!v) setAssignDialog({ open: false, userId: null, name: "" }); }}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Asignaciones de {assignDialog.name}</DialogTitle>
+            <DialogDescription>Vincula este usuario a una o más unidades de salud y a un área operativa.</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3">
+            <div className="space-y-2">
+              {assignments.filter((a) => a.user_id === assignDialog.userId).map((a) => {
+                const u = units.find((x) => x.id === a.health_unit_id);
+                return (
+                  <div key={a.id} className="flex items-center justify-between border rounded-md px-3 py-2">
+                    <div>
+                      <div className="font-medium text-sm">{u?.name ?? "—"}</div>
+                      <div className="text-xs text-muted-foreground">{AREA_LABEL[a.area]}</div>
+                    </div>
+                    <Button size="sm" variant="ghost" onClick={() => removeAssignment(a.id)}>Quitar</Button>
+                  </div>
+                );
+              })}
+              {assignments.filter((a) => a.user_id === assignDialog.userId).length === 0 && (
+                <p className="text-sm text-muted-foreground">Sin asignaciones todavía.</p>
+              )}
+            </div>
+            <div className="border-t pt-3 space-y-2">
+              <Label>Agregar asignación</Label>
+              <div className="grid grid-cols-2 gap-2">
+                <Select value={newAssign.unit} onValueChange={(v) => setNewAssign((p) => ({ ...p, unit: v }))}>
+                  <SelectTrigger><SelectValue placeholder="Unidad" /></SelectTrigger>
+                  <SelectContent>
+                    {units.map((u) => <SelectItem key={u.id} value={u.id}>{u.name}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+                <Select value={newAssign.area} onValueChange={(v) => setNewAssign((p) => ({ ...p, area: v as Area }))}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {(Object.keys(AREA_LABEL) as Area[]).map((a) => <SelectItem key={a} value={a}>{AREA_LABEL[a]}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+              <Button size="sm" onClick={addAssignment} disabled={!newAssign.unit}>Agregar</Button>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setAssignDialog({ open: false, userId: null, name: "" })}>Cerrar</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
