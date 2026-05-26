@@ -37,6 +37,9 @@ const SynapsiaHome = () => {
   if (hasRole("especialista")) return <SpecialistHome />;
   if (hasRole("administrativo")) return <Navigate to="/synapsia/admin" replace />;
   if (hasRole("promotor")) return <Navigate to="/synapsia/cotizador" replace />;
+  if (hasRole("enfermera") || hasRole("intendencia") || hasRole("mantenimiento") || hasRole("asistente_admin") || hasRole("contador") || hasRole("rrhh")) {
+    return <Navigate to="/synapsia/unidades" replace />;
+  }
   return <Navigate to="/synapsia/floor" replace />;
 };
 
