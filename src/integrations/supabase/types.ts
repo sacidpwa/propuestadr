@@ -101,6 +101,113 @@ export type Database = {
         }
         Relationships: []
       }
+      client_fee_payments: {
+        Row: {
+          amount: number
+          created_at: string
+          fee_id: string
+          id: string
+          method: string | null
+          notes: string | null
+          paid_at: string
+          recorded_by: string
+          reference: string | null
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          fee_id: string
+          id?: string
+          method?: string | null
+          notes?: string | null
+          paid_at?: string
+          recorded_by: string
+          reference?: string | null
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          fee_id?: string
+          id?: string
+          method?: string | null
+          notes?: string | null
+          paid_at?: string
+          recorded_by?: string
+          reference?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_fee_payments_fee_id_fkey"
+            columns: ["fee_id"]
+            isOneToOne: false
+            referencedRelation: "client_fees"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      client_fees: {
+        Row: {
+          amount: number
+          created_at: string
+          created_by: string
+          health_unit_id: string | null
+          id: string
+          is_active: boolean
+          next_due_date: string
+          notes: string | null
+          patient_id: string | null
+          patient_name: string
+          recurrence: Database["public"]["Enums"]["fee_recurrence"]
+          start_date: string
+          updated_at: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          created_by: string
+          health_unit_id?: string | null
+          id?: string
+          is_active?: boolean
+          next_due_date: string
+          notes?: string | null
+          patient_id?: string | null
+          patient_name: string
+          recurrence?: Database["public"]["Enums"]["fee_recurrence"]
+          start_date?: string
+          updated_at?: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          created_by?: string
+          health_unit_id?: string | null
+          id?: string
+          is_active?: boolean
+          next_due_date?: string
+          notes?: string | null
+          patient_id?: string | null
+          patient_name?: string
+          recurrence?: Database["public"]["Enums"]["fee_recurrence"]
+          start_date?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_fees_health_unit_id_fkey"
+            columns: ["health_unit_id"]
+            isOneToOne: false
+            referencedRelation: "health_units"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "client_fees_patient_id_fkey"
+            columns: ["patient_id"]
+            isOneToOne: false
+            referencedRelation: "patients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       draft_documents: {
         Row: {
           created_at: string
@@ -176,12 +283,16 @@ export type Database = {
           created_at: string
           created_by: string | null
           description: string
+          entry_type: string
           expense_date: string
           fixed_expense_id: string | null
+          health_unit_id: string | null
           id: string
           notes: string | null
+          operation_date: string | null
           period_month: number
           period_year: number
+          receipt_url: string | null
           updated_at: string
         }
         Insert: {
@@ -190,12 +301,16 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           description: string
+          entry_type?: string
           expense_date?: string
           fixed_expense_id?: string | null
+          health_unit_id?: string | null
           id?: string
           notes?: string | null
+          operation_date?: string | null
           period_month: number
           period_year: number
+          receipt_url?: string | null
           updated_at?: string
         }
         Update: {
@@ -204,12 +319,16 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           description?: string
+          entry_type?: string
           expense_date?: string
           fixed_expense_id?: string | null
+          health_unit_id?: string | null
           id?: string
           notes?: string | null
+          operation_date?: string | null
           period_month?: number
           period_year?: number
+          receipt_url?: string | null
           updated_at?: string
         }
         Relationships: [
@@ -218,6 +337,13 @@ export type Database = {
             columns: ["fixed_expense_id"]
             isOneToOne: false
             referencedRelation: "fixed_expenses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "expense_entries_health_unit_id_fkey"
+            columns: ["health_unit_id"]
+            isOneToOne: false
+            referencedRelation: "health_units"
             referencedColumns: ["id"]
           },
         ]
@@ -876,6 +1002,78 @@ export type Database = {
           },
         ]
       }
+      patient_invoices: {
+        Row: {
+          amount: number
+          concept: string | null
+          created_at: string
+          error_reason: string | null
+          file_url: string | null
+          health_unit_id: string | null
+          id: string
+          invoice_date: string
+          invoice_number: string | null
+          patient_id: string | null
+          patient_name: string
+          status: Database["public"]["Enums"]["invoice_status"]
+          updated_at: string
+          uploaded_by: string
+          verified_at: string | null
+          verified_by: string | null
+        }
+        Insert: {
+          amount?: number
+          concept?: string | null
+          created_at?: string
+          error_reason?: string | null
+          file_url?: string | null
+          health_unit_id?: string | null
+          id?: string
+          invoice_date?: string
+          invoice_number?: string | null
+          patient_id?: string | null
+          patient_name: string
+          status?: Database["public"]["Enums"]["invoice_status"]
+          updated_at?: string
+          uploaded_by: string
+          verified_at?: string | null
+          verified_by?: string | null
+        }
+        Update: {
+          amount?: number
+          concept?: string | null
+          created_at?: string
+          error_reason?: string | null
+          file_url?: string | null
+          health_unit_id?: string | null
+          id?: string
+          invoice_date?: string
+          invoice_number?: string | null
+          patient_id?: string | null
+          patient_name?: string
+          status?: Database["public"]["Enums"]["invoice_status"]
+          updated_at?: string
+          uploaded_by?: string
+          verified_at?: string | null
+          verified_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "patient_invoices_health_unit_id_fkey"
+            columns: ["health_unit_id"]
+            isOneToOne: false
+            referencedRelation: "health_units"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "patient_invoices_patient_id_fkey"
+            columns: ["patient_id"]
+            isOneToOne: false
+            referencedRelation: "patients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       patients: {
         Row: {
           created_at: string
@@ -1519,6 +1717,8 @@ export type Database = {
         | "cancelada"
         | "completada"
         | "no_asistio"
+      fee_recurrence: "unica" | "semanal" | "quincenal" | "mensual"
+      invoice_status: "pendiente" | "verificada" | "erronea" | "cancelada"
       medication_log_type:
         | "medicamento"
         | "estudio"
@@ -1700,6 +1900,8 @@ export const Constants = {
         "completada",
         "no_asistio",
       ],
+      fee_recurrence: ["unica", "semanal", "quincenal", "mensual"],
+      invoice_status: ["pendiente", "verificada", "erronea", "cancelada"],
       medication_log_type: [
         "medicamento",
         "estudio",
