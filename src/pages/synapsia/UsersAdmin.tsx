@@ -286,7 +286,7 @@ export default function UsersAdmin() {
                         <Select value={primary || ""} onValueChange={(v) => setPrimaryRole(p.user_id, v as Role)} disabled={!isOwnerOrAdmin}>
                           <SelectTrigger className="w-44"><SelectValue placeholder="Sin rol" /></SelectTrigger>
                           <SelectContent>
-                            {(["dueno", "especialista", "recepcion", "administrativo", "promotor", "admin"] as Role[]).map((r) => (
+                            {PRIMARY_ROLE_OPTIONS.map((r) => (
                               <SelectItem key={r} value={r}>{ROLE_LABEL[r]}</SelectItem>
                             ))}
                           </SelectContent>
