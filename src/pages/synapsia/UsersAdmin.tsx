@@ -294,7 +294,7 @@ export default function UsersAdmin() {
                       </TableCell>
                       <TableCell>
                         <div className="flex flex-wrap gap-1">
-                          {(["especialista", "recepcion", "administrativo", "promotor", "dueno"] as Role[]).filter((r) => r !== primary).map((r) => {
+                          {ADDITIONAL_ROLE_OPTIONS.filter((r) => r !== primary).map((r) => {
                             const has = userRoles.includes(r);
                             return (
                               <Badge
