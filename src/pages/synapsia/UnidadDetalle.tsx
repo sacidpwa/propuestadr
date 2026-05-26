@@ -11,8 +11,8 @@ import synapsiaIcon from "@/assets/synapsia-icon.svg";
 interface HealthUnit { id: string; name: string; description: string | null; }
 
 const APPS = [
-  { key: "medicamentos", label: "Control de medicamentos", desc: "Hoja por paciente (enfermería)", icon: Pill },
-  { key: "menus", label: "Menús semanales", desc: "Plan alimenticio y consumo", icon: ClipboardList },
+  { key: "medicamentos", label: "Control de medicamentos", desc: "Hoja por paciente (enfermería)", icon: Pill, route: "enfermeria", ready: true },
+  { key: "menus", label: "Menús semanales", desc: "Plan alimenticio y consumo", icon: ClipboardList, route: "enfermeria", ready: true },
   { key: "gastos", label: "Control de gastos", desc: "Gastos, ingresos y órdenes de pago", icon: Wallet },
   { key: "ingresos", label: "Ingresos (facturas)", desc: "Facturas de pacientes y verificación", icon: Receipt },
   { key: "nomina", label: "Nómina", desc: "Plantilla, incidencias y recibos", icon: Users },
