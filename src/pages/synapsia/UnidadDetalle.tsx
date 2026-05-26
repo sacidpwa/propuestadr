@@ -11,8 +11,8 @@ import synapsiaIcon from "@/assets/synapsia-icon.svg";
 interface HealthUnit { id: string; name: string; description: string | null; }
 
 const APPS = [
-  { key: "medicamentos", label: "Control de medicamentos", desc: "Hoja por paciente (enfermería)", icon: Pill },
-  { key: "menus", label: "Menús semanales", desc: "Plan alimenticio y consumo", icon: ClipboardList },
+  { key: "medicamentos", label: "Control de medicamentos", desc: "Hoja por paciente (enfermería)", icon: Pill, route: "enfermeria", ready: true },
+  { key: "menus", label: "Menús semanales", desc: "Plan alimenticio y consumo", icon: ClipboardList, route: "enfermeria", ready: true },
   { key: "gastos", label: "Control de gastos", desc: "Gastos, ingresos y órdenes de pago", icon: Wallet },
   { key: "ingresos", label: "Ingresos (facturas)", desc: "Facturas de pacientes y verificación", icon: Receipt },
   { key: "nomina", label: "Nómina", desc: "Plantilla, incidencias y recibos", icon: Users },
@@ -58,18 +58,18 @@ export default function UnidadDetalle() {
           <p className="text-sm text-muted-foreground">{unit?.description}</p>
         </div>
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {APPS.map(({ key, label, desc, icon: Icon }) => (
-            <Card key={key} className="opacity-80">
+          {APPS.map(({ key, label, desc, icon: Icon, route, ready }) => (
+            <Card key={key} className={ready ? "cursor-pointer hover:shadow-md transition" : "opacity-80"} onClick={() => ready && route && navigate(`/synapsia/unidades/${id}/${route}`)}>
               <CardHeader>
                 <div className="flex items-start justify-between">
                   <Icon className="w-7 h-7 text-primary" />
-                  <Badge variant="outline" className="text-[10px]">Próximamente</Badge>
+                  <Badge variant={ready ? "default" : "outline"} className="text-[10px]">{ready ? "Disponible" : "Próximamente"}</Badge>
                 </div>
                 <CardTitle className="text-base mt-2">{label}</CardTitle>
                 <CardDescription className="text-xs">{desc}</CardDescription>
               </CardHeader>
               <CardContent>
-                <Button size="sm" variant="outline" disabled>Abrir</Button>
+                <Button size="sm" variant={ready ? "default" : "outline"} disabled={!ready}>Abrir</Button>
               </CardContent>
             </Card>
           ))}

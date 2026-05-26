@@ -442,6 +442,126 @@ export type Database = {
         }
         Relationships: []
       }
+      meal_intake: {
+        Row: {
+          amount: string | null
+          consumed: boolean
+          created_at: string
+          health_unit_id: string
+          id: string
+          intake_date: string
+          meal: string
+          notes: string | null
+          patient_id: string
+          recorded_by: string
+        }
+        Insert: {
+          amount?: string | null
+          consumed?: boolean
+          created_at?: string
+          health_unit_id: string
+          id?: string
+          intake_date?: string
+          meal: string
+          notes?: string | null
+          patient_id: string
+          recorded_by: string
+        }
+        Update: {
+          amount?: string | null
+          consumed?: boolean
+          created_at?: string
+          health_unit_id?: string
+          id?: string
+          intake_date?: string
+          meal?: string
+          notes?: string | null
+          patient_id?: string
+          recorded_by?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "meal_intake_health_unit_id_fkey"
+            columns: ["health_unit_id"]
+            isOneToOne: false
+            referencedRelation: "health_units"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "meal_intake_patient_id_fkey"
+            columns: ["patient_id"]
+            isOneToOne: false
+            referencedRelation: "patients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      meal_plans: {
+        Row: {
+          cena: string | null
+          colacion_am: string | null
+          colacion_pm: string | null
+          comida: string | null
+          created_at: string
+          created_by: string | null
+          day_of_week: number
+          desayuno: string | null
+          health_unit_id: string
+          id: string
+          notes: string | null
+          patient_id: string | null
+          updated_at: string
+          week_start: string
+        }
+        Insert: {
+          cena?: string | null
+          colacion_am?: string | null
+          colacion_pm?: string | null
+          comida?: string | null
+          created_at?: string
+          created_by?: string | null
+          day_of_week: number
+          desayuno?: string | null
+          health_unit_id: string
+          id?: string
+          notes?: string | null
+          patient_id?: string | null
+          updated_at?: string
+          week_start: string
+        }
+        Update: {
+          cena?: string | null
+          colacion_am?: string | null
+          colacion_pm?: string | null
+          comida?: string | null
+          created_at?: string
+          created_by?: string | null
+          day_of_week?: number
+          desayuno?: string | null
+          health_unit_id?: string
+          id?: string
+          notes?: string | null
+          patient_id?: string | null
+          updated_at?: string
+          week_start?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "meal_plans_health_unit_id_fkey"
+            columns: ["health_unit_id"]
+            isOneToOne: false
+            referencedRelation: "health_units"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "meal_plans_patient_id_fkey"
+            columns: ["patient_id"]
+            isOneToOne: false
+            referencedRelation: "patients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       medical_notes: {
         Row: {
           afecto: string | null
@@ -613,6 +733,69 @@ export type Database = {
           },
         ]
       }
+      medication_log: {
+        Row: {
+          created_at: string
+          description: string | null
+          dose: string | null
+          event_at: string
+          health_unit_id: string
+          id: string
+          log_type: Database["public"]["Enums"]["medication_log_type"]
+          medication: string | null
+          notes: string | null
+          patient_id: string
+          recorded_by: string
+          route: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          dose?: string | null
+          event_at?: string
+          health_unit_id: string
+          id?: string
+          log_type?: Database["public"]["Enums"]["medication_log_type"]
+          medication?: string | null
+          notes?: string | null
+          patient_id: string
+          recorded_by: string
+          route?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          dose?: string | null
+          event_at?: string
+          health_unit_id?: string
+          id?: string
+          log_type?: Database["public"]["Enums"]["medication_log_type"]
+          medication?: string | null
+          notes?: string | null
+          patient_id?: string
+          recorded_by?: string
+          route?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "medication_log_health_unit_id_fkey"
+            columns: ["health_unit_id"]
+            isOneToOne: false
+            referencedRelation: "health_units"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "medication_log_patient_id_fkey"
+            columns: ["patient_id"]
+            isOneToOne: false
+            referencedRelation: "patients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       patient_flow: {
         Row: {
           arrived_at: string
@@ -699,6 +882,7 @@ export type Database = {
           date_of_birth: string | null
           email: string | null
           full_name: string
+          health_unit_id: string | null
           id: string
           notes: string | null
           phone: string | null
@@ -709,6 +893,7 @@ export type Database = {
           date_of_birth?: string | null
           email?: string | null
           full_name: string
+          health_unit_id?: string | null
           id?: string
           notes?: string | null
           phone?: string | null
@@ -719,12 +904,21 @@ export type Database = {
           date_of_birth?: string | null
           email?: string | null
           full_name?: string
+          health_unit_id?: string | null
           id?: string
           notes?: string | null
           phone?: string | null
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "patients_health_unit_id_fkey"
+            columns: ["health_unit_id"]
+            isOneToOne: false
+            referencedRelation: "health_units"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       payments: {
         Row: {
@@ -1192,6 +1386,12 @@ export type Database = {
         | "cancelada"
         | "completada"
         | "no_asistio"
+      medication_log_type:
+        | "medicamento"
+        | "estudio"
+        | "consulta"
+        | "salida"
+        | "otro"
       payment_method: "efectivo" | "transferencia" | "tarjeta"
       specialty_type: "psiquiatra" | "psicologo"
       visit_status: "en_espera" | "en_consulta" | "atendido" | "cancelado"
@@ -1352,6 +1552,13 @@ export const Constants = {
         "cancelada",
         "completada",
         "no_asistio",
+      ],
+      medication_log_type: [
+        "medicamento",
+        "estudio",
+        "consulta",
+        "salida",
+        "otro",
       ],
       payment_method: ["efectivo", "transferencia", "tarjeta"],
       specialty_type: ["psiquiatra", "psicologo"],
