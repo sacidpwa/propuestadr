@@ -22,6 +22,7 @@ import FloorPlan from "./pages/synapsia/FloorPlan";
 import Unidades from "./pages/synapsia/Unidades";
 import UnidadDetalle from "./pages/synapsia/UnidadDetalle";
 import Enfermeria from "./pages/synapsia/Enfermeria";
+import Requisiciones from "./pages/synapsia/Requisiciones";
 import ProtectedRoute from "./components/synapsia/ProtectedRoute";
 import OwnerOnlyRoute from "./components/synapsia/OwnerOnlyRoute";
 import { AuthProvider, useAuth } from "./hooks/useAuth";
