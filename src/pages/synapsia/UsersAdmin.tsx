@@ -15,7 +15,7 @@ import { useToast } from "@/hooks/use-toast";
 import { ArrowLeft, LogOut, Loader2, UserPlus, KeyRound, ShieldCheck, BarChart3, Users as UsersIcon, Pencil, Stethoscope } from "lucide-react";
 import synapsiaIcon from "@/assets/synapsia-icon.svg";
 
-type Role = "admin" | "recepcion" | "especialista" | "administrativo" | "dueno" | "promotor";
+type Role = "admin" | "recepcion" | "especialista" | "administrativo" | "dueno" | "promotor" | "enfermera" | "intendencia" | "mantenimiento" | "asistente_admin" | "contador" | "rrhh" | "empleado";
 const ROLE_LABEL: Record<Role, string> = {
   admin: "Administrador (super)",
   dueno: "Dueño",
@@ -23,7 +23,20 @@ const ROLE_LABEL: Record<Role, string> = {
   recepcion: "Recepción",
   administrativo: "Administrativo",
   promotor: "Promotor",
+  enfermera: "Enfermera",
+  intendencia: "Intendencia",
+  mantenimiento: "Mantenimiento",
+  asistente_admin: "Asistente administrativo",
+  contador: "Contador",
+  rrhh: "RRHH / Nómina",
+  empleado: "Empleado",
 };
+const PRIMARY_ROLE_OPTIONS: Role[] = ["dueno","especialista","recepcion","administrativo","promotor","enfermera","intendencia","mantenimiento","asistente_admin","contador","rrhh","empleado","admin"];
+const ADDITIONAL_ROLE_OPTIONS: Role[] = ["especialista","recepcion","administrativo","promotor","enfermera","intendencia","mantenimiento","asistente_admin","contador","rrhh","empleado","dueno"];
+type Area = "enfermeria"|"intendencia"|"administracion"|"abastecimiento"|"mantenimiento"|"contabilidad"|"rrhh"|"direccion";
+const AREA_LABEL: Record<Area,string> = { enfermeria:"Enfermería", intendencia:"Intendencia", administracion:"Administración", abastecimiento:"Abastecimiento", mantenimiento:"Mantenimiento", contabilidad:"Contabilidad", rrhh:"RRHH", direccion:"Dirección" };
+interface HealthUnit { id: string; name: string; is_active: boolean; }
+interface Assignment { id: string; user_id: string; health_unit_id: string; area: Area; is_active: boolean; }
 
 interface Specialist {
   id: string; full_name: string; specialty: string; consultation_fee: number;
@@ -45,6 +58,10 @@ export default function UsersAdmin() {
   const [pinValue, setPinValue] = useState("");
   const [editDialog, setEditDialog] = useState<{ open: boolean; userId: string | null; full_name: string; email: string }>({ open: false, userId: null, full_name: "", email: "" });
   const [editLoading, setEditLoading] = useState(false);
+  const [units, setUnits] = useState<HealthUnit[]>([]);
+  const [assignments, setAssignments] = useState<Assignment[]>([]);
+  const [assignDialog, setAssignDialog] = useState<{ open: boolean; userId: string | null; name: string }>({ open: false, userId: null, name: "" });
+  const [newAssign, setNewAssign] = useState<{ unit: string; area: Area }>({ unit: "", area: "enfermeria" });
 
   const [newUser, setNewUser] = useState({
     email: "", password: "", full_name: "", role: "recepcion" as Role, pin: "", also_especialista: false,
@@ -61,10 +78,12 @@ export default function UsersAdmin() {
   useEffect(() => { fetchAll(); }, []);
 
   const fetchAll = async () => {
-    const [{ data: s }, { data: p }, { data: r }] = await Promise.all([
+    const [{ data: s }, { data: p }, { data: r }, { data: u }, { data: a }] = await Promise.all([
       supabase.from("specialists").select("*").order("full_name"),
       supabase.from("profiles").select("user_id, full_name, email, pin_set_at, is_active").order("full_name"),
       supabase.from("user_roles").select("user_id, role"),
+      (supabase.from as any)("health_units").select("id,name,is_active").order("name"),
+      (supabase.from as any)("employee_assignments").select("id,user_id,health_unit_id,area,is_active"),
     ]);
     setSpecialists((s as any) || []);
     setProfiles((p as any) || []);
@@ -73,6 +92,22 @@ export default function UsersAdmin() {
       map[row.user_id] = [...(map[row.user_id] || []), row.role];
     });
     setRolesByUser(map);
+    setUnits((u as any) || []);
+    setAssignments((a as any) || []);
+  };
+
+  const addAssignment = async () => {
+    if (!assignDialog.userId || !newAssign.unit) return;
+    const { error } = await (supabase.from as any)("employee_assignments").insert({
+      user_id: assignDialog.userId, health_unit_id: newAssign.unit, area: newAssign.area,
+    });
+    if (error) toast({ variant: "destructive", title: "Error", description: error.message });
+    else { toast({ title: "Asignación agregada" }); fetchAll(); }
+  };
+  const removeAssignment = async (id: string) => {
+    const { error } = await (supabase.from as any)("employee_assignments").delete().eq("id", id);
+    if (error) toast({ variant: "destructive", title: "Error", description: error.message });
+    else fetchAll();
   };
 
   const handleCreateUser = async (e: React.FormEvent) => {
@@ -218,7 +253,7 @@ export default function UsersAdmin() {
                     <Select value={newUser.role} onValueChange={(v) => setNewUser((p) => ({ ...p, role: v as Role }))}>
                       <SelectTrigger><SelectValue /></SelectTrigger>
                       <SelectContent>
-                        {(["dueno", "especialista", "recepcion", "administrativo", "promotor", "admin"] as Role[]).map((r) => (
+                        {PRIMARY_ROLE_OPTIONS.map((r) => (
                           <SelectItem key={r} value={r}>{ROLE_LABEL[r]}</SelectItem>
                         ))}
                       </SelectContent>
@@ -273,7 +308,7 @@ export default function UsersAdmin() {
                         <Select value={primary || ""} onValueChange={(v) => setPrimaryRole(p.user_id, v as Role)} disabled={!isOwnerOrAdmin}>
                           <SelectTrigger className="w-44"><SelectValue placeholder="Sin rol" /></SelectTrigger>
                           <SelectContent>
-                            {(["dueno", "especialista", "recepcion", "administrativo", "promotor", "admin"] as Role[]).map((r) => (
+                            {PRIMARY_ROLE_OPTIONS.map((r) => (
                               <SelectItem key={r} value={r}>{ROLE_LABEL[r]}</SelectItem>
                             ))}
                           </SelectContent>
@@ -281,7 +316,7 @@ export default function UsersAdmin() {
                       </TableCell>
                       <TableCell>
                         <div className="flex flex-wrap gap-1">
-                          {(["especialista", "recepcion", "administrativo", "promotor", "dueno"] as Role[]).filter((r) => r !== primary).map((r) => {
+                          {ADDITIONAL_ROLE_OPTIONS.filter((r) => r !== primary).map((r) => {
                             const has = userRoles.includes(r);
                             return (
                               <Badge
@@ -310,6 +345,9 @@ export default function UsersAdmin() {
                           </Button>
                           <Button size="sm" variant="outline" onClick={() => setPinDialog({ open: true, userId: p.user_id, name: p.full_name })} disabled={!isOwnerOrAdmin}>
                             <KeyRound className="w-3 h-3 mr-1" /> PIN
+                          </Button>
+                          <Button size="sm" variant="outline" onClick={() => setAssignDialog({ open: true, userId: p.user_id, name: p.full_name })} disabled={!isOwnerOrAdmin}>
+                            <Stethoscope className="w-3 h-3 mr-1" /> Unidades
                           </Button>
                           <Button size="sm" variant="ghost" onClick={() => navigate(`/synapsia/metrics?user=${p.user_id}`)}>
                             <BarChart3 className="w-3 h-3 mr-1" /> Métricas
@@ -436,6 +474,56 @@ export default function UsersAdmin() {
           <DialogFooter>
             <Button variant="outline" onClick={() => setEditDialog({ open: false, userId: null, full_name: "", email: "" })}>Cancelar</Button>
             <Button onClick={submitEdit} disabled={editLoading}>{editLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : "Guardar cambios"}</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Assignments dialog */}
+      <Dialog open={assignDialog.open} onOpenChange={(v) => { if (!v) setAssignDialog({ open: false, userId: null, name: "" }); }}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Asignaciones de {assignDialog.name}</DialogTitle>
+            <DialogDescription>Vincula este usuario a una o más unidades de salud y a un área operativa.</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3">
+            <div className="space-y-2">
+              {assignments.filter((a) => a.user_id === assignDialog.userId).map((a) => {
+                const u = units.find((x) => x.id === a.health_unit_id);
+                return (
+                  <div key={a.id} className="flex items-center justify-between border rounded-md px-3 py-2">
+                    <div>
+                      <div className="font-medium text-sm">{u?.name ?? "—"}</div>
+                      <div className="text-xs text-muted-foreground">{AREA_LABEL[a.area]}</div>
+                    </div>
+                    <Button size="sm" variant="ghost" onClick={() => removeAssignment(a.id)}>Quitar</Button>
+                  </div>
+                );
+              })}
+              {assignments.filter((a) => a.user_id === assignDialog.userId).length === 0 && (
+                <p className="text-sm text-muted-foreground">Sin asignaciones todavía.</p>
+              )}
+            </div>
+            <div className="border-t pt-3 space-y-2">
+              <Label>Agregar asignación</Label>
+              <div className="grid grid-cols-2 gap-2">
+                <Select value={newAssign.unit} onValueChange={(v) => setNewAssign((p) => ({ ...p, unit: v }))}>
+                  <SelectTrigger><SelectValue placeholder="Unidad" /></SelectTrigger>
+                  <SelectContent>
+                    {units.map((u) => <SelectItem key={u.id} value={u.id}>{u.name}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+                <Select value={newAssign.area} onValueChange={(v) => setNewAssign((p) => ({ ...p, area: v as Area }))}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {(Object.keys(AREA_LABEL) as Area[]).map((a) => <SelectItem key={a} value={a}>{AREA_LABEL[a]}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+              <Button size="sm" onClick={addAssignment} disabled={!newAssign.unit}>Agregar</Button>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setAssignDialog({ open: false, userId: null, name: "" })}>Cerrar</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

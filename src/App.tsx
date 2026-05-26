@@ -19,6 +19,8 @@ import Expenses from "./pages/synapsia/Expenses";
 import UsersAdmin from "./pages/synapsia/UsersAdmin";
 import Metrics from "./pages/synapsia/Metrics";
 import FloorPlan from "./pages/synapsia/FloorPlan";
+import Unidades from "./pages/synapsia/Unidades";
+import UnidadDetalle from "./pages/synapsia/UnidadDetalle";
 import ProtectedRoute from "./components/synapsia/ProtectedRoute";
 import OwnerOnlyRoute from "./components/synapsia/OwnerOnlyRoute";
 import { AuthProvider, useAuth } from "./hooks/useAuth";
@@ -35,6 +37,9 @@ const SynapsiaHome = () => {
   if (hasRole("especialista")) return <SpecialistHome />;
   if (hasRole("administrativo")) return <Navigate to="/synapsia/admin" replace />;
   if (hasRole("promotor")) return <Navigate to="/synapsia/cotizador" replace />;
+  if (hasRole("enfermera") || hasRole("intendencia") || hasRole("mantenimiento") || hasRole("asistente_admin") || hasRole("contador") || hasRole("rrhh")) {
+    return <Navigate to="/synapsia/unidades" replace />;
+  }
   return <Navigate to="/synapsia/floor" replace />;
 };
 
@@ -60,6 +65,8 @@ const App = () => (
             <Route path="/synapsia/users" element={<ProtectedRoute requiredRole={["admin", "dueno", "recepcion"]}><UsersAdmin /></ProtectedRoute>} />
             <Route path="/synapsia/metrics" element={<ProtectedRoute><Metrics /></ProtectedRoute>} />
             <Route path="/synapsia/floor" element={<ProtectedRoute requiredRole={["admin", "dueno", "recepcion"]}><FloorPlan /></ProtectedRoute>} />
+            <Route path="/synapsia/unidades" element={<ProtectedRoute requiredRole={["admin", "dueno", "administrativo", "asistente_admin", "contador", "rrhh", "enfermera", "intendencia", "mantenimiento"]}><Unidades /></ProtectedRoute>} />
+            <Route path="/synapsia/unidades/:id" element={<ProtectedRoute requiredRole={["admin", "dueno", "administrativo", "asistente_admin", "contador", "rrhh", "enfermera", "intendencia", "mantenimiento"]}><UnidadDetalle /></ProtectedRoute>} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </AuthProvider>
