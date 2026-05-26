@@ -231,7 +231,7 @@ export default function UsersAdmin() {
                     <Select value={newUser.role} onValueChange={(v) => setNewUser((p) => ({ ...p, role: v as Role }))}>
                       <SelectTrigger><SelectValue /></SelectTrigger>
                       <SelectContent>
-                        {(["dueno", "especialista", "recepcion", "administrativo", "promotor", "admin"] as Role[]).map((r) => (
+                        {PRIMARY_ROLE_OPTIONS.map((r) => (
                           <SelectItem key={r} value={r}>{ROLE_LABEL[r]}</SelectItem>
                         ))}
                       </SelectContent>
