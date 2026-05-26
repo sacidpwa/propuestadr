@@ -58,6 +58,10 @@ export default function UsersAdmin() {
   const [pinValue, setPinValue] = useState("");
   const [editDialog, setEditDialog] = useState<{ open: boolean; userId: string | null; full_name: string; email: string }>({ open: false, userId: null, full_name: "", email: "" });
   const [editLoading, setEditLoading] = useState(false);
+  const [units, setUnits] = useState<HealthUnit[]>([]);
+  const [assignments, setAssignments] = useState<Assignment[]>([]);
+  const [assignDialog, setAssignDialog] = useState<{ open: boolean; userId: string | null; name: string }>({ open: false, userId: null, name: "" });
+  const [newAssign, setNewAssign] = useState<{ unit: string; area: Area }>({ unit: "", area: "enfermeria" });
 
   const [newUser, setNewUser] = useState({
     email: "", password: "", full_name: "", role: "recepcion" as Role, pin: "", also_especialista: false,
