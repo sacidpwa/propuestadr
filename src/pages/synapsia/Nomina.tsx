@@ -397,10 +397,10 @@ export default function Nomina() {
         </Tabs>
       </main>
 
-      <Dialog open={!!pinAction} onOpenChange={(o) => !o && setPinAction(null)}>
-        <DialogContent>
-          <DialogHeader><DialogTitle>{pinAction?.type === "pagar" ? "Confirmar pago" : "Autorizar nómina"}</DialogTitle></DialogHeader>
-          {pinAction?.type === "pagar" && (
+      {pinAction?.type === "pagar" && (
+        <Dialog open onOpenChange={(o) => !o && setPinAction(null)}>
+          <DialogContent>
+            <DialogHeader><DialogTitle>Datos de pago</DialogTitle></DialogHeader>
             <div className="space-y-2 mb-3">
               <div>
                 <Label>Método</Label>
@@ -415,15 +415,25 @@ export default function Nomina() {
               </div>
               <div><Label>Referencia</Label><Input value={paymentRef} onChange={(e) => setPaymentRef(e.target.value)} /></div>
             </div>
-          )}
-          <PinPrompt onVerified={async () => {
-            if (!pinAction) return;
-            if (pinAction.type === "autorizar") await authorize(pinAction.runId);
-            else await pay(pinAction.runId);
-            setPinAction(null);
-          }} />
-        </DialogContent>
-      </Dialog>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setPinAction(null)}>Cancelar</Button>
+              <Button onClick={() => setPinAction({ type: "pagar-pin" as any, runId: pinAction.runId })}>Continuar</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      )}
+
+      <PinPrompt
+        open={pinAction?.type === "autorizar" || (pinAction?.type as any) === "pagar-pin"}
+        onOpenChange={(v) => { if (!v) setPinAction(null); }}
+        title={pinAction?.type === "autorizar" ? "Autorizar nómina" : "Confirmar pago"}
+        onConfirm={async () => {
+          if (!pinAction) return;
+          if (pinAction.type === "autorizar") await authorize(pinAction.runId);
+          else await pay(pinAction.runId);
+          setPinAction(null);
+        }}
+      />
     </div>
   );
 }
