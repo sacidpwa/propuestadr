@@ -1165,6 +1165,174 @@ export type Database = {
           },
         ]
       }
+      payroll_employees: {
+        Row: {
+          area: Database["public"]["Enums"]["payroll_area"]
+          bank: string | null
+          bank_account: string | null
+          base_salary: number
+          created_at: string
+          created_by: string | null
+          frequency: Database["public"]["Enums"]["payroll_frequency"]
+          full_name: string
+          health_unit_id: string | null
+          id: string
+          is_active: boolean
+          notes: string | null
+          position: string | null
+          rfc: string | null
+          updated_at: string
+        }
+        Insert: {
+          area: Database["public"]["Enums"]["payroll_area"]
+          bank?: string | null
+          bank_account?: string | null
+          base_salary?: number
+          created_at?: string
+          created_by?: string | null
+          frequency?: Database["public"]["Enums"]["payroll_frequency"]
+          full_name: string
+          health_unit_id?: string | null
+          id?: string
+          is_active?: boolean
+          notes?: string | null
+          position?: string | null
+          rfc?: string | null
+          updated_at?: string
+        }
+        Update: {
+          area?: Database["public"]["Enums"]["payroll_area"]
+          bank?: string | null
+          bank_account?: string | null
+          base_salary?: number
+          created_at?: string
+          created_by?: string | null
+          frequency?: Database["public"]["Enums"]["payroll_frequency"]
+          full_name?: string
+          health_unit_id?: string | null
+          id?: string
+          is_active?: boolean
+          notes?: string | null
+          position?: string | null
+          rfc?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      payroll_items: {
+        Row: {
+          absences: number
+          base_amount: number
+          bonuses: number
+          created_at: string
+          deductions: number
+          employee_id: string
+          employee_name: string
+          id: string
+          net_amount: number
+          notes: string | null
+          overtime: number
+          receipt_url: string | null
+          run_id: string
+          updated_at: string
+        }
+        Insert: {
+          absences?: number
+          base_amount?: number
+          bonuses?: number
+          created_at?: string
+          deductions?: number
+          employee_id: string
+          employee_name: string
+          id?: string
+          net_amount?: number
+          notes?: string | null
+          overtime?: number
+          receipt_url?: string | null
+          run_id: string
+          updated_at?: string
+        }
+        Update: {
+          absences?: number
+          base_amount?: number
+          bonuses?: number
+          created_at?: string
+          deductions?: number
+          employee_id?: string
+          employee_name?: string
+          id?: string
+          net_amount?: number
+          notes?: string | null
+          overtime?: number
+          receipt_url?: string | null
+          run_id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      payroll_runs: {
+        Row: {
+          area: Database["public"]["Enums"]["payroll_area"]
+          authorized_at: string | null
+          authorized_by: string | null
+          created_at: string
+          created_by: string
+          frequency: Database["public"]["Enums"]["payroll_frequency"]
+          health_unit_id: string | null
+          id: string
+          notes: string | null
+          paid_at: string | null
+          paid_by: string | null
+          payment_method: string | null
+          payment_reference: string | null
+          period_end: string
+          period_start: string
+          status: Database["public"]["Enums"]["payroll_status"]
+          total_amount: number
+          updated_at: string
+        }
+        Insert: {
+          area: Database["public"]["Enums"]["payroll_area"]
+          authorized_at?: string | null
+          authorized_by?: string | null
+          created_at?: string
+          created_by: string
+          frequency?: Database["public"]["Enums"]["payroll_frequency"]
+          health_unit_id?: string | null
+          id?: string
+          notes?: string | null
+          paid_at?: string | null
+          paid_by?: string | null
+          payment_method?: string | null
+          payment_reference?: string | null
+          period_end: string
+          period_start: string
+          status?: Database["public"]["Enums"]["payroll_status"]
+          total_amount?: number
+          updated_at?: string
+        }
+        Update: {
+          area?: Database["public"]["Enums"]["payroll_area"]
+          authorized_at?: string | null
+          authorized_by?: string | null
+          created_at?: string
+          created_by?: string
+          frequency?: Database["public"]["Enums"]["payroll_frequency"]
+          health_unit_id?: string | null
+          id?: string
+          notes?: string | null
+          paid_at?: string | null
+          paid_by?: string | null
+          payment_method?: string | null
+          payment_reference?: string | null
+          period_end?: string
+          period_start?: string
+          status?: Database["public"]["Enums"]["payroll_status"]
+          total_amount?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       prescription_items: {
         Row: {
           created_at: string
@@ -1726,6 +1894,14 @@ export type Database = {
         | "salida"
         | "otro"
       payment_method: "efectivo" | "transferencia" | "tarjeta"
+      payroll_area:
+        | "enfermeria"
+        | "intendencia"
+        | "mantenimiento"
+        | "administrativo"
+        | "otro"
+      payroll_frequency: "semanal" | "quincenal" | "mensual"
+      payroll_status: "borrador" | "autorizada" | "pagada" | "cancelada"
       requisition_priority: "baja" | "media" | "alta" | "urgente"
       requisition_status:
         | "pendiente"
@@ -1910,6 +2086,15 @@ export const Constants = {
         "otro",
       ],
       payment_method: ["efectivo", "transferencia", "tarjeta"],
+      payroll_area: [
+        "enfermeria",
+        "intendencia",
+        "mantenimiento",
+        "administrativo",
+        "otro",
+      ],
+      payroll_frequency: ["semanal", "quincenal", "mensual"],
+      payroll_status: ["borrador", "autorizada", "pagada", "cancelada"],
       requisition_priority: ["baja", "media", "alta", "urgente"],
       requisition_status: [
         "pendiente",
