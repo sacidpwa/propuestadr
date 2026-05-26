@@ -1110,6 +1110,13 @@ export type Database = {
         | "administrativo"
         | "dueno"
         | "promotor"
+        | "enfermera"
+        | "intendencia"
+        | "mantenimiento"
+        | "asistente_admin"
+        | "contador"
+        | "rrhh"
+        | "empleado"
       appointment_status:
         | "programada"
         | "confirmada"
@@ -1253,6 +1260,13 @@ export const Constants = {
         "administrativo",
         "dueno",
         "promotor",
+        "enfermera",
+        "intendencia",
+        "mantenimiento",
+        "asistente_admin",
+        "contador",
+        "rrhh",
+        "empleado",
       ],
       appointment_status: [
         "programada",
