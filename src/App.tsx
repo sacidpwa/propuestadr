@@ -19,6 +19,8 @@ import Expenses from "./pages/synapsia/Expenses";
 import UsersAdmin from "./pages/synapsia/UsersAdmin";
 import Metrics from "./pages/synapsia/Metrics";
 import FloorPlan from "./pages/synapsia/FloorPlan";
+import Unidades from "./pages/synapsia/Unidades";
+import UnidadDetalle from "./pages/synapsia/UnidadDetalle";
 import ProtectedRoute from "./components/synapsia/ProtectedRoute";
 import OwnerOnlyRoute from "./components/synapsia/OwnerOnlyRoute";
 import { AuthProvider, useAuth } from "./hooks/useAuth";
