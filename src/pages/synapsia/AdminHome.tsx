@@ -57,6 +57,7 @@ export default function AdminHome() {
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           <Tool to="/synapsia/cotizador" icon={<Calculator className="w-6 h-6 text-primary" />} title="Cotizador" desc="Genera cotizaciones para Senior Living y Centro Benesse." />
+          <Tool to="/synapsia/unidades" icon={<Building2 className="w-6 h-6 text-primary" />} title="Unidades de salud" desc="Aplicativos operativos por unidad: medicamentos, gastos, nómina, requisiciones." />
           <Tool to="/synapsia/expenses" icon={<Wallet className="w-6 h-6 text-primary" />} title="Gastos & Reporte de socios" desc="Registra gastos fijos y revisa el estado de resultados por socio." />
           <Tool to="/synapsia/metrics" icon={<BarChart3 className="w-6 h-6 text-primary" />} title="Mis métricas" desc="Cobros del periodo y desempeño." />
           {(hasRole("admin") || hasRole("dueno")) && (
