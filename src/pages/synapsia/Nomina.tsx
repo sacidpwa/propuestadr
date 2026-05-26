@@ -65,7 +65,7 @@ export default function Nomina() {
     area: "enfermeria", frequency: "quincenal", period_start: "", period_end: "", notes: "",
   });
 
-  const [pinAction, setPinAction] = useState<null | { type: "autorizar" | "pagar"; runId: string }>(null);
+  const [pinAction, setPinAction] = useState<null | { type: "autorizar" | "pagar" | "pagar-pin"; runId: string }>(null);
   const [paymentMethod, setPaymentMethod] = useState("transferencia");
   const [paymentRef, setPaymentRef] = useState("");
 
