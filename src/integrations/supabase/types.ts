@@ -131,6 +131,44 @@ export type Database = {
         }
         Relationships: []
       }
+      employee_assignments: {
+        Row: {
+          area: Database["public"]["Enums"]["work_area"]
+          created_at: string
+          health_unit_id: string
+          id: string
+          is_active: boolean
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          area: Database["public"]["Enums"]["work_area"]
+          created_at?: string
+          health_unit_id: string
+          id?: string
+          is_active?: boolean
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          area?: Database["public"]["Enums"]["work_area"]
+          created_at?: string
+          health_unit_id?: string
+          id?: string
+          is_active?: boolean
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "employee_assignments_health_unit_id_fkey"
+            columns: ["health_unit_id"]
+            isOneToOne: false
+            referencedRelation: "health_units"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       expense_entries: {
         Row: {
           amount: number
@@ -340,6 +378,33 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      health_units: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          is_active: boolean
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          name?: string
+          updated_at?: string
+        }
+        Relationships: []
       }
       informed_consents: {
         Row: {
@@ -1100,6 +1165,10 @@ export type Database = {
         Returns: boolean
       }
       set_my_pin: { Args: { _pin: string }; Returns: undefined }
+      user_in_unit: {
+        Args: { _unit_id: string; _user_id: string }
+        Returns: boolean
+      }
       verify_pin: { Args: { _pin: string }; Returns: boolean }
     }
     Enums: {
@@ -1126,6 +1195,15 @@ export type Database = {
       payment_method: "efectivo" | "transferencia" | "tarjeta"
       specialty_type: "psiquiatra" | "psicologo"
       visit_status: "en_espera" | "en_consulta" | "atendido" | "cancelado"
+      work_area:
+        | "enfermeria"
+        | "intendencia"
+        | "administracion"
+        | "abastecimiento"
+        | "mantenimiento"
+        | "contabilidad"
+        | "rrhh"
+        | "direccion"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -1278,6 +1356,16 @@ export const Constants = {
       payment_method: ["efectivo", "transferencia", "tarjeta"],
       specialty_type: ["psiquiatra", "psicologo"],
       visit_status: ["en_espera", "en_consulta", "atendido", "cancelado"],
+      work_area: [
+        "enfermeria",
+        "intendencia",
+        "administracion",
+        "abastecimiento",
+        "mantenimiento",
+        "contabilidad",
+        "rrhh",
+        "direccion",
+      ],
     },
   },
 } as const
