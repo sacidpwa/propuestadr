@@ -22,6 +22,7 @@ import FloorPlan from "./pages/synapsia/FloorPlan";
 import Unidades from "./pages/synapsia/Unidades";
 import UnidadDetalle from "./pages/synapsia/UnidadDetalle";
 import Enfermeria from "./pages/synapsia/Enfermeria";
+import Requisiciones from "./pages/synapsia/Requisiciones";
 import ProtectedRoute from "./components/synapsia/ProtectedRoute";
 import OwnerOnlyRoute from "./components/synapsia/OwnerOnlyRoute";
 import { AuthProvider, useAuth } from "./hooks/useAuth";
@@ -69,6 +70,7 @@ const App = () => (
             <Route path="/synapsia/unidades" element={<ProtectedRoute requiredRole={["admin", "dueno", "administrativo", "asistente_admin", "contador", "rrhh", "enfermera", "intendencia", "mantenimiento"]}><Unidades /></ProtectedRoute>} />
             <Route path="/synapsia/unidades/:id" element={<ProtectedRoute requiredRole={["admin", "dueno", "administrativo", "asistente_admin", "contador", "rrhh", "enfermera", "intendencia", "mantenimiento"]}><UnidadDetalle /></ProtectedRoute>} />
             <Route path="/synapsia/unidades/:id/enfermeria" element={<ProtectedRoute requiredRole={["admin", "dueno", "administrativo", "enfermera", "especialista"]}><Enfermeria /></ProtectedRoute>} />
+            <Route path="/synapsia/unidades/:id/requisiciones/:type" element={<ProtectedRoute requiredRole={["admin", "dueno", "administrativo", "asistente_admin", "enfermera", "intendencia", "mantenimiento"]}><Requisiciones /></ProtectedRoute>} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </AuthProvider>
