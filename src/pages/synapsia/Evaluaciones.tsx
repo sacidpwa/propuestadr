@@ -47,7 +47,7 @@ const empty = {
   observations: "",
 };
 
-const DRAFT_KEY = "synapsia:evaluaciones:draft";
+
 
 export default function Evaluaciones() {
   const { user, signOut } = useAuth();
@@ -71,41 +71,31 @@ export default function Evaluaciones() {
 
   useEffect(() => { load(); }, []);
 
-  // Restaurar borrador local si existe (sobrevive a sesión expirada)
-  useEffect(() => {
-    try {
-      const raw = localStorage.getItem(DRAFT_KEY);
-      if (!raw) return;
-      const parsed = JSON.parse(raw);
-      if (parsed?.form && (parsed.form.full_name || parsed.form.position || parsed.form.info_received || parsed.form.info_processing || parsed.form.info_generated)) {
-        setForm(parsed.form);
-        setEditingId(parsed.editingId || null);
-        setShowForm(true);
-        if (parsed.savedAt) setLastDraftAt(new Date(parsed.savedAt));
-        toast.info("Borrador recuperado del autoguardado");
-      }
-    } catch {}
-  }, []);
-
-  // Autoguardado local cada 20s mientras hay contenido
+  // Autoguardado en backend cada 20s (requiere nombre y puesto, NOT NULL en BD)
   useEffect(() => {
     if (!showForm) return;
-    const hasContent = !!(form.full_name || form.position || form.info_received || form.info_processing || form.info_generated || form.team_in_charge || form.reports_to || form.tools_used || form.pain_points || form.observations);
-    if (!hasContent) return;
-    const tick = () => {
-      try {
-        const savedAt = new Date().toISOString();
-        localStorage.setItem(DRAFT_KEY, JSON.stringify({ form, editingId, savedAt }));
-        setLastDraftAt(new Date(savedAt));
-      } catch {}
+    if (!form.full_name.trim() || !form.position.trim()) return;
+
+    const tick = async () => {
+      const payload: any = {
+        ...form,
+        health_unit_id: form.health_unit_id || null,
+        interviewer_id: user?.id,
+      };
+      if (editingId) {
+        const { error } = await (supabase.from as any)("staff_evaluations").update(payload).eq("id", editingId);
+        if (!error) { setLastDraftAt(new Date()); load(); }
+      } else {
+        const { data, error } = await (supabase.from as any)("staff_evaluations").insert(payload).select("id").single();
+        if (!error && data?.id) { setEditingId(data.id); setLastDraftAt(new Date()); load(); }
+      }
     };
+
     const id = setInterval(tick, 20000);
     return () => clearInterval(id);
-  }, [form, editingId, showForm]);
+  }, [form, editingId, showForm, user?.id]);
 
-  const clearDraft = () => { try { localStorage.removeItem(DRAFT_KEY); } catch {} setLastDraftAt(null); };
-
-  const reset = () => { setForm(empty); setEditingId(null); setShowForm(false); clearDraft(); };
+  const reset = () => { setForm(empty); setEditingId(null); setShowForm(false); setLastDraftAt(null); };
 
   const save = async () => {
     if (!form.full_name.trim() || !form.position.trim()) {
@@ -196,7 +186,7 @@ export default function Evaluaciones() {
                 Completa la información levantada durante la entrevista.
                 {lastDraftAt && (
                   <span className="block text-xs text-emerald-600 mt-1">
-                    ✓ Borrador autoguardado a las {lastDraftAt.toLocaleTimeString("es-MX")}
+                    ✓ Guardado en la nube a las {lastDraftAt.toLocaleTimeString("es-MX")}
                   </span>
                 )}
               </CardDescription>
