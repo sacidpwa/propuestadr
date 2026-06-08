@@ -47,7 +47,7 @@ const empty = {
   observations: "",
 };
 
-const DRAFT_KEY = "synapsia:evaluaciones:draft";
+
 
 export default function Evaluaciones() {
   const { user, signOut } = useAuth();
