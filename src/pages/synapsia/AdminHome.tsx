@@ -63,6 +63,9 @@ export default function AdminHome() {
           {(hasRole("admin") || hasRole("dueno")) && (
             <Tool to="/synapsia/users" icon={<Users className="w-6 h-6 text-primary" />} title="Usuarios y socios" desc="Crear cuentas, asignar roles, PIN y vincular especialistas." />
           )}
+          {(hasRole("admin") || hasRole("dueno")) && (
+            <Tool to="/synapsia/evaluaciones" icon={<ClipboardList className="w-6 h-6 text-primary" />} title="Evaluación de personal" desc="Entrevistas al brazo administrativo: qué reciben, procesan y generan." />
+          )}
         </div>
       </main>
     </div>
