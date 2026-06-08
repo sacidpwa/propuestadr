@@ -1690,6 +1690,74 @@ export type Database = {
         }
         Relationships: []
       }
+      staff_evaluations: {
+        Row: {
+          created_at: string
+          frequency: string | null
+          full_name: string
+          health_unit_id: string | null
+          id: string
+          info_generated: string | null
+          info_processing: string | null
+          info_received: string | null
+          interview_date: string
+          interviewer_id: string
+          observations: string | null
+          pain_points: string | null
+          position: string
+          reports_to: string | null
+          team_in_charge: string | null
+          tools_used: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          frequency?: string | null
+          full_name: string
+          health_unit_id?: string | null
+          id?: string
+          info_generated?: string | null
+          info_processing?: string | null
+          info_received?: string | null
+          interview_date?: string
+          interviewer_id: string
+          observations?: string | null
+          pain_points?: string | null
+          position: string
+          reports_to?: string | null
+          team_in_charge?: string | null
+          tools_used?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          frequency?: string | null
+          full_name?: string
+          health_unit_id?: string | null
+          id?: string
+          info_generated?: string | null
+          info_processing?: string | null
+          info_received?: string | null
+          interview_date?: string
+          interviewer_id?: string
+          observations?: string | null
+          pain_points?: string | null
+          position?: string
+          reports_to?: string | null
+          team_in_charge?: string | null
+          tools_used?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "staff_evaluations_health_unit_id_fkey"
+            columns: ["health_unit_id"]
+            isOneToOne: false
+            referencedRelation: "health_units"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_roles: {
         Row: {
           id: string
