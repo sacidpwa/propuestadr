@@ -2,7 +2,7 @@ import { Link } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { BarChart3, Calendar, FileText, LogOut, Users, Wallet, Stethoscope, Calculator, ShieldCheck, LayoutDashboard } from "lucide-react";
+import { BarChart3, Calendar, FileText, LogOut, Users, Wallet, Stethoscope, Calculator, ShieldCheck, LayoutDashboard, ClipboardList } from "lucide-react";
 import synapsiaIcon from "@/assets/synapsia-icon.svg";
 import { useState } from "react";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
