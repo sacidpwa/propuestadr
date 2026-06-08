@@ -186,7 +186,7 @@ export default function Evaluaciones() {
                 Completa la información levantada durante la entrevista.
                 {lastDraftAt && (
                   <span className="block text-xs text-emerald-600 mt-1">
-                    ✓ Borrador autoguardado a las {lastDraftAt.toLocaleTimeString("es-MX")}
+                    ✓ Guardado en la nube a las {lastDraftAt.toLocaleTimeString("es-MX")}
                   </span>
                 )}
               </CardDescription>
