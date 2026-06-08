@@ -192,7 +192,14 @@ export default function Evaluaciones() {
           <Card>
             <CardHeader>
               <CardTitle>{editingId ? "Editar evaluación" : "Nueva evaluación"}</CardTitle>
-              <CardDescription>Completa la información levantada durante la entrevista.</CardDescription>
+              <CardDescription>
+                Completa la información levantada durante la entrevista.
+                {lastDraftAt && (
+                  <span className="block text-xs text-emerald-600 mt-1">
+                    ✓ Borrador autoguardado a las {lastDraftAt.toLocaleTimeString("es-MX")}
+                  </span>
+                )}
+              </CardDescription>
             </CardHeader>
             <CardContent className="space-y-5">
               <div className="grid md:grid-cols-3 gap-4">
