@@ -70,6 +70,7 @@ export default function OwnerHome() {
           <Tool to="/synapsia/calendar" icon={<Calendar className="w-6 h-6 text-primary" />} title="Agenda" desc="Vista global del calendario de citas." />
           <Tool to="/synapsia/patients" icon={<Stethoscope className="w-6 h-6 text-primary" />} title="Pacientes y expedientes" desc="Explora todos los expedientes médicos digitales." />
           <Tool to="/synapsia/cotizador" icon={<Calculator className="w-6 h-6 text-primary" />} title="Cotizador" desc="Genera cotizaciones para Senior Living y Centro Benesse." />
+          <Tool to="/synapsia/evaluaciones" icon={<ClipboardList className="w-6 h-6 text-primary" />} title="Evaluación de personal" desc="Entrevistas al brazo administrativo: qué reciben, procesan y generan." />
           {isSpecialist && (
             <Tool to="/synapsia/calendar" icon={<FileText className="w-6 h-6 text-primary" />} title="Mi consulta" desc="Tu agenda y notas como especialista." />
           )}
