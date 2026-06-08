@@ -27,6 +27,7 @@ import GastosUnidad from "./pages/synapsia/GastosUnidad";
 import Facturas from "./pages/synapsia/Facturas";
 import Cartera from "./pages/synapsia/Cartera";
 import Nomina from "./pages/synapsia/Nomina";
+import Evaluaciones from "./pages/synapsia/Evaluaciones";
 import ProtectedRoute from "./components/synapsia/ProtectedRoute";
 import OwnerOnlyRoute from "./components/synapsia/OwnerOnlyRoute";
 import { AuthProvider, useAuth } from "./hooks/useAuth";
@@ -79,6 +80,7 @@ const App = () => (
             <Route path="/synapsia/unidades/:id/facturas" element={<ProtectedRoute requiredRole={["admin", "dueno", "administrativo", "contador"]}><Facturas /></ProtectedRoute>} />
             <Route path="/synapsia/unidades/:id/cartera" element={<ProtectedRoute requiredRole={["admin", "dueno", "administrativo", "contador"]}><Cartera /></ProtectedRoute>} />
             <Route path="/synapsia/unidades/:id/nomina" element={<ProtectedRoute requiredRole={["admin", "dueno", "administrativo", "asistente_admin", "contador", "rrhh"]}><Nomina /></ProtectedRoute>} />
+            <Route path="/synapsia/evaluaciones" element={<ProtectedRoute requiredRole={["admin", "dueno"]}><Evaluaciones /></ProtectedRoute>} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </AuthProvider>
