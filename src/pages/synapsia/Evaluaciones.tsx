@@ -47,6 +47,8 @@ const empty = {
   observations: "",
 };
 
+const DRAFT_KEY = "synapsia:evaluaciones:draft";
+
 export default function Evaluaciones() {
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
@@ -56,6 +58,7 @@ export default function Evaluaciones() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [showForm, setShowForm] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [lastDraftAt, setLastDraftAt] = useState<Date | null>(null);
 
   const load = async () => {
     const [u, e] = await Promise.all([
@@ -68,7 +71,41 @@ export default function Evaluaciones() {
 
   useEffect(() => { load(); }, []);
 
-  const reset = () => { setForm(empty); setEditingId(null); setShowForm(false); };
+  // Restaurar borrador local si existe (sobrevive a sesión expirada)
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(DRAFT_KEY);
+      if (!raw) return;
+      const parsed = JSON.parse(raw);
+      if (parsed?.form && (parsed.form.full_name || parsed.form.position || parsed.form.info_received || parsed.form.info_processing || parsed.form.info_generated)) {
+        setForm(parsed.form);
+        setEditingId(parsed.editingId || null);
+        setShowForm(true);
+        if (parsed.savedAt) setLastDraftAt(new Date(parsed.savedAt));
+        toast.info("Borrador recuperado del autoguardado");
+      }
+    } catch {}
+  }, []);
+
+  // Autoguardado local cada 20s mientras hay contenido
+  useEffect(() => {
+    if (!showForm) return;
+    const hasContent = !!(form.full_name || form.position || form.info_received || form.info_processing || form.info_generated || form.team_in_charge || form.reports_to || form.tools_used || form.pain_points || form.observations);
+    if (!hasContent) return;
+    const tick = () => {
+      try {
+        const savedAt = new Date().toISOString();
+        localStorage.setItem(DRAFT_KEY, JSON.stringify({ form, editingId, savedAt }));
+        setLastDraftAt(new Date(savedAt));
+      } catch {}
+    };
+    const id = setInterval(tick, 20000);
+    return () => clearInterval(id);
+  }, [form, editingId, showForm]);
+
+  const clearDraft = () => { try { localStorage.removeItem(DRAFT_KEY); } catch {} setLastDraftAt(null); };
+
+  const reset = () => { setForm(empty); setEditingId(null); setShowForm(false); clearDraft(); };
 
   const save = async () => {
     if (!form.full_name.trim() || !form.position.trim()) {
