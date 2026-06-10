@@ -5,10 +5,12 @@ import { es } from "date-fns/locale";
 import logoBenesse from "@/assets/logo-benesse.jpg";
 import logoAlcatraces from "@/assets/logo-alcatraces.jpg";
 import logoSenior from "@/assets/logo-senior-living.jpg";
+import logoCtAlcatracesAsset from "@/assets/logo-ct-alcatraces.png.asset.json";
 
 const LOGO_BY_SERVICE: Record<string, string> = {
   senior_living: logoSenior,
   centro_benesse: logoBenesse,
+  ct_alcatraces: logoCtAlcatracesAsset.url,
   personalizado: logoAlcatraces,
 };
 
@@ -30,7 +32,7 @@ interface CostItem {
 
 interface QuoteData {
   quote_number: string;
-  service_type: "senior_living" | "centro_benesse" | "personalizado";
+  service_type: "senior_living" | "centro_benesse" | "ct_alcatraces" | "personalizado";
   base_monthly_price: number;
   room_type?: "compartida" | "individual" | null;
   client_name: string;
@@ -53,6 +55,7 @@ interface QuoteData {
 const SERVICE_LABELS: Record<string, string> = {
   senior_living: "Senior Living",
   centro_benesse: "Centro Benesse",
+  ct_alcatraces: "Comunidad Terapéutica Alcatraces",
   personalizado: "Servicio Personalizado",
 };
 
@@ -63,6 +66,10 @@ const SERVICE_DESCRIPTIONS: Record<string, string> = {
     "Centro Benesse es una institución especializada en el tratamiento integral de las adicciones y los trastornos por uso de sustancias, que cuenta con un equipo multidisciplinario de profesionales de la salud —médicos psiquiatras, médicos internistas, psicólogos clínicos especializados en adicciones, consejeros terapéuticos, personal de enfermería capacitado, terapeutas ocupacionales, nutriólogos clínicos, trabajadores sociales y cuidadores entrenados— trabajando de forma coordinada bajo un mismo plan terapéutico individualizado. " +
     "Atendemos a personas que cursan con dependencia y uso problemático de alcohol, cocaína, cannabis, metanfetaminas, opioides, benzodiacepinas, tabaco y otras sustancias, así como adicciones conductuales (juego patológico, tecnologías) y los trastornos psiquiátricos asociados al consumo —depresión, ansiedad, trastornos del sueño, trastornos de personalidad y patología dual—, acompañando al paciente desde la desintoxicación supervisada hasta la rehabilitación y la prevención de recaídas. " +
     "Nuestro modelo terapéutico combina desintoxicación médica supervisada, manejo farmacológico de la abstinencia y de la patología dual, psicoterapia individual y grupal, terapia cognitivo-conductual, prevención de recaídas, terapia familiar, grupos de apoyo, intervención motivacional, rehabilitación funcional, plan nutricional personalizado, actividades terapéuticas y recreativas, y un programa estructurado de reinserción social y seguimiento posterior al egreso, todo dentro de un entorno residencial seguro, cálido y profesional diseñado para promover la recuperación sostenida, la autonomía y la mejor calidad de vida posible para cada residente y su familia.",
+  ct_alcatraces:
+    "La Comunidad Terapéutica Alcatraces es un programa residencial de tratamiento integral para adicciones y trastornos por uso de sustancias, con un equipo multidisciplinario —médicos psiquiatras, psicólogos clínicos, consejeros terapéuticos, personal de enfermería, terapeutas ocupacionales, nutriólogos y cuidadores entrenados— que opera bajo un plan terapéutico individualizado. " +
+    "Atendemos a personas con dependencia y uso problemático de alcohol, cocaína, cannabis, metanfetaminas, opioides, benzodiacepinas, tabaco y otras sustancias, así como adicciones conductuales y los trastornos psiquiátricos asociados al consumo, acompañando al residente desde la desintoxicación supervisada hasta la rehabilitación y la prevención de recaídas. " +
+    "Nuestro modelo combina desintoxicación médica supervisada, manejo farmacológico, psicoterapia individual y grupal, terapia cognitivo-conductual, prevención de recaídas, terapia familiar, grupos de apoyo, rehabilitación funcional, plan nutricional personalizado, actividades terapéuticas y recreativas, y un programa estructurado de reinserción social y seguimiento posterior al egreso, en un entorno residencial seguro, cálido y profesional diseñado para promover la recuperación sostenida y la mejor calidad de vida posible.",
   personalizado:
     "Esquema a la medida cotizado por periodo (día, semana o mes), con costo unitario y cantidad definidos según las necesidades del residente.",
 };
@@ -103,7 +110,8 @@ export async function generateQuotePDF(quote: QuoteData) {
       w = maxW;
       h = w / ratio;
     }
-    doc.addImage(logo, "JPEG", margin, (100 - h) / 2, w, h);
+    const fmtImg = quote.service_type === "ct_alcatraces" ? "PNG" : "JPEG";
+    doc.addImage(logo, fmtImg, margin, (100 - h) / 2, w, h);
   } catch {
     // ignore if logo fails to load
   }
