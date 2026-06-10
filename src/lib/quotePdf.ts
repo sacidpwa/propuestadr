@@ -110,7 +110,8 @@ export async function generateQuotePDF(quote: QuoteData) {
       w = maxW;
       h = w / ratio;
     }
-    doc.addImage(logo, "JPEG", margin, (100 - h) / 2, w, h);
+    const fmtImg = quote.service_type === "ct_alcatraces" ? "PNG" : "JPEG";
+    doc.addImage(logo, fmtImg, margin, (100 - h) / 2, w, h);
   } catch {
     // ignore if logo fails to load
   }
