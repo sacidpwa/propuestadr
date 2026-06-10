@@ -528,7 +528,7 @@ export default function Cotizador() {
                       <Input
                         type="number"
                         min={0}
-                        step={500}
+                        step="any"
                         required
                         value={form.base_monthly_price}
                         onChange={(e) =>
