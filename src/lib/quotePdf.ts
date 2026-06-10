@@ -32,7 +32,7 @@ interface CostItem {
 
 interface QuoteData {
   quote_number: string;
-  service_type: "senior_living" | "centro_benesse" | "personalizado";
+  service_type: "senior_living" | "centro_benesse" | "ct_alcatraces" | "personalizado";
   base_monthly_price: number;
   room_type?: "compartida" | "individual" | null;
   client_name: string;
@@ -55,6 +55,7 @@ interface QuoteData {
 const SERVICE_LABELS: Record<string, string> = {
   senior_living: "Senior Living",
   centro_benesse: "Centro Benesse",
+  ct_alcatraces: "Comunidad Terapéutica Alcatraces",
   personalizado: "Servicio Personalizado",
 };
 
