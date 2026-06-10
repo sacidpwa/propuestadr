@@ -420,7 +420,7 @@ export default function Cotizador() {
       </header>
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <Card>
             <CardContent className="pt-4 pb-3 px-4 flex items-center gap-3">
               <Building2 className="w-8 h-8 text-primary" />
@@ -440,6 +440,17 @@ export default function Cotizador() {
                 <p className="text-sm">
                   Compartida <span className="font-bold">{formatCurrency(65000)}</span> · Individual <span className="font-bold">{formatCurrency(85000)}</span>
                   <Badge variant="outline" className="ml-2 text-[10px]">Individual: propuesta</Badge>
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="pt-4 pb-3 px-4 flex items-center gap-3">
+              <Building2 className="w-8 h-8 text-primary" />
+              <div>
+                <p className="text-xs text-muted-foreground">CT Alcatraces</p>
+                <p className="text-sm">
+                  Mensualidad <span className="font-bold">{formatCurrency(26000)}</span>
                 </p>
               </div>
             </CardContent>
