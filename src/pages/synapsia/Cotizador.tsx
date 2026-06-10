@@ -107,6 +107,9 @@ const DEFAULT_COSTS: Record<ServiceType, CostItem[]> = {
   personalizado: [],
 };
 
+// CT Alcatraces comparte el catálogo y características de Centro Benesse
+DEFAULT_COSTS.ct_alcatraces = DEFAULT_COSTS.centro_benesse.map((c) => ({ ...c }));
+
 const DEFAULT_OTHER_TO_QUOTE: CostItem[] = [
   { concept: "5 alimentos al día", unit: "incluido en cotización a medida", price: null },
   { concept: "Cuidado médico continuo", unit: "según valoración", price: null },
