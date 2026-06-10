@@ -72,6 +72,23 @@ const SERVICE_PRICES: Record<ServiceType, Record<RoomType, number>> = {
 
 // Catálogos por defecto basados en el Excel del cliente.
 // proposed: true marca valores propuestos por el asistente que el cliente debe revisar.
+const BENESSE_COSTS: CostItem[] = [
+  { concept: "Inscripción", unit: "pago único", price: 50000, proposed: true },
+  { concept: "Kit de ingreso", unit: "pago único", price: 3500, proposed: true },
+  { concept: "Cuidador particular (dentro de la institución)", unit: "por hora", price: 120 },
+  { concept: "Enfermera particular (dentro de la institución)", unit: "por hora", price: 130 },
+  { concept: "Acompañante terapéutico (dentro de la institución)", unit: "por hora", price: 150 },
+  { concept: "Cuidador particular (fuera de la institución)", unit: "por hora", price: 130 },
+  { concept: "Enfermera particular (fuera de la institución)", unit: "por hora", price: 150 },
+  { concept: "Acompañante terapéutico (fuera de la institución)", unit: "por hora", price: 170 },
+  { concept: "Terapia ocupacional (cuota semestral)", unit: "semestral", price: 1200, proposed: true },
+  { concept: "Consulta de emergencia", unit: "por evento", price: 2500 },
+  { concept: "Consulta psicológica individual", unit: "por consulta", price: 1200, proposed: true },
+  { concept: "Consulta psicológica grupal (por persona)", unit: "por sesión", price: 700, proposed: true },
+  { concept: "Consulta psiquiátrica", unit: "por consulta", price: 2000 },
+  { concept: "Consulta Dr. Rodrigo Márquez de la Serna", unit: "por consulta", price: 2500, proposed: true },
+];
+
 const DEFAULT_COSTS: Record<ServiceType, CostItem[]> = {
   senior_living: [
     { concept: "Inscripción", unit: "pago único", price: 40000 },
@@ -88,27 +105,11 @@ const DEFAULT_COSTS: Record<ServiceType, CostItem[]> = {
     { concept: "Consulta psiquiátrica", unit: "por consulta", price: 2000 },
     { concept: "Consulta Dr. Rodrigo Márquez de la Serna", unit: "por consulta", price: 2500, proposed: true },
   ],
-  centro_benesse: [
-    { concept: "Inscripción", unit: "pago único", price: 50000, proposed: true },
-    { concept: "Kit de ingreso", unit: "pago único", price: 3500, proposed: true },
-    { concept: "Cuidador particular (dentro de la institución)", unit: "por hora", price: 120 },
-    { concept: "Enfermera particular (dentro de la institución)", unit: "por hora", price: 130 },
-    { concept: "Acompañante terapéutico (dentro de la institución)", unit: "por hora", price: 150 },
-    { concept: "Cuidador particular (fuera de la institución)", unit: "por hora", price: 130 },
-    { concept: "Enfermera particular (fuera de la institución)", unit: "por hora", price: 150 },
-    { concept: "Acompañante terapéutico (fuera de la institución)", unit: "por hora", price: 170 },
-    { concept: "Terapia ocupacional (cuota semestral)", unit: "semestral", price: 1200, proposed: true },
-    { concept: "Consulta de emergencia", unit: "por evento", price: 2500 },
-    { concept: "Consulta psicológica individual", unit: "por consulta", price: 1200, proposed: true },
-    { concept: "Consulta psicológica grupal (por persona)", unit: "por sesión", price: 700, proposed: true },
-    { concept: "Consulta psiquiátrica", unit: "por consulta", price: 2000 },
-    { concept: "Consulta Dr. Rodrigo Márquez de la Serna", unit: "por consulta", price: 2500, proposed: true },
-  ],
+  centro_benesse: BENESSE_COSTS,
+  ct_alcatraces: BENESSE_COSTS.map((c) => ({ ...c })),
   personalizado: [],
 };
 
-// CT Alcatraces comparte el catálogo y características de Centro Benesse
-DEFAULT_COSTS.ct_alcatraces = DEFAULT_COSTS.centro_benesse.map((c) => ({ ...c }));
 
 const DEFAULT_OTHER_TO_QUOTE: CostItem[] = [
   { concept: "5 alimentos al día", unit: "incluido en cotización a medida", price: null },
