@@ -471,6 +471,7 @@ export default function Cotizador() {
                     <SelectContent>
                       <SelectItem value="senior_living">Senior Living</SelectItem>
                       <SelectItem value="centro_benesse">Centro Benesse</SelectItem>
+                      <SelectItem value="ct_alcatraces">Comunidad Terapéutica Alcatraces</SelectItem>
                       <SelectItem value="personalizado">Personalizado</SelectItem>
                     </SelectContent>
                   </Select>
