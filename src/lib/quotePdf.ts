@@ -5,10 +5,12 @@ import { es } from "date-fns/locale";
 import logoBenesse from "@/assets/logo-benesse.jpg";
 import logoAlcatraces from "@/assets/logo-alcatraces.jpg";
 import logoSenior from "@/assets/logo-senior-living.jpg";
+import logoCtAlcatracesAsset from "@/assets/logo-ct-alcatraces.png.asset.json";
 
 const LOGO_BY_SERVICE: Record<string, string> = {
   senior_living: logoSenior,
   centro_benesse: logoBenesse,
+  ct_alcatraces: logoCtAlcatracesAsset.url,
   personalizado: logoAlcatraces,
 };
 
