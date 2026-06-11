@@ -1,0 +1,2 @@
+ALTER TABLE public.quotes DROP CONSTRAINT IF EXISTS quotes_service_type_check;
+ALTER TABLE public.quotes ADD CONSTRAINT quotes_service_type_check CHECK (service_type IN ('senior_living','centro_benesse','ct_alcatraces','personalizado'));
