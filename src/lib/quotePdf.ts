@@ -209,9 +209,22 @@ export async function generateQuotePDF(quote: QuoteData) {
   doc.setFont("helvetica", "normal");
   doc.setFontSize(10);
   doc.setTextColor(...MUTED);
-  const desc = doc.splitTextToSize(SERVICE_DESCRIPTIONS[quote.service_type], pageW - margin * 2);
-  doc.text(desc, margin, y, { align: "justify", maxWidth: pageW - margin * 2 });
-  y += desc.length * 12 + 10;
+  const fullDesc = SERVICE_DESCRIPTIONS[quote.service_type];
+  // Split into paragraphs; justify normal paragraphs, left-align bullet lines (lines starting with •)
+  const paragraphs = fullDesc.split(/\n+/);
+  for (const para of paragraphs) {
+    const trimmed = para.trim();
+    if (!trimmed) { y += 6; continue; }
+    const isBullet = trimmed.startsWith("•");
+    const lines = doc.splitTextToSize(trimmed, pageW - margin * 2);
+    if (isBullet) {
+      doc.text(lines, margin, y);
+    } else {
+      doc.text(lines, margin, y, { align: "justify", maxWidth: pageW - margin * 2 });
+    }
+    y += lines.length * 12 + 2;
+  }
+  y += 8;
 
   // Highlighted price box
   const isCustom = quote.service_type === "personalizado";
