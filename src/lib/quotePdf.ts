@@ -67,9 +67,13 @@ const SERVICE_DESCRIPTIONS: Record<string, string> = {
     "Atendemos a personas que cursan con dependencia y uso problemático de alcohol, cocaína, cannabis, metanfetaminas, opioides, benzodiacepinas, tabaco y otras sustancias, así como adicciones conductuales (juego patológico, tecnologías) y los trastornos psiquiátricos asociados al consumo —depresión, ansiedad, trastornos del sueño, trastornos de personalidad y patología dual—, acompañando al paciente desde la desintoxicación supervisada hasta la rehabilitación y la prevención de recaídas. " +
     "Nuestro modelo terapéutico combina desintoxicación médica supervisada, manejo farmacológico de la abstinencia y de la patología dual, psicoterapia individual y grupal, terapia cognitivo-conductual, prevención de recaídas, terapia familiar, grupos de apoyo, intervención motivacional, rehabilitación funcional, plan nutricional personalizado, actividades terapéuticas y recreativas, y un programa estructurado de reinserción social y seguimiento posterior al egreso, todo dentro de un entorno residencial seguro, cálido y profesional diseñado para promover la recuperación sostenida, la autonomía y la mejor calidad de vida posible para cada residente y su familia.",
   ct_alcatraces:
-    "La Comunidad Terapéutica Alcatraces es un programa residencial de tratamiento integral para adicciones y trastornos por uso de sustancias, con un equipo multidisciplinario —médicos psiquiatras, psicólogos clínicos, consejeros terapéuticos, personal de enfermería, terapeutas ocupacionales, nutriólogos y cuidadores entrenados— que opera bajo un plan terapéutico individualizado. " +
-    "Atendemos a personas con dependencia y uso problemático de alcohol, cocaína, cannabis, metanfetaminas, opioides, benzodiacepinas, tabaco y otras sustancias, así como adicciones conductuales y los trastornos psiquiátricos asociados al consumo, acompañando al residente desde la desintoxicación supervisada hasta la rehabilitación y la prevención de recaídas. " +
-    "Nuestro modelo combina desintoxicación médica supervisada, manejo farmacológico, psicoterapia individual y grupal, terapia cognitivo-conductual, prevención de recaídas, terapia familiar, grupos de apoyo, rehabilitación funcional, plan nutricional personalizado, actividades terapéuticas y recreativas, y un programa estructurado de reinserción social y seguimiento posterior al egreso, en un entorno residencial seguro, cálido y profesional diseñado para promover la recuperación sostenida y la mejor calidad de vida posible.",
+    "Somos un gran equipo multidisciplinario de profesionales de la salud con más de 40 años de experiencia en el manejo de personas con padecimientos psiquiátricos. La cuota mensual incluye:\n\n" +
+    "•  HOSPEDAJE: Habitación, luz, agua, teléfono, baño y lavandería.\n" +
+    "•  ACTIVIDADES: Físicas, recreativas, de entretenimiento y esparcimiento.\n" +
+    "•  CUIDADOS: De enfermería y cuidadora durante la estancia (24 horas).\n" +
+    "•  COMIDAS: Desayuno, lunch, comida, refrigerio y cena.\n" +
+    "•  NUTRICIÓN: Consulta nutricional.\n" +
+    "•  CONSULTA: Consulta mensual de Medicina Psiquiátrica y Medicina General.",
   personalizado:
     "Esquema a la medida cotizado por periodo (día, semana o mes), con costo unitario y cantidad definidos según las necesidades del residente.",
 };
