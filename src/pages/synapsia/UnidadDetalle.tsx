@@ -5,7 +5,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, LogOut, Pill, Wallet, FileText, Users, ClipboardList, Sparkles, Wrench, HandCoins, Receipt, ShoppingBag } from "lucide-react";
+import { ArrowLeft, LogOut, Pill, Wallet, FileText, Users, ClipboardList, Sparkles, Wrench, HandCoins, Receipt, ShoppingBag, ShoppingCart, Package, ClipboardCheck } from "lucide-react";
 import synapsiaIcon from "@/assets/synapsia-icon.svg";
 
 interface HealthUnit { id: string; name: string; description: string | null; }
@@ -22,6 +22,9 @@ const APPS = [
   { key: "req-servicio", label: "Servicios de mantenimiento", desc: "Reparaciones y servicios externos", icon: Wrench, route: "requisiciones/servicio_mantenimiento", ready: true },
   { key: "pago-proveedores", label: "Pago a proveedores", desc: "Órdenes y verificación con PIN", icon: HandCoins, route: "requisiciones/pago_proveedor", ready: true },
   { key: "cobranza", label: "Cartera de clientes", desc: "Cuotas y morosos", icon: FileText, route: "cartera", ready: true },
+  { key: "ordenes-compra", label: "Órdenes de compra", desc: "Generar, autorizar y abastecer", icon: ShoppingCart, route: "ordenes-compra", ready: true },
+  { key: "inventario", label: "Inventario de medicamentos", desc: "Stock, entradas, alertas de mínimo", icon: Package, route: "inventario", ready: true },
+  { key: "confirmar-inventario", label: "Confirmar inventario", desc: "Conteo físico cada 3 días", icon: ClipboardCheck, route: "confirmar-inventario", ready: true },
 ];
 
 export default function UnidadDetalle() {
