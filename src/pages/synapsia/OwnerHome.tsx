@@ -2,7 +2,7 @@ import { Link } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { BarChart3, Calendar, FileText, LogOut, Users, Wallet, Stethoscope, Calculator, ShieldCheck, LayoutDashboard, ClipboardList } from "lucide-react";
+import { BarChart3, Calendar, FileText, LogOut, Users, Wallet, Stethoscope, Calculator, ShieldCheck, LayoutDashboard, ClipboardList, CheckCircle } from "lucide-react";
 import synapsiaIcon from "@/assets/synapsia-icon.svg";
 import { useState } from "react";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -70,6 +70,8 @@ export default function OwnerHome() {
           <Tool to="/synapsia/calendar" icon={<Calendar className="w-6 h-6 text-primary" />} title="Agenda" desc="Vista global del calendario de citas." />
           <Tool to="/synapsia/patients" icon={<Stethoscope className="w-6 h-6 text-primary" />} title="Pacientes y expedientes" desc="Explora todos los expedientes médicos digitales." />
           <Tool to="/synapsia/cotizador" icon={<Calculator className="w-6 h-6 text-primary" />} title="Cotizador" desc="Genera cotizaciones para Senior Living y Centro Benesse." />
+          <Tool to="/synapsia/dashboard" icon={<LayoutDashboard className="w-6 h-6 text-primary" />} title="Dashboard ejecutivo" desc="Indicadores consolidados: requisiciones, nómina, facturas, egresos por unidad." />
+          <Tool to="/synapsia/autorizaciones" icon={<CheckCircle className="w-6 h-6 text-primary" />} title="Centro de autorizaciones" desc="Autoriza requisiciones, nómina y verifica facturas con PIN desde un solo lugar." />
           <Tool to="/synapsia/evaluaciones" icon={<ClipboardList className="w-6 h-6 text-primary" />} title="Evaluación de personal" desc="Entrevistas al brazo administrativo: qué reciben, procesan y generan." />
           {isSpecialist && (
             <Tool to="/synapsia/calendar" icon={<FileText className="w-6 h-6 text-primary" />} title="Mi consulta" desc="Tu agenda y notas como especialista." />

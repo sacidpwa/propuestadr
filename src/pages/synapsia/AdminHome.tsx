@@ -2,7 +2,7 @@ import { Link } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Calculator, LogOut, Wallet, Users, BarChart3, ShieldCheck, Building2, ClipboardList } from "lucide-react";
+import { Calculator, LogOut, Wallet, Users, BarChart3, ShieldCheck, Building2, ClipboardList, LayoutDashboard, CheckCircle } from "lucide-react";
 import synapsiaIcon from "@/assets/synapsia-icon.svg";
 import { useState } from "react";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -62,6 +62,12 @@ export default function AdminHome() {
           <Tool to="/synapsia/metrics" icon={<BarChart3 className="w-6 h-6 text-primary" />} title="Mis métricas" desc="Cobros del periodo y desempeño." />
           {(hasRole("admin") || hasRole("dueno")) && (
             <Tool to="/synapsia/users" icon={<Users className="w-6 h-6 text-primary" />} title="Usuarios y socios" desc="Crear cuentas, asignar roles, PIN y vincular especialistas." />
+          )}
+          {(hasRole("admin") || hasRole("dueno") || hasRole("administrativo")) && (
+            <Tool to="/synapsia/dashboard" icon={<LayoutDashboard className="w-6 h-6 text-primary" />} title="Dashboard ejecutivo" desc="Indicadores consolidados: requisiciones, nómina, facturas, egresos por unidad." />
+          )}
+          {(hasRole("admin") || hasRole("dueno") || hasRole("administrativo")) && (
+            <Tool to="/synapsia/autorizaciones" icon={<CheckCircle className="w-6 h-6 text-primary" />} title="Centro de autorizaciones" desc="Autoriza requisiciones, nómina y verifica facturas con PIN desde un solo lugar." />
           )}
           {(hasRole("admin") || hasRole("dueno")) && (
             <Tool to="/synapsia/evaluaciones" icon={<ClipboardList className="w-6 h-6 text-primary" />} title="Evaluación de personal" desc="Entrevistas al brazo administrativo: qué reciben, procesan y generan." />
