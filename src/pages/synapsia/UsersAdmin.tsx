@@ -58,6 +58,9 @@ export default function UsersAdmin() {
   const [pinValue, setPinValue] = useState("");
   const [editDialog, setEditDialog] = useState<{ open: boolean; userId: string | null; full_name: string; email: string }>({ open: false, userId: null, full_name: "", email: "" });
   const [editLoading, setEditLoading] = useState(false);
+  const [pwDialog, setPwDialog] = useState<{ open: boolean; userId: string | null; name: string }>({ open: false, userId: null, name: "" });
+  const [pwValue, setPwValue] = useState("");
+  const [pwLoading, setPwLoading] = useState(false);
   const [units, setUnits] = useState<HealthUnit[]>([]);
   const [assignments, setAssignments] = useState<Assignment[]>([]);
   const [assignDialog, setAssignDialog] = useState<{ open: boolean; userId: string | null; name: string }>({ open: false, userId: null, name: "" });
@@ -181,6 +184,26 @@ export default function UsersAdmin() {
       fetchAll();
     }
     setEditLoading(false);
+  };
+
+  const submitPassword = async () => {
+    if (!pwDialog.userId) return;
+    if (pwValue.length < 8) {
+      toast({ variant: "destructive", title: "Contraseña muy corta", description: "Mínimo 8 caracteres." });
+      return;
+    }
+    setPwLoading(true);
+    const { data, error } = await supabase.functions.invoke("admin-reset-password", {
+      body: { user_id: pwDialog.userId, password: pwValue },
+    });
+    setPwLoading(false);
+    if (error || (data as any)?.error) {
+      toast({ variant: "destructive", title: "Error", description: (data as any)?.error || error?.message });
+    } else {
+      toast({ title: "Contraseña actualizada", description: `Nueva contraseña para ${pwDialog.name}` });
+      setPwDialog({ open: false, userId: null, name: "" });
+      setPwValue("");
+    }
   };
 
   const togglePartner = async (id: string, v: boolean) => { await supabase.from("specialists").update({ is_partner: v }).eq("id", id); fetchAll(); };
@@ -346,6 +369,9 @@ export default function UsersAdmin() {
                           <Button size="sm" variant="outline" onClick={() => setPinDialog({ open: true, userId: p.user_id, name: p.full_name })} disabled={!isOwnerOrAdmin}>
                             <KeyRound className="w-3 h-3 mr-1" /> PIN
                           </Button>
+                          <Button size="sm" variant="outline" onClick={() => setPwDialog({ open: true, userId: p.user_id, name: p.full_name })} disabled={!isOwnerOrAdmin}>
+                            <KeyRound className="w-3 h-3 mr-1" /> Password
+                          </Button>
                           <Button size="sm" variant="outline" onClick={() => setAssignDialog({ open: true, userId: p.user_id, name: p.full_name })} disabled={!isOwnerOrAdmin}>
                             <Stethoscope className="w-3 h-3 mr-1" /> Unidades
                           </Button>
@@ -474,6 +500,21 @@ export default function UsersAdmin() {
           <DialogFooter>
             <Button variant="outline" onClick={() => setEditDialog({ open: false, userId: null, full_name: "", email: "" })}>Cancelar</Button>
             <Button onClick={submitEdit} disabled={editLoading}>{editLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : "Guardar cambios"}</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Password reset dialog */}
+      <Dialog open={pwDialog.open} onOpenChange={(v) => { if (!v) { setPwDialog({ open: false, userId: null, name: "" }); setPwValue(""); } }}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Cambiar contraseña de {pwDialog.name}</DialogTitle>
+            <DialogDescription>Mínimo 8 caracteres. El usuario deberá usar la nueva contraseña en su próximo inicio de sesión.</DialogDescription>
+          </DialogHeader>
+          <Input type="text" minLength={8} value={pwValue} onChange={(e) => setPwValue(e.target.value)} placeholder="Nueva contraseña" />
+          <DialogFooter>
+            <Button variant="outline" onClick={() => { setPwDialog({ open: false, userId: null, name: "" }); setPwValue(""); }}>Cancelar</Button>
+            <Button onClick={submitPassword} disabled={pwLoading || pwValue.length < 8}>{pwLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : "Guardar"}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
