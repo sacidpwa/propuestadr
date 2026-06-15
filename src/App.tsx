@@ -12,6 +12,9 @@ import Cotizador from "./pages/synapsia/Cotizador";
 import AdminHome from "./pages/synapsia/AdminHome";
 import OwnerHome from "./pages/synapsia/OwnerHome";
 import SpecialistHome from "./pages/synapsia/SpecialistHome";
+import ProfileSelector from "./pages/synapsia/ProfileSelector";
+import DuenoDashboard from "./pages/synapsia/DuenoDashboard";
+import DuenoUnidadDashboard from "./pages/synapsia/DuenoUnidadDashboard";
 import CalendarPage from "./pages/synapsia/Calendar";
 import Patients from "./pages/synapsia/Patients";
 import MedicalRecord from "./pages/synapsia/MedicalRecord";
@@ -45,8 +48,12 @@ const queryClient = new QueryClient({
 const SynapsiaHome = () => {
   const { hasRole, loading } = useAuth();
   if (loading) return null;
-  // Dueño, admin y recepción aterrizan en la Planta en vivo (canvas central)
-  if (hasRole("dueno") || hasRole("admin") || hasRole("recepcion")) {
+  // Si es dueño (con o sin especialista), mostrar selector de perfil
+  if (hasRole("dueno")) {
+    return <ProfileSelector />;
+  }
+  // Admin y recepción aterrizan en la Planta en vivo (canvas central)
+  if (hasRole("admin") || hasRole("recepcion")) {
     return <Navigate to="/synapsia/floor" replace />;
   }
   if (hasRole("especialista")) return <SpecialistHome />;
@@ -95,6 +102,9 @@ const App = () => (
             <Route path="/synapsia/unidades/:id/inventario" element={<ProtectedRoute requiredRole={["admin", "dueno", "administrativo", "asistente_admin", "enfermera"]}><Inventario /></ProtectedRoute>} />
             <Route path="/synapsia/unidades/:id/confirmar-inventario" element={<ProtectedRoute requiredRole={["admin", "dueno", "enfermera"]}><ConfirmacionInventario /></ProtectedRoute>} />
             <Route path="/synapsia/log-movimientos" element={<ProtectedRoute requiredRole={["admin", "dueno", "administrativo"]}><LogMovimientos /></ProtectedRoute>} />
+            <Route path="/synapsia/elegir-perfil" element={<ProtectedRoute><ProfileSelector /></ProtectedRoute>} />
+            <Route path="/synapsia/dueno" element={<ProtectedRoute requiredRole={["admin", "dueno"]}><DuenoDashboard /></ProtectedRoute>} />
+            <Route path="/synapsia/unidades/:id/dashboard" element={<ProtectedRoute requiredRole={["admin", "dueno"]}><DuenoUnidadDashboard /></ProtectedRoute>} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </AuthProvider>
