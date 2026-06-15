@@ -36,6 +36,7 @@ interface PO {
 interface POItem {
   id: string; medication_name: string; quantity: number; unit: string;
   unit_price: number; total_price: number; notes: string | null;
+  patient_name?: string | null;
 }
 interface Req {
   id: string; title: string; total_amount: number; created_at: string;
@@ -69,7 +70,8 @@ export default function OrdenesCompra() {
     delivery_address: "", payment_terms: "Crédito 7 días", department: "",
     requested_by_name: "", delivery_date: "", notes: "",
   });
-  const [poItems, setPoItems] = useState<Array<{ medication_name: string; quantity: number; unit: string; unit_price: number }>>([]);
+  const [poItems, setPoItems] = useState<Array<{ medication_name: string; quantity: number; unit: string; unit_price: number; patient_name?: string }>>([]);
+  const [addPatientCol, setAddPatientCol] = useState(false);
 
   const [detailOpen, setDetailOpen] = useState(false);
   const [detailPo, setDetailPo] = useState<PO | null>(null);
@@ -129,6 +131,7 @@ export default function OrdenesCompra() {
         quantity: it.quantity,
         unit: it.unit || "pza",
         unit_price: it.unit_price,
+        patient_name: it.patient_name,
       })));
     }
   }
@@ -351,13 +354,14 @@ export default function OrdenesCompra() {
               </div>
               {poItems.map((it, idx) => (
                 <div key={idx} className="grid grid-cols-12 gap-2 items-end border rounded p-2">
-                  <div className="col-span-4"><Label className="text-xs">Medicamento/Insumo</Label><Input value={it.medication_name} onChange={e => updatePoItem(idx, "medication_name", e.target.value)} /></div>
+                  <div className="col-span-2"><Label className="text-xs">Medicamento</Label><Input value={it.medication_name} onChange={e => updatePoItem(idx, "medication_name", e.target.value)} /></div>
+                  <div className="col-span-2"><Label className="text-xs">Paciente</Label><Input value={it.patient_name || ""} onChange={e => updatePoItem(idx, "patient_name", e.target.value)} /></div>
                   <div className="col-span-2"><Label className="text-xs">Cant.</Label><Input type="number" min="0" step="0.01" value={it.quantity} onChange={e => updatePoItem(idx, "quantity", parseFloat(e.target.value) || 0)} /></div>
                   <div className="col-span-2"><Label className="text-xs">Unidad</Label>
                     <Select value={it.unit} onValueChange={v => updatePoItem(idx, "unit", v)}>
                       <SelectTrigger><SelectValue /></SelectTrigger>
                       <SelectContent>
-                        {["pza", "kg", "ml", "l", "caja", "frasco", "blister", "tubo", "par", "m", "servicio"].map(u => <SelectItem key={u} value={u}>{u}</SelectItem>)}
+                        {["pza", "tableta", "cápsula", "ampula", "frasco", "gotas", "kg", "ml", "l", "caja", "blister", "tubo"].map(u => <SelectItem key={u} value={u}>{u}</SelectItem>)}
                       </SelectContent>
                     </Select>
                   </div>
@@ -423,7 +427,8 @@ export default function OrdenesCompra() {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Descripción</TableHead>
+                      <TableHead>Medicamento</TableHead>
+                      <TableHead>Paciente</TableHead>
                       <TableHead className="text-center">Cant.</TableHead>
                       <TableHead className="text-center">Unidad</TableHead>
                       <TableHead className="text-right">P. unit.</TableHead>
@@ -434,6 +439,7 @@ export default function OrdenesCompra() {
                     {detailItems.map(it => (
                       <TableRow key={it.id}>
                         <TableCell>{it.medication_name}</TableCell>
+                        <TableCell>{(it as any).patient_name || "—"}</TableCell>
                         <TableCell className="text-center">{it.quantity}</TableCell>
                         <TableCell className="text-center">{it.unit}</TableCell>
                         <TableCell className="text-right">${Number(it.unit_price).toFixed(2)}</TableCell>

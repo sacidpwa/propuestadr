@@ -178,6 +178,12 @@ CREATE TRIGGER trg_purchase_orders_updated
   BEFORE UPDATE ON public.purchase_orders
   FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
 
+-- Add patient-level fields to existing requisition_items
+ALTER TABLE public.requisition_items
+  ADD COLUMN IF NOT EXISTS patient_name TEXT,
+  ADD COLUMN IF NOT EXISTS daily_dose NUMERIC,
+  ADD COLUMN IF NOT EXISTS delivered BOOLEAN NOT NULL DEFAULT false;
+
 -- Grant permissions
 GRANT ALL ON public.medication_inventory TO authenticated;
 GRANT ALL ON public.inventory_movements TO authenticated;

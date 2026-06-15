@@ -24,7 +24,7 @@ interface Req {
   requested_by: string; authorized_by: string | null; created_at: string;
   health_unit_id: string;
 }
-interface Item { id: string; description: string; quantity: number; unit: string | null; unit_price: number; image_path: string | null; status: string; }
+interface Item { id: string; description: string; quantity: number; unit: string | null; unit_price: number; image_path: string | null; status: string; patient_name: string | null; daily_dose: number | null; delivered: boolean; notes: string | null; }
 
 const TYPE_MAP: Record<string, { label: string; pageType: string }> = {
   medicamentos: { label: "Medicamentos", pageType: "med" },
@@ -67,7 +67,7 @@ export default function Requisiciones() {
   const canCreate = hasRole("enfermera") || hasRole("intendencia") || hasRole("mantenimiento") || isManager;
 
   const [form, setForm] = useState({ title: "", description: "", vendor_name: "", priority: "media" });
-  const [newItems, setNewItems] = useState<Array<{ description: string; quantity: number; unit: string; unit_price: number; file?: File }>>([{ description: "", quantity: 1, unit: "", unit_price: 0 }]);
+  const [newItems, setNewItems] = useState<Array<{ description: string; quantity: number; unit: string; unit_price: number; file?: File; patient_name?: string; daily_dose?: number; delivered?: boolean; notes?: string }>>([{ description: "", quantity: 1, unit: "", unit_price: 0, patient_name: "", daily_dose: 0, delivered: false, notes: "" }]);
 
   useEffect(() => {
     if (!unitId) return;
@@ -116,12 +116,13 @@ export default function Requisiciones() {
       if (it.file) img = await uploadImage(it.file);
       await (supabase.from as any)("requisition_items").insert({
         requisition_id: created.id, description: it.description, quantity: it.quantity, unit: it.unit || null, unit_price: it.unit_price, image_path: img,
+        patient_name: it.patient_name || null, daily_dose: it.daily_dose || null, delivered: it.delivered || false, notes: it.notes || null,
       });
     }
     toast({ title: "Requisición creada" });
     setOpen(false);
     setForm({ title: "", description: "", vendor_name: "", priority: "media" });
-    setNewItems([{ description: "", quantity: 1, unit: "", unit_price: 0 }]);
+    setNewItems([{ description: "", quantity: 1, unit: "", unit_price: 0, patient_name: "", daily_dose: 0, delivered: false, notes: "" }]);
     load();
   }
 
@@ -197,15 +198,40 @@ export default function Requisiciones() {
                   <div className="space-y-2 border-t pt-3">
                     <div className="flex items-center justify-between">
                       <Label>Items</Label>
-                      <Button type="button" size="sm" variant="outline" onClick={() => setNewItems([...newItems, { description: "", quantity: 1, unit: "", unit_price: 0 }])}><Plus className="w-3 h-3 mr-1" /> Agregar</Button>
+                      <Button type="button" size="sm" variant="outline" onClick={() => setNewItems([...newItems, { description: "", quantity: 1, unit: "", unit_price: 0, patient_name: "", daily_dose: 0, delivered: false, notes: "" }])}><Plus className="w-3 h-3 mr-1" /> Agregar</Button>
                     </div>
                     {newItems.map((it, idx) => (
                       <div key={idx} className="grid grid-cols-12 gap-2 items-end border rounded p-2">
-                        <div className="col-span-5"><Label className="text-xs">Descripción</Label><Input value={it.description} onChange={e => { const c = [...newItems]; c[idx].description = e.target.value; setNewItems(c); }} /></div>
-                        <div className="col-span-1"><Label className="text-xs">Cant.</Label><Input type="number" min="0" step="0.01" value={it.quantity} onChange={e => { const c = [...newItems]; c[idx].quantity = parseFloat(e.target.value) || 0; setNewItems(c); }} /></div>
-                        <div className="col-span-2"><Label className="text-xs">Unidad</Label><Input value={it.unit} onChange={e => { const c = [...newItems]; c[idx].unit = e.target.value; setNewItems(c); }} placeholder="pza, kg" /></div>
-                        <div className="col-span-2"><Label className="text-xs">P. unit.</Label><Input type="number" min="0" step="0.01" value={it.unit_price} onChange={e => { const c = [...newItems]; c[idx].unit_price = parseFloat(e.target.value) || 0; setNewItems(c); }} /></div>
-                        <div className="col-span-1"><Label className="text-xs">Foto</Label><Input type="file" accept="image/*" onChange={e => { const c = [...newItems]; c[idx].file = e.target.files?.[0]; setNewItems(c); }} /></div>
+                        {reqType === "medicamentos" ? (
+                          <>
+                            <div className="col-span-3"><Label className="text-xs">Medicamento</Label><Input value={it.description} onChange={e => { const c = [...newItems]; c[idx].description = e.target.value; setNewItems(c); }} /></div>
+                            <div className="col-span-2"><Label className="text-xs">Paciente</Label><Input value={it.patient_name} onChange={e => { const c = [...newItems]; c[idx].patient_name = e.target.value; setNewItems(c); }} /></div>
+                            <div className="col-span-1"><Label className="text-xs">Dosis/día</Label><Input type="number" min="0" step="0.01" value={it.daily_dose} onChange={e => { const c = [...newItems]; c[idx].daily_dose = parseFloat(e.target.value) || 0; setNewItems(c); }} /></div>
+                            <div className="col-span-1"><Label className="text-xs">Cant.</Label><Input type="number" min="0" step="0.01" value={it.quantity} onChange={e => { const c = [...newItems]; c[idx].quantity = parseFloat(e.target.value) || 0; setNewItems(c); }} /></div>
+                            <div className="col-span-1"><Label className="text-xs">Unidad</Label><Select value={it.unit} onValueChange={v => { const c = [...newItems]; c[idx].unit = v; setNewItems(c); }}>
+                              <SelectTrigger><SelectValue /></SelectTrigger>
+                              <SelectContent>
+                                {["pza", "tableta", "cápsula", "ampula", "frasco", "gotas", "ml", "kg", "caja", "blister", "tubo"].map(u => <SelectItem key={u} value={u}>{u}</SelectItem>)}
+                              </SelectContent>
+                            </Select></div>
+                            <div className="col-span-1"><Label className="text-xs">P. unit.</Label><Input type="number" min="0" step="0.01" value={it.unit_price} onChange={e => { const c = [...newItems]; c[idx].unit_price = parseFloat(e.target.value) || 0; setNewItems(c); }} /></div>
+                            <div className="col-span-1 flex items-end pb-1">
+                              <label className="flex items-center gap-1 text-xs cursor-pointer">
+                                <input type="checkbox" checked={it.delivered} onChange={e => { const c = [...newItems]; c[idx].delivered = e.target.checked; setNewItems(c); }} className="rounded" />
+                                Entregado
+                              </label>
+                            </div>
+                            <div className="col-span-1"><Label className="text-xs">Foto</Label><Input type="file" accept="image/*" onChange={e => { const c = [...newItems]; c[idx].file = e.target.files?.[0]; setNewItems(c); }} /></div>
+                          </>
+                        ) : (
+                          <>
+                            <div className="col-span-5"><Label className="text-xs">Descripción</Label><Input value={it.description} onChange={e => { const c = [...newItems]; c[idx].description = e.target.value; setNewItems(c); }} /></div>
+                            <div className="col-span-1"><Label className="text-xs">Cant.</Label><Input type="number" min="0" step="0.01" value={it.quantity} onChange={e => { const c = [...newItems]; c[idx].quantity = parseFloat(e.target.value) || 0; setNewItems(c); }} /></div>
+                            <div className="col-span-2"><Label className="text-xs">Unidad</Label><Input value={it.unit} onChange={e => { const c = [...newItems]; c[idx].unit = e.target.value; setNewItems(c); }} placeholder="pza, kg" /></div>
+                            <div className="col-span-2"><Label className="text-xs">P. unit.</Label><Input type="number" min="0" step="0.01" value={it.unit_price} onChange={e => { const c = [...newItems]; c[idx].unit_price = parseFloat(e.target.value) || 0; setNewItems(c); }} /></div>
+                            <div className="col-span-1"><Label className="text-xs">Foto</Label><Input type="file" accept="image/*" onChange={e => { const c = [...newItems]; c[idx].file = e.target.files?.[0]; setNewItems(c); }} /></div>
+                          </>
+                        )}
                         <div className="col-span-1"><Button type="button" variant="ghost" size="icon" onClick={() => setNewItems(newItems.filter((_, i) => i !== idx))}><Trash2 className="w-4 h-4" /></Button></div>
                       </div>
                     ))}
@@ -262,18 +288,37 @@ export default function Requisiciones() {
 
                 <div className="border rounded">
                   <table className="w-full text-sm">
-                    <thead className="bg-muted"><tr><th className="text-left p-2">Descripción</th><th className="p-2">Cant.</th><th className="p-2">P.U.</th><th className="p-2">Foto</th></tr></thead>
+                    <thead className="bg-muted">
+                      {reqType === "medicamentos" ? (
+                        <tr><th className="text-left p-2">Medicamento</th><th className="text-left p-2">Paciente</th><th className="p-2">Dosis/día</th><th className="p-2">Cant.</th><th className="p-2">Unidad</th><th className="p-2">P.U.</th><th className="p-2">Entr.</th><th className="p-2">Foto</th><th className="p-2">Obs</th></tr>
+                      ) : (
+                        <tr><th className="text-left p-2">Descripción</th><th className="p-2">Cant.</th><th className="p-2">P.U.</th><th className="p-2">Foto</th></tr>
+                      )}
+                    </thead>
                     <tbody>
                       {items.map(it => (
                         <tr key={it.id} className="border-t">
                           <td className="p-2">{it.description}</td>
-                          <td className="p-2 text-center">{it.quantity} {it.unit}</td>
+                          {reqType === "medicamentos" && (
+                            <>
+                              <td className="p-2">{it.patient_name || "—"}</td>
+                              <td className="p-2 text-center">{it.daily_dose ?? "—"}</td>
+                            </>
+                          )}
+                          <td className="p-2 text-center">{it.quantity}</td>
+                          <td className="p-2 text-center">{it.unit || "—"}</td>
                           <td className="p-2 text-right">${Number(it.unit_price).toFixed(2)}</td>
+                          {reqType === "medicamentos" && (
+                            <td className="p-2 text-center">{it.delivered ? "✅" : "—"}</td>
+                          )}
                           <td className="p-2 text-center">
                             {it.image_path ? (
                               <Button variant="ghost" size="icon" onClick={async () => { const u = await getSignedUrl(it.image_path!); if (u) window.open(u, "_blank"); }}><ImageIcon className="w-4 h-4" /></Button>
                             ) : <span className="text-xs text-muted-foreground">—</span>}
                           </td>
+                          {reqType === "medicamentos" && (
+                            <td className="p-2 text-xs max-w-[120px] truncate" title={it.notes || ""}>{it.notes || "—"}</td>
+                          )}
                         </tr>
                       ))}
                     </tbody>
