@@ -44,7 +44,7 @@ export default function Inventario() {
   const [form, setForm] = useState({ medication_name: "", presentation: "", current_stock: 0, min_stock: 0, unit: "pza", notes: "" });
 
   const canManage = hasRole("admin") || hasRole("dueno") || hasRole("administrativo") || hasRole("asistente_admin");
-  const canAdjust = hasRole("admin") || hasRole("dueno") || hasRole("administrativo");
+  const canAdjust = hasRole("admin") || hasRole("dueno") || hasRole("administrativo") || hasRole("asistente_admin");
   const canConfirm = hasRole("enfermera");
 
   useEffect(() => {
@@ -109,6 +109,7 @@ export default function Inventario() {
 
   async function doAdjust() {
     if (!adjustItem || !user || !adjustQty) return;
+    if (!adjustNote.trim()) { toast({ title: "La observación es obligatoria", variant: "destructive" }); return; }
     const movementType = adjustQty > 0 ? "entry" : "exit";
     const qty = Math.abs(adjustQty);
     await (supabase.from as any)("medication_inventory").update({
@@ -273,9 +274,9 @@ export default function Inventario() {
                 <div><Label>Cantidad (+ entrada, - salida)</Label>
                   <Input type="number" value={adjustQty} onChange={e => setAdjustQty(parseInt(e.target.value) || 0)} placeholder="Ej: 10 para entrada, -5 para salida" />
                 </div>
-                <div><Label>Motivo</Label><Textarea rows={2} value={adjustNote} onChange={e => setAdjustNote(e.target.value)} placeholder="Ej: Ajuste por conteo físico" /></div>
+                <div><Label>Motivo *</Label><Textarea rows={2} value={adjustNote} onChange={e => setAdjustNote(e.target.value)} placeholder="Obligatorio: explica el motivo del ajuste" /></div>
               </div>
-              <DialogFooter><Button onClick={doAdjust} disabled={!adjustQty}>Aplicar ajuste</Button></DialogFooter>
+              <DialogFooter><Button onClick={doAdjust} disabled={!adjustQty || !adjustNote.trim()}>Aplicar ajuste</Button></DialogFooter>
             </>
           )}
         </DialogContent>
