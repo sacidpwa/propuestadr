@@ -109,6 +109,9 @@ export default function DashboardEjecutivo() {
               <p className="text-xs text-muted-foreground">{user?.email}</p>
             </div>
           </div>
+          <Button variant="outline" size="sm" onClick={() => navigate("/synapsia/log-movimientos")} className="mr-2">
+            Log inventario
+          </Button>
           <Button variant="ghost" size="icon" onClick={signOut}><LogOut className="w-4 h-4" /></Button>
         </div>
       </header>

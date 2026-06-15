@@ -10,26 +10,31 @@ import synapsiaIcon from "@/assets/synapsia-icon.svg";
 
 interface HealthUnit { id: string; name: string; description: string | null; }
 
-const APPS = [
-  { key: "medicamentos", label: "Control de medicamentos", desc: "Hoja por paciente (enfermería)", icon: Pill, route: "enfermeria", ready: true },
-  { key: "menus", label: "Menús semanales", desc: "Plan alimenticio y consumo", icon: ClipboardList, route: "enfermeria", ready: true },
-  { key: "gastos", label: "Control de gastos", desc: "Gastos, ingresos y órdenes de pago", icon: Wallet, route: "gastos", ready: true },
-  { key: "ingresos", label: "Facturas de ingreso", desc: "Facturas de pacientes y verificación", icon: Receipt, route: "facturas", ready: true },
-  { key: "nomina", label: "Nómina", desc: "Plantilla, periodos y pagos", icon: Users, route: "nomina", ready: true },
-  { key: "req-medicamentos", label: "Requisición de medicamentos", desc: "Solicitudes de insumos médicos", icon: ShoppingBag, route: "requisiciones/medicamentos", ready: true },
-  { key: "req-limpieza", label: "Requisición de limpieza", desc: "Insumos de intendencia", icon: Sparkles, route: "requisiciones/limpieza", ready: true },
-  { key: "req-mantenimiento", label: "Requisición de mantenimiento", desc: "Insumos de mantenimiento", icon: Wrench, route: "requisiciones/mantenimiento", ready: true },
-  { key: "req-servicio", label: "Servicios de mantenimiento", desc: "Reparaciones y servicios externos", icon: Wrench, route: "requisiciones/servicio_mantenimiento", ready: true },
-  { key: "pago-proveedores", label: "Pago a proveedores", desc: "Órdenes y verificación con PIN", icon: HandCoins, route: "requisiciones/pago_proveedor", ready: true },
-  { key: "cobranza", label: "Cartera de clientes", desc: "Cuotas y morosos", icon: FileText, route: "cartera", ready: true },
-  { key: "ordenes-compra", label: "Órdenes de compra", desc: "Generar, autorizar y abastecer", icon: ShoppingCart, route: "ordenes-compra", ready: true },
-  { key: "inventario", label: "Inventario de medicamentos", desc: "Stock, entradas, alertas de mínimo", icon: Package, route: "inventario", ready: true },
-  { key: "confirmar-inventario", label: "Confirmar inventario", desc: "Conteo físico cada 3 días", icon: ClipboardCheck, route: "confirmar-inventario", ready: true },
+interface AppEntry {
+  key: string; label: string; desc: string; icon: any; route: string;
+  roles: string[];
+}
+
+const APPS: AppEntry[] = [
+  { key: "medicamentos", label: "Control de medicamentos", desc: "Hoja por paciente (enfermería)", icon: Pill, route: "enfermeria", roles: ["admin", "dueno", "administrativo", "enfermera", "especialista"] },
+  { key: "menus", label: "Menús semanales", desc: "Plan alimenticio y consumo", icon: ClipboardList, route: "enfermeria", roles: ["admin", "dueno", "administrativo", "enfermera", "especialista"] },
+  { key: "gastos", label: "Control de gastos", desc: "Gastos, ingresos y órdenes de pago", icon: Wallet, route: "gastos", roles: ["admin", "dueno", "administrativo", "asistente_admin"] },
+  { key: "ingresos", label: "Facturas de ingreso", desc: "Facturas de pacientes y verificación", icon: Receipt, route: "facturas", roles: ["admin", "dueno", "administrativo", "contador"] },
+  { key: "nomina", label: "Nómina", desc: "Plantilla, periodos y pagos", icon: Users, route: "nomina", roles: ["admin", "dueno", "administrativo", "asistente_admin", "contador", "rrhh"] },
+  { key: "req-medicamentos", label: "Requisición de medicamentos", desc: "Solicitudes de insumos médicos", icon: ShoppingBag, route: "requisiciones/medicamentos", roles: ["admin", "dueno", "administrativo", "asistente_admin", "enfermera", "intendencia", "mantenimiento"] },
+  { key: "req-limpieza", label: "Requisición de limpieza", desc: "Insumos de intendencia", icon: Sparkles, route: "requisiciones/limpieza", roles: ["admin", "dueno", "administrativo", "asistente_admin", "enfermera", "intendencia", "mantenimiento"] },
+  { key: "req-mantenimiento", label: "Requisición de mantenimiento", desc: "Insumos de mantenimiento", icon: Wrench, route: "requisiciones/mantenimiento", roles: ["admin", "dueno", "administrativo", "asistente_admin", "enfermera", "intendencia", "mantenimiento"] },
+  { key: "req-servicio", label: "Servicios de mantenimiento", desc: "Reparaciones y servicios externos", icon: Wrench, route: "requisiciones/servicio_mantenimiento", roles: ["admin", "dueno", "administrativo", "asistente_admin", "enfermera", "intendencia", "mantenimiento"] },
+  { key: "pago-proveedores", label: "Pago a proveedores", desc: "Órdenes y verificación con PIN", icon: HandCoins, route: "requisiciones/pago_proveedor", roles: ["admin", "dueno", "administrativo", "asistente_admin", "enfermera", "intendencia", "mantenimiento"] },
+  { key: "cobranza", label: "Cartera de clientes", desc: "Cuotas y morosos", icon: FileText, route: "cartera", roles: ["admin", "dueno", "administrativo", "contador"] },
+  { key: "ordenes-compra", label: "Órdenes de compra", desc: "Generar, autorizar y abastecer", icon: ShoppingCart, route: "ordenes-compra", roles: ["admin", "dueno", "administrativo", "asistente_admin"] },
+  { key: "inventario", label: "Inventario de medicamentos", desc: "Stock, entradas, alertas de mínimo", icon: Package, route: "inventario", roles: ["admin", "dueno", "administrativo", "asistente_admin", "enfermera"] },
+  { key: "confirmar-inventario", label: "Confirmar inventario", desc: "Conteo físico cada 3 días", icon: ClipboardCheck, route: "confirmar-inventario", roles: ["admin", "dueno", "enfermera"] },
 ];
 
 export default function UnidadDetalle() {
   const { id } = useParams<{ id: string }>();
-  const { user, signOut } = useAuth();
+  const { user, signOut, hasRole } = useAuth();
   const navigate = useNavigate();
   const [unit, setUnit] = useState<HealthUnit | null>(null);
 
@@ -62,18 +67,18 @@ export default function UnidadDetalle() {
           <p className="text-sm text-muted-foreground">{unit?.description}</p>
         </div>
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {APPS.map(({ key, label, desc, icon: Icon, route, ready }) => (
-            <Card key={key} className={ready ? "cursor-pointer hover:shadow-md transition" : "opacity-80"} onClick={() => ready && route && navigate(`/synapsia/unidades/${id}/${route}`)}>
+          {APPS.filter(a => a.roles.some(r => hasRole(r))).map(({ key, label, desc, icon: Icon, route }) => (
+            <Card key={key} className="cursor-pointer hover:shadow-md transition" onClick={() => navigate(`/synapsia/unidades/${id}/${route}`)}>
               <CardHeader>
                 <div className="flex items-start justify-between">
                   <Icon className="w-7 h-7 text-primary" />
-                  <Badge variant={ready ? "default" : "outline"} className="text-[10px]">{ready ? "Disponible" : "Próximamente"}</Badge>
+                  <Badge variant="default" className="text-[10px]">Disponible</Badge>
                 </div>
                 <CardTitle className="text-base mt-2">{label}</CardTitle>
                 <CardDescription className="text-xs">{desc}</CardDescription>
               </CardHeader>
               <CardContent>
-                <Button size="sm" variant={ready ? "default" : "outline"} disabled={!ready}>Abrir</Button>
+                <Button size="sm">Abrir</Button>
               </CardContent>
             </Card>
           ))}

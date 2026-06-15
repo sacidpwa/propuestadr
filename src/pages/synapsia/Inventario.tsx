@@ -44,6 +44,7 @@ export default function Inventario() {
   const [form, setForm] = useState({ medication_name: "", presentation: "", current_stock: 0, min_stock: 0, unit: "pza", notes: "" });
 
   const canManage = hasRole("admin") || hasRole("dueno") || hasRole("administrativo") || hasRole("asistente_admin");
+  const canAdjust = hasRole("admin") || hasRole("dueno") || hasRole("administrativo");
   const canConfirm = hasRole("enfermera");
 
   useEffect(() => {
@@ -202,9 +203,11 @@ export default function Inventario() {
                           <Button size="icon" variant="ghost" onClick={() => loadMovements(item.id)} title="Movimientos">
                             <History className="w-4 h-4" />
                           </Button>
-                          <Button size="icon" variant="ghost" onClick={() => { setAdjustItem(item); setAdjustQty(0); setAdjustNote(""); setAdjustOpen(true); }} title="Ajustar stock">
-                            <ArrowUpDown className="w-4 h-4" />
-                          </Button>
+                          {canAdjust && (
+                            <Button size="icon" variant="ghost" onClick={() => { setAdjustItem(item); setAdjustQty(0); setAdjustNote(""); setAdjustOpen(true); }} title="Ajustar stock">
+                              <ArrowUpDown className="w-4 h-4" />
+                            </Button>
+                          )}
                           {canManage && (
                             <Button size="icon" variant="ghost" onClick={() => setEditItem(item)} title="Editar">
                               <Package className="w-4 h-4" />

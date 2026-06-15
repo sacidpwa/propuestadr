@@ -33,6 +33,7 @@ import CentroAutorizaciones from "./pages/synapsia/CentroAutorizaciones";
 import OrdenesCompra from "./pages/synapsia/OrdenesCompra";
 import Inventario from "./pages/synapsia/Inventario";
 import ConfirmacionInventario from "./pages/synapsia/ConfirmacionInventario";
+import LogMovimientos from "./pages/synapsia/LogMovimientos";
 import ProtectedRoute from "./components/synapsia/ProtectedRoute";
 import OwnerOnlyRoute from "./components/synapsia/OwnerOnlyRoute";
 import { AuthProvider, useAuth } from "./hooks/useAuth";
@@ -93,6 +94,7 @@ const App = () => (
             <Route path="/synapsia/unidades/:id/ordenes-compra" element={<ProtectedRoute requiredRole={["admin", "dueno", "administrativo", "asistente_admin"]}><OrdenesCompra /></ProtectedRoute>} />
             <Route path="/synapsia/unidades/:id/inventario" element={<ProtectedRoute requiredRole={["admin", "dueno", "administrativo", "asistente_admin", "enfermera"]}><Inventario /></ProtectedRoute>} />
             <Route path="/synapsia/unidades/:id/confirmar-inventario" element={<ProtectedRoute requiredRole={["admin", "dueno", "enfermera"]}><ConfirmacionInventario /></ProtectedRoute>} />
+            <Route path="/synapsia/log-movimientos" element={<ProtectedRoute requiredRole={["admin", "dueno", "administrativo"]}><LogMovimientos /></ProtectedRoute>} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </AuthProvider>
