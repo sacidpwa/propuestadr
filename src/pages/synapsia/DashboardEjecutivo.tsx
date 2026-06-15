@@ -26,6 +26,7 @@ export default function DashboardEjecutivo() {
   const [pendingInvoices, setPendingInvoices] = useState<PendingInvoice[]>([]);
   const [pendingOrdPago, setPendingOrdPago] = useState<OrdPago[]>([]);
   const [totalCashOut, setTotalCashOut] = useState(0);
+  const [expensesByUnit, setExpensesByUnit] = useState<Record<string, number>>({});
 
   useEffect(() => {
     (async () => {
@@ -88,6 +89,17 @@ export default function DashboardEjecutivo() {
         .gte("created_at", monthStart);
       const total = (egresos as any[] || []).reduce((s, e) => s + Number(e.amount || 0), 0);
       setTotalCashOut(total);
+
+      // Gastos por unidad del mes
+      const { data: gastosByUnit } = await (supabase.from as any)("expense_entries")
+        .select("health_unit_id, amount")
+        .in("entry_type", ["gasto", "orden_pago"])
+        .gte("created_at", monthStart);
+      const byUnit: Record<string, number> = {};
+      for (const g of (gastosByUnit as any[] || [])) {
+        if (g.health_unit_id) byUnit[g.health_unit_id] = (byUnit[g.health_unit_id] || 0) + Number(g.amount || 0);
+      }
+      setExpensesByUnit(byUnit);
     })();
   }, [units]);
 
@@ -349,6 +361,37 @@ export default function DashboardEjecutivo() {
                       <TableCell>{f.health_unit_id ? unitName(f.health_unit_id) : "—"}</TableCell>
                       <TableCell className="text-xs">{format(new Date(f.invoice_date), "dd/MM/yyyy", { locale: es })}</TableCell>
                       <TableCell className="text-right font-mono">${Number(f.amount).toLocaleString()}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Fila 6: Gastos por unidad */}
+        {units.length > 0 && (
+          <Card>
+            <CardHeader><CardTitle className="text-base flex items-center gap-2"><DollarSign className="w-4 h-4 text-red-500" />Gastos del mes por unidad</CardTitle></CardHeader>
+            <CardContent className="p-0">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Unidad</TableHead>
+                    <TableHead className="text-right">Total gastos</TableHead>
+                    <TableHead></TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {units.map(u => (
+                    <TableRow key={u.id}>
+                      <TableCell className="font-medium">{u.name}</TableCell>
+                      <TableCell className="text-right font-mono">${(expensesByUnit[u.id] || 0).toLocaleString()}</TableCell>
+                      <TableCell>
+                        <Button size="sm" variant="ghost" onClick={() => navigate(`/synapsia/unidades/${u.id}/gastos`)}>
+                          Ver detalle
+                        </Button>
+                      </TableCell>
                     </TableRow>
                   ))}
                 </TableBody>

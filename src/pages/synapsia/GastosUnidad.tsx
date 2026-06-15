@@ -21,7 +21,7 @@ interface Entry {
   id: string; description: string; amount: number; expense_date: string;
   category: string | null; notes: string | null; entry_type: string;
   receipt_url: string | null; operation_date: string | null; health_unit_id: string | null;
-  period_month: number; period_year: number;
+  period_month: number; period_year: number; purchase_order_id: string | null;
 }
 
 const TYPE_LABEL: Record<string, string> = { gasto: "Gasto", ingreso: "Ingreso", orden_pago: "Orden de pago" };
@@ -174,19 +174,23 @@ export default function GastosUnidad() {
 
         <div className="space-y-2">
           {entries.length === 0 && <Card><CardContent className="py-10 text-center text-muted-foreground">Sin registros.</CardContent></Card>}
-          {entries.map(e => (
-            <Card key={e.id}>
+          {entries.map(e => {
+            const canDrill = e.purchase_order_id && unitId;
+            return (
+            <Card key={e.id} className={canDrill ? "cursor-pointer hover:border-primary/50 transition-colors" : ""}
+                onClick={canDrill ? () => navigate(`/synapsia/unidades/${unitId}/ordenes-compra?po_id=${e.purchase_order_id}`) : undefined}>
               <CardContent className="py-3 flex items-center justify-between gap-3">
                 <div className="flex-1">
                   <div className="flex items-center gap-2 flex-wrap">
                     <Badge variant="outline" className={`capitalize ${TYPE_STYLE[e.entry_type]}`}>{TYPE_LABEL[e.entry_type]}</Badge>
                     <span className="text-xs text-muted-foreground">{format(new Date(e.expense_date), "PP", { locale: es })}</span>
                     {e.category && <span className="text-xs text-muted-foreground">· {e.category}</span>}
+                    {canDrill && <Badge variant="outline" className="bg-indigo-500/10 text-indigo-700 border-indigo-500/30 text-[10px]">OC</Badge>}
                   </div>
                   <p className="font-medium mt-1">{e.description}</p>
                   {e.notes && <p className="text-xs text-muted-foreground">{e.notes}</p>}
                 </div>
-                <div className="text-right">
+                <div className="text-right" onClick={e => e.stopPropagation()}>
                   <p className="font-bold">${Number(e.amount).toFixed(2)}</p>
                   <div className="flex gap-1 justify-end mt-1">
                     {e.receipt_url && <Button size="icon" variant="ghost" onClick={() => viewReceipt(e.receipt_url!)}><Paperclip className="w-4 h-4" /></Button>}
@@ -195,7 +199,8 @@ export default function GastosUnidad() {
                 </div>
               </CardContent>
             </Card>
-          ))}
+            );
+          })}
         </div>
       </main>
     </div>

@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
@@ -13,7 +13,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, Dialog
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import PinPrompt from "@/components/synapsia/PinPrompt";
-import { ArrowLeft, LogOut, Plus, Check, X, ShoppingCart, Package, Loader2, Building2, Phone, Mail, MapPin, Truck } from "lucide-react";
+import { ArrowLeft, LogOut, Plus, Check, X, ShoppingCart, Package, Loader2, Building2, Phone, Mail, MapPin, Truck, CreditCard } from "lucide-react";
 import synapsiaIcon from "@/assets/synapsia-icon.svg";
 import { toast } from "@/hooks/use-toast";
 import { format } from "date-fns";
@@ -48,11 +48,13 @@ const STATUS_STYLE: Record<string, string> = {
   rechazada: "bg-red-500/10 text-red-700 border-red-500/30",
   comprada: "bg-emerald-500/10 text-emerald-700 border-emerald-500/30",
   abastecida: "bg-green-600/10 text-green-700 border-green-600/30",
+  pagada: "bg-indigo-500/10 text-indigo-700 border-indigo-500/30",
   cancelada: "bg-muted text-muted-foreground border-border",
 };
 
 export default function OrdenesCompra() {
   const { id: unitId } = useParams<{ id: string }>();
+  const [searchParams] = useSearchParams();
   const { user, signOut, hasRole } = useAuth();
   const navigate = useNavigate();
   const [unitName, setUnitName] = useState("");
@@ -84,6 +86,7 @@ export default function OrdenesCompra() {
   const canEsther = hasRole("admin") || hasRole("dueno") || hasRole("administrativo");
   const canProcure = hasRole("admin") || hasRole("dueno") || hasRole("administrativo") || hasRole("asistente_admin");
   const canStock = hasRole("admin") || hasRole("dueno") || hasRole("asistente_admin");
+  const canPay = hasRole("admin") || hasRole("dueno") || hasRole("administrativo");
 
   useEffect(() => {
     if (!unitId) return;
@@ -98,7 +101,13 @@ export default function OrdenesCompra() {
     let q = (supabase.from as any)("purchase_orders").select("*").eq("health_unit_id", unitId).order("created_at", { ascending: false });
     if (filter !== "todas") q = q.eq("status", filter);
     const { data } = await q;
-    setPos((data as any) || []);
+    const list = (data as any) || [];
+    setPos(list);
+    const poId = searchParams.get("po_id");
+    if (poId) {
+      const match = list.find((p: PO) => p.id === poId);
+      if (match) openDetail(match);
+    }
   }
 
   useEffect(() => { loadPOs(); }, [unitId, filter]);
@@ -240,6 +249,28 @@ export default function OrdenesCompra() {
     setLoading(false);
   }
 
+  async function payPO(po: PO) {
+    if (!user || !unitId) return;
+    const method = window.prompt("Método de pago (efectivo, transferencia, tarjeta, cheque):") || "";
+    if (!method) return;
+    const ref = window.prompt("Referencia / folio:") || "";
+    setLoading(true);
+    const today = new Date();
+    const { error: expErr } = await (supabase.from as any)("expense_entries").insert({
+      health_unit_id: unitId, entry_type: "gasto",
+      description: `OC ${po.po_number || ""} — ${po.vendor_name || "proveedor"}`,
+      amount: po.total_amount, purchase_order_id: po.id,
+      operation_date: today.toISOString().slice(0, 10),
+      expense_date: today.toISOString().slice(0, 10),
+      period_month: today.getMonth() + 1, period_year: today.getFullYear(),
+      category: "medicamentos", notes: `Pago: ${method}${ref ? ", ref: " + ref : ""}`,
+      created_by: user.id,
+    });
+    if (expErr) { toast({ title: "Error al registrar pago", description: expErr.message, variant: "destructive" }); setLoading(false); return; }
+    await updateStatus(po, "pagada", { paid_at: new Date().toISOString(), payment_method: method, payment_reference: ref });
+    setLoading(false);
+  }
+
   async function openDetail(po: PO) {
     setDetailPo(po);
     const { data } = await (supabase.from as any)("purchase_order_items").select("*").eq("purchase_order_id", po.id);
@@ -247,7 +278,7 @@ export default function OrdenesCompra() {
     setDetailOpen(true);
   }
 
-  const FILTERS = ["pendiente", "autorizada", "comprada", "abastecida", "rechazada", "todas"];
+  const FILTERS = ["pendiente", "autorizada", "comprada", "abastecida", "pagada", "rechazada", "todas"];
 
   return (
     <div className="min-h-screen bg-background">
@@ -489,6 +520,12 @@ export default function OrdenesCompra() {
                     <Button size="sm" onClick={() => askPin("Abastecer inventario", () => stockInventory(detailPo))} disabled={loading}>
                       {loading ? <Loader2 className="w-4 h-4 mr-1 animate-spin" /> : <Package className="w-4 h-4 mr-1" />}
                       Abastecer e ingresar a inventario
+                    </Button>
+                  )}
+                  {detailPo.status === "abastecida" && canPay && (
+                    <Button size="sm" onClick={() => askPin("Registrar pago", () => payPO(detailPo))} disabled={loading}>
+                      {loading ? <Loader2 className="w-4 h-4 mr-1 animate-spin" /> : <CreditCard className="w-4 h-4 mr-1" />}
+                      Registrar pago
                     </Button>
                   )}
                 </div>
