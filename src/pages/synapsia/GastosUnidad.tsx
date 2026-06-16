@@ -42,6 +42,17 @@ export default function GastosUnidad() {
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState({ entry_type: "gasto", description: "", amount: 0, category: "", notes: "", operation_date: new Date().toISOString().slice(0, 10), file: undefined as File | undefined });
 
+  function waitForFile(): Promise<File | null> {
+    return new Promise((resolve) => {
+      const input = document.createElement("input");
+      input.type = "file";
+      input.accept = "image/*,application/pdf";
+      input.onchange = () => resolve(input.files?.[0] ?? null);
+      input.oncancel = () => resolve(null);
+      input.click();
+    });
+  }
+
   useEffect(() => {
     if (!unitId) return;
     (async () => {
@@ -200,9 +211,13 @@ export default function GastosUnidad() {
                         const method = window.prompt("Método de pago (efectivo, transferencia, tarjeta, cheque):") || "";
                         if (!method) return;
                         const ref = window.prompt("Referencia / folio (opcional):") || "";
+                        const file = await waitForFile();
+                        let receipt: string | null = null;
+                        if (file) receipt = await uploadReceipt(file);
                         const { error } = await (supabase.from as any)("expense_entries").update({
                           entry_type: "gasto",
                           notes: `Pagado: ${method}${ref ? ", ref: " + ref : ""}`,
+                          receipt_url: receipt,
                         }).eq("id", e.id);
                         if (error) { toast({ title: "Error", description: error.message, variant: "destructive" }); return; }
                         toast({ title: "Orden de pago convertida a gasto" });
