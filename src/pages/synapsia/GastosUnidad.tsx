@@ -11,11 +11,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
-import { ArrowLeft, LogOut, Plus, Paperclip, Trash2 } from "lucide-react";
+import { ArrowLeft, LogOut, Plus, Paperclip, Trash2, ArrowRight } from "lucide-react";
 import synapsiaIcon from "@/assets/synapsia-icon.svg";
 import { toast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
+import { fmt } from "@/lib/utils";
 
 interface Entry {
   id: string; description: string; amount: number; expense_date: string;
@@ -33,7 +34,7 @@ const TYPE_STYLE: Record<string, string> = {
 
 export default function GastosUnidad() {
   const { id: unitId } = useParams<{ id: string }>();
-  const { user, signOut } = useAuth();
+  const { user, signOut, hasRole } = useAuth();
   const navigate = useNavigate();
   const [unitName, setUnitName] = useState("");
   const [entries, setEntries] = useState<Entry[]>([]);
@@ -129,10 +130,10 @@ export default function GastosUnidad() {
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-4">
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-          <Card><CardContent className="py-4"><p className="text-xs text-muted-foreground">Ingresos</p><p className="text-xl font-bold text-green-700">${totals.i.toFixed(2)}</p></CardContent></Card>
-          <Card><CardContent className="py-4"><p className="text-xs text-muted-foreground">Gastos</p><p className="text-xl font-bold text-red-700">${totals.g.toFixed(2)}</p></CardContent></Card>
-          <Card><CardContent className="py-4"><p className="text-xs text-muted-foreground">Órdenes de pago</p><p className="text-xl font-bold text-blue-700">${totals.o.toFixed(2)}</p></CardContent></Card>
-          <Card><CardContent className="py-4"><p className="text-xs text-muted-foreground">Balance</p><p className={`text-xl font-bold ${totals.balance >= 0 ? "text-green-700" : "text-red-700"}`}>${totals.balance.toFixed(2)}</p></CardContent></Card>
+          <Card><CardContent className="py-4"><p className="text-xs text-muted-foreground">Ingresos</p><p className="text-xl font-bold text-green-700">{fmt(totals.i)}</p></CardContent></Card>
+          <Card><CardContent className="py-4"><p className="text-xs text-muted-foreground">Gastos</p><p className="text-xl font-bold text-red-700">{fmt(totals.g)}</p></CardContent></Card>
+          <Card><CardContent className="py-4"><p className="text-xs text-muted-foreground">Órdenes de pago</p><p className="text-xl font-bold text-blue-700">{fmt(totals.o)}</p></CardContent></Card>
+          <Card><CardContent className="py-4"><p className="text-xs text-muted-foreground">Balance</p><p className={`text-xl font-bold ${totals.balance >= 0 ? "text-green-700" : "text-red-700"}`}>{fmt(totals.balance)}</p></CardContent></Card>
         </div>
 
         <div className="flex items-center justify-between gap-3">
@@ -191,8 +192,25 @@ export default function GastosUnidad() {
                   {e.notes && <p className="text-xs text-muted-foreground">{e.notes}</p>}
                 </div>
                 <div className="text-right" onClick={e => e.stopPropagation()}>
-                  <p className="font-bold">${Number(e.amount).toFixed(2)}</p>
+                  <p className="font-bold">{fmt(Number(e.amount))}</p>
                   <div className="flex gap-1 justify-end mt-1">
+                    {e.entry_type === "orden_pago" && (hasRole("admin") || hasRole("dueno") || hasRole("administrativo")) && (
+                      <Button size="sm" variant="outline" className="h-7 text-xs" onClick={async () => {
+                        if (!confirm("¿Convertir esta orden de pago en gasto?")) return;
+                        const method = window.prompt("Método de pago (efectivo, transferencia, tarjeta, cheque):") || "";
+                        if (!method) return;
+                        const ref = window.prompt("Referencia / folio (opcional):") || "";
+                        const { error } = await (supabase.from as any)("expense_entries").update({
+                          entry_type: "gasto",
+                          notes: `Pagado: ${method}${ref ? ", ref: " + ref : ""}`,
+                        }).eq("id", e.id);
+                        if (error) { toast({ title: "Error", description: error.message, variant: "destructive" }); return; }
+                        toast({ title: "Orden de pago convertida a gasto" });
+                        load();
+                      }}>
+                        <ArrowRight className="w-3 h-3 mr-1" /> Pagar
+                      </Button>
+                    )}
                     {e.receipt_url && <Button size="icon" variant="ghost" onClick={() => viewReceipt(e.receipt_url!)}><Paperclip className="w-4 h-4" /></Button>}
                     <Button size="icon" variant="ghost" onClick={() => remove(e.id)}><Trash2 className="w-4 h-4" /></Button>
                   </div>

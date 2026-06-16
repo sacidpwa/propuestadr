@@ -14,6 +14,7 @@ import PinPrompt from "@/components/synapsia/PinPrompt";
 import { ArrowLeft, LogOut, Plus, Paperclip, Check, AlertTriangle } from "lucide-react";
 import synapsiaIcon from "@/assets/synapsia-icon.svg";
 import { toast } from "@/hooks/use-toast";
+import { fmt } from "@/lib/utils";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 
@@ -127,9 +128,9 @@ export default function Facturas() {
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-4">
         <div className="grid grid-cols-3 gap-3">
-          <Card><CardContent className="py-4"><p className="text-xs text-muted-foreground">Pendientes</p><p className="text-xl font-bold text-yellow-700">${totals.p.toFixed(2)}</p></CardContent></Card>
-          <Card><CardContent className="py-4"><p className="text-xs text-muted-foreground">Verificadas</p><p className="text-xl font-bold text-green-700">${totals.v.toFixed(2)}</p></CardContent></Card>
-          <Card><CardContent className="py-4"><p className="text-xs text-muted-foreground">Erróneas</p><p className="text-xl font-bold text-red-700">${totals.e.toFixed(2)}</p></CardContent></Card>
+          <Card><CardContent className="py-4"><p className="text-xs text-muted-foreground">Pendientes</p><p className="text-xl font-bold text-yellow-700">{fmt(totals.p)}</p></CardContent></Card>
+          <Card><CardContent className="py-4"><p className="text-xs text-muted-foreground">Verificadas</p><p className="text-xl font-bold text-green-700">{fmt(totals.v)}</p></CardContent></Card>
+          <Card><CardContent className="py-4"><p className="text-xs text-muted-foreground">Erróneas</p><p className="text-xl font-bold text-red-700">{fmt(totals.e)}</p></CardContent></Card>
         </div>
 
         <div className="flex items-center justify-between gap-3">
@@ -177,7 +178,7 @@ export default function Facturas() {
                   )}
                 </div>
                 <div className="text-right space-y-1">
-                  <p className="font-bold">${Number(inv.amount).toFixed(2)}</p>
+                  <p className="font-bold">{fmt(Number(inv.amount))}</p>
                   <div className="flex gap-1 justify-end">
                     {inv.file_url && <Button size="icon" variant="ghost" onClick={() => viewFile(inv.file_url!)}><Paperclip className="w-4 h-4" /></Button>}
                     {canVerify && inv.status === "pendiente" && (

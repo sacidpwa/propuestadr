@@ -15,6 +15,7 @@ import PinPrompt from "@/components/synapsia/PinPrompt";
 import { ArrowLeft, LogOut, Plus, Trash2, Image as ImageIcon, Check, X, ShoppingCart, CreditCard } from "lucide-react";
 import synapsiaIcon from "@/assets/synapsia-icon.svg";
 import { toast } from "@/hooks/use-toast";
+import { fmt } from "@/lib/utils";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 
@@ -235,7 +236,7 @@ export default function Requisiciones() {
                         <div className="col-span-1"><Button type="button" variant="ghost" size="icon" onClick={() => setNewItems(newItems.filter((_, i) => i !== idx))}><Trash2 className="w-4 h-4" /></Button></div>
                       </div>
                     ))}
-                    <div className="text-right text-sm font-medium">Total estimado: ${newItems.reduce((s, i) => s + (i.quantity || 0) * (i.unit_price || 0), 0).toFixed(2)}</div>
+                    <div className="text-right text-sm font-medium">Total estimado: {fmt(newItems.reduce((s, i) => s + (i.quantity || 0) * (i.unit_price || 0), 0))}</div>
                   </div>
                 </div>
                 <DialogFooter><Button onClick={createReq}>Crear</Button></DialogFooter>
@@ -260,7 +261,7 @@ export default function Requisiciones() {
                     {r.vendor_name && <p className="text-xs text-muted-foreground">Proveedor: {r.vendor_name}</p>}
                   </div>
                   <div className="text-right">
-                    <p className="font-bold">${Number(r.total_amount || 0).toFixed(2)}</p>
+                    <p className="font-bold">{fmt(Number(r.total_amount || 0))}</p>
                   </div>
                 </div>
               </CardContent>
@@ -283,7 +284,7 @@ export default function Requisiciones() {
               <div className="space-y-3">
                 {editing.description && <p className="text-sm">{editing.description}</p>}
                 {editing.vendor_name && <p className="text-sm"><b>Proveedor:</b> {editing.vendor_name}</p>}
-                <p className="text-sm"><b>Total:</b> ${Number(editing.total_amount || 0).toFixed(2)}</p>
+                <p className="text-sm"><b>Total:</b> {fmt(Number(editing.total_amount || 0))}</p>
                 {editing.payment_method && <p className="text-sm"><b>Pago:</b> {editing.payment_method}</p>}
 
                 <div className="border rounded">
@@ -307,7 +308,7 @@ export default function Requisiciones() {
                           )}
                           <td className="p-2 text-center">{it.quantity}</td>
                           <td className="p-2 text-center">{it.unit || "—"}</td>
-                          <td className="p-2 text-right">${Number(it.unit_price).toFixed(2)}</td>
+                          <td className="p-2 text-right">{fmt(Number(it.unit_price))}</td>
                           {reqType === "medicamentos" && (
                             <td className="p-2 text-center">{it.delivered ? "✅" : "—"}</td>
                           )}

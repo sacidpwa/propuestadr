@@ -16,6 +16,7 @@ import PinPrompt from "@/components/synapsia/PinPrompt";
 import { ArrowLeft, LogOut, Plus, Check, X, ShoppingCart, Package, Loader2, Building2, Phone, Mail, MapPin, Truck, CreditCard } from "lucide-react";
 import synapsiaIcon from "@/assets/synapsia-icon.svg";
 import { toast } from "@/hooks/use-toast";
+import { fmt } from "@/lib/utils";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 
@@ -324,7 +325,7 @@ export default function OrdenesCompra() {
                     {po.department && <p className="text-xs text-muted-foreground">Depto: {po.department}</p>}
                   </div>
                   <div className="text-right">
-                    <p className="font-bold">${Number(po.total_amount || 0).toFixed(2)}</p>
+                    <p className="font-bold">{fmt(Number(po.total_amount || 0))}</p>
                   </div>
                 </div>
               </CardContent>
@@ -344,7 +345,7 @@ export default function OrdenesCompra() {
                 <SelectContent>
                   {availReqs.map(r => (
                     <SelectItem key={r.id} value={r.id}>
-                      {r.title} — ${Number(r.total_amount).toFixed(2)}
+                      {r.title} — {fmt(Number(r.total_amount))}
                       {r.status && <span className="ml-2 text-xs text-muted-foreground">({r.status})</span>}
                     </SelectItem>
                   ))}
@@ -401,14 +402,14 @@ export default function OrdenesCompra() {
                   </div>
                   <div className="col-span-2"><Label className="text-xs">P. unit.</Label><Input type="number" min="0" step="0.01" value={it.unit_price} onChange={e => updatePoItem(idx, "unit_price", parseFloat(e.target.value) || 0)} /></div>
                   <div className="col-span-2 flex items-end justify-center">
-                    <p className="text-xs font-mono">${((it.quantity || 0) * (it.unit_price || 0)).toFixed(2)}</p>
+                    <p className="text-xs font-mono">{fmt((it.quantity || 0) * (it.unit_price || 0))}</p>
                   </div>
                 </div>
               ))}
               <div className="border-t pt-2 space-y-1 text-right text-sm">
-                <p>Subtotal: <span className="font-mono">${calcSubtotal().toFixed(2)}</span></p>
-                <p>IVA (16%): <span className="font-mono">${calcTax().toFixed(2)}</span></p>
-                <p className="text-base font-bold">TOTAL: <span className="font-mono">${calcTotal().toFixed(2)}</span></p>
+                <p>Subtotal: <span className="font-mono">{fmt(calcSubtotal())}</span></p>
+                <p>IVA (16%): <span className="font-mono">{fmt(calcTax())}</span></p>
+                <p className="text-base font-bold">TOTAL: <span className="font-mono">{fmt(calcTotal())}</span></p>
               </div>
             </div>
 
@@ -476,8 +477,8 @@ export default function OrdenesCompra() {
                         <TableCell>{(it as any).patient_name || "—"}</TableCell>
                         <TableCell className="text-center">{it.quantity}</TableCell>
                         <TableCell className="text-center">{it.unit}</TableCell>
-                        <TableCell className="text-right">${Number(it.unit_price).toFixed(2)}</TableCell>
-                        <TableCell className="text-right font-mono">${Number(it.total_price).toFixed(2)}</TableCell>
+                        <TableCell className="text-right">{fmt(Number(it.unit_price))}</TableCell>
+                        <TableCell className="text-right font-mono">{fmt(Number(it.total_price))}</TableCell>
                       </TableRow>
                     ))}
                   </TableBody>
@@ -485,9 +486,9 @@ export default function OrdenesCompra() {
 
                 {/* Totals */}
                 <div className="text-right space-y-1 border-t pt-2">
-                  <p className="text-sm">Subtotal: <span className="font-mono">${Number(detailPo.subtotal || 0).toFixed(2)}</span></p>
-                  <p className="text-sm">IVA: <span className="font-mono">${Number(detailPo.tax_amount || 0).toFixed(2)}</span></p>
-                  <p className="text-base font-bold">TOTAL: <span className="font-mono">${Number(detailPo.total_amount || 0).toFixed(2)}</span></p>
+                  <p className="text-sm">Subtotal: <span className="font-mono">{fmt(Number(detailPo.subtotal || 0))}</span></p>
+                  <p className="text-sm">IVA: <span className="font-mono">{fmt(Number(detailPo.tax_amount || 0))}</span></p>
+                  <p className="text-base font-bold">TOTAL: <span className="font-mono">{fmt(Number(detailPo.total_amount || 0))}</span></p>
                 </div>
 
                 {detailPo.notes && <p className="text-muted-foreground border-t pt-2"><b>Instrucciones:</b> {detailPo.notes}</p>}

@@ -14,6 +14,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, Dialog
 import { ArrowLeft, LogOut, Plus, CreditCard, AlertCircle } from "lucide-react";
 import synapsiaIcon from "@/assets/synapsia-icon.svg";
 import { toast } from "@/hooks/use-toast";
+import { fmt } from "@/lib/utils";
 import { format, differenceInDays } from "date-fns";
 import { es } from "date-fns/locale";
 
@@ -114,7 +115,7 @@ export default function Cartera() {
         <div className="grid grid-cols-3 gap-3">
           <Card><CardContent className="py-4"><p className="text-xs text-muted-foreground">Clientes activos</p><p className="text-xl font-bold">{totals.activos}</p></CardContent></Card>
           <Card><CardContent className="py-4"><p className="text-xs text-muted-foreground">Morosos</p><p className="text-xl font-bold text-red-700">{totals.morosos}</p></CardContent></Card>
-          <Card><CardContent className="py-4"><p className="text-xs text-muted-foreground">Monto vencido</p><p className="text-xl font-bold text-red-700">${totals.monto.toFixed(2)}</p></CardContent></Card>
+          <Card><CardContent className="py-4"><p className="text-xs text-muted-foreground">Monto vencido</p><p className="text-xl font-bold text-red-700">{fmt(totals.monto)}</p></CardContent></Card>
         </div>
 
         <div className="flex items-center justify-between gap-3">
@@ -176,7 +177,7 @@ export default function Cartera() {
                     {f.notes && <p className="text-xs text-muted-foreground">{f.notes}</p>}
                   </div>
                   <div className="text-right space-y-1">
-                    <p className="font-bold">${Number(f.amount).toFixed(2)}</p>
+                    <p className="font-bold">{fmt(Number(f.amount))}</p>
                     {canManage && f.is_active && (
                       <Button size="sm" onClick={() => { setPayOpen(f); setPayment({ ...payment, amount: Number(f.amount) }); }}>
                         <CreditCard className="w-4 h-4 mr-1" /> Registrar pago
