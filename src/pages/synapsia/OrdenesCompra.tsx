@@ -39,7 +39,7 @@ interface POItem {
   patient_name?: string | null;
 }
 interface Req {
-  id: string; title: string; total_amount: number; created_at: string;
+  id: string; title: string; total_amount: number; created_at: string; status?: string;
 }
 
 const STATUS_STYLE: Record<string, string> = {
@@ -115,10 +115,10 @@ export default function OrdenesCompra() {
   async function loadAvailReqs() {
     if (!unitId) return;
     const { data } = await (supabase.from as any)("requisitions")
-      .select("id, title, total_amount, created_at")
+      .select("id, title, total_amount, created_at, status")
       .eq("health_unit_id", unitId)
       .eq("req_type", "medicamentos")
-      .in("status", ["autorizada"])
+      .in("status", ["pendiente", "autorizada"])
       .order("created_at", { ascending: false });
     setAvailReqs((data as any) || []);
   }
@@ -343,7 +343,10 @@ export default function OrdenesCompra() {
                 <SelectTrigger><SelectValue placeholder="Seleccionar requisición autorizada..." /></SelectTrigger>
                 <SelectContent>
                   {availReqs.map(r => (
-                    <SelectItem key={r.id} value={r.id}>{r.title} — ${Number(r.total_amount).toFixed(2)}</SelectItem>
+                    <SelectItem key={r.id} value={r.id}>
+                      {r.title} — ${Number(r.total_amount).toFixed(2)}
+                      {r.status && <span className="ml-2 text-xs text-muted-foreground">({r.status})</span>}
+                    </SelectItem>
                   ))}
                 </SelectContent>
               </Select>

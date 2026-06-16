@@ -16,11 +16,11 @@ interface AppEntry {
 }
 
 const APPS: AppEntry[] = [
-  { key: "medicamentos", label: "Control de medicamentos", desc: "Hoja por paciente (enfermería)", icon: Pill, route: "enfermeria", roles: ["admin", "dueno", "administrativo", "enfermera", "especialista"] },
-  { key: "menus", label: "Menús semanales", desc: "Plan alimenticio y consumo", icon: ClipboardList, route: "enfermeria", roles: ["admin", "dueno", "administrativo", "enfermera", "especialista"] },
+  { key: "medicamentos", label: "Control de medicamentos", desc: "Hoja por paciente (enfermería)", icon: Pill, route: "enfermeria", roles: ["admin", "dueno", "administrativo", "asistente_admin", "enfermera", "especialista"] },
+  { key: "menus", label: "Menús semanales", desc: "Plan alimenticio y consumo", icon: ClipboardList, route: "enfermeria", roles: ["admin", "dueno", "administrativo", "asistente_admin", "enfermera", "especialista"] },
   { key: "gastos", label: "Control de gastos", desc: "Gastos, ingresos y órdenes de pago", icon: Wallet, route: "gastos", roles: ["admin", "dueno", "administrativo", "asistente_admin"] },
   { key: "ingresos", label: "Facturas de ingreso", desc: "Facturas de pacientes y verificación", icon: Receipt, route: "facturas", roles: ["admin", "dueno", "administrativo", "contador"] },
-  { key: "nomina", label: "Nómina", desc: "Plantilla, periodos y pagos", icon: Users, route: "nomina", roles: ["admin", "dueno", "administrativo", "asistente_admin", "contador", "rrhh"] },
+  { key: "nomina", label: "Nómina", desc: "Plantilla, periodos y pagos", icon: Users, route: "nomina", roles: ["admin", "dueno", "administrativo", "contador", "rrhh"] },
   { key: "req-medicamentos", label: "Requisición de medicamentos", desc: "Solicitudes de insumos médicos", icon: ShoppingBag, route: "requisiciones/medicamentos", roles: ["admin", "dueno", "administrativo", "asistente_admin", "enfermera", "intendencia", "mantenimiento"] },
   { key: "req-limpieza", label: "Requisición de limpieza", desc: "Insumos de intendencia", icon: Sparkles, route: "requisiciones/limpieza", roles: ["admin", "dueno", "administrativo", "asistente_admin", "enfermera", "intendencia", "mantenimiento"] },
   { key: "req-mantenimiento", label: "Requisición de mantenimiento", desc: "Insumos de mantenimiento", icon: Wrench, route: "requisiciones/mantenimiento", roles: ["admin", "dueno", "administrativo", "asistente_admin", "enfermera", "intendencia", "mantenimiento"] },

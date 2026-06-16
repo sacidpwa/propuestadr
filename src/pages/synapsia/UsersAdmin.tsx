@@ -56,7 +56,7 @@ export default function UsersAdmin() {
   const [createOpen, setCreateOpen] = useState(false);
   const [pinDialog, setPinDialog] = useState<{ open: boolean; userId: string | null; name: string }>({ open: false, userId: null, name: "" });
   const [pinValue, setPinValue] = useState("");
-  const [editDialog, setEditDialog] = useState<{ open: boolean; userId: string | null; full_name: string; email: string }>({ open: false, userId: null, full_name: "", email: "" });
+  const [editDialog, setEditDialog] = useState<{ open: boolean; userId: string | null; full_name: string; email: string; password: string }>({ open: false, userId: null, full_name: "", email: "", password: "" });
   const [editLoading, setEditLoading] = useState(false);
   const [pwDialog, setPwDialog] = useState<{ open: boolean; userId: string | null; name: string }>({ open: false, userId: null, name: "" });
   const [pwValue, setPwValue] = useState("");
@@ -117,18 +117,16 @@ export default function UsersAdmin() {
     e.preventDefault();
     setLoading(true);
     const additional = newUser.also_especialista && newUser.role !== "especialista" ? ["especialista"] : [];
-    const { data, error } = await supabase.functions.invoke("admin-create-user", {
-      body: {
-        email: newUser.email,
-        password: newUser.password,
-        full_name: newUser.full_name,
-        role: newUser.role,
-        pin: newUser.pin || null,
-        additional_roles: additional,
-      },
+    const { data, error } = await supabase.rpc("admin_create_user", {
+      _email: newUser.email,
+      _password: newUser.password,
+      _full_name: newUser.full_name,
+      _role: newUser.role,
+      _pin: newUser.pin || null,
+      _additional_roles: additional,
     });
-    if (error || (data as any)?.error) {
-      toast({ variant: "destructive", title: "No se pudo crear", description: (data as any)?.error || error?.message });
+    if (error) {
+      toast({ variant: "destructive", title: "No se pudo crear", description: error.message });
     } else {
       toast({ title: "Usuario creado", description: (data as any)?.warning || "Cuenta lista para iniciar sesión." });
       setCreateOpen(false);
@@ -173,16 +171,32 @@ export default function UsersAdmin() {
       return;
     }
     setEditLoading(true);
-    const { data, error } = await supabase.functions.invoke("admin-update-user", {
-      body: { user_id: editDialog.userId, full_name: editDialog.full_name.trim(), email: editDialog.email.trim().toLowerCase() },
+    const { data, error } = await supabase.rpc("admin_update_user", {
+      _user_id: editDialog.userId,
+      _full_name: editDialog.full_name.trim(),
+      _email: editDialog.email.trim().toLowerCase(),
     });
-    if (error || (data as any)?.error) {
-      toast({ variant: "destructive", title: "No se pudo actualizar", description: (data as any)?.error || error?.message });
-    } else {
-      toast({ title: "Usuario actualizado" });
-      setEditDialog({ open: false, userId: null, full_name: "", email: "" });
-      fetchAll();
+    if (error) {
+      toast({ variant: "destructive", title: "No se pudo actualizar", description: error.message });
+      setEditLoading(false);
+      return;
     }
+    if (editDialog.password.length >= 8) {
+      const { error: pwErr } = await supabase.rpc("admin_reset_password", {
+        _user_id: editDialog.userId,
+        _password: editDialog.password,
+      });
+      if (pwErr) {
+        toast({ variant: "destructive", title: "Usuario actualizado, pero no se pudo cambiar la contraseña", description: pwErr.message });
+        setEditDialog({ open: false, userId: null, full_name: "", email: "", password: "" });
+        fetchAll();
+        setEditLoading(false);
+        return;
+      }
+    }
+    toast({ title: "Usuario actualizado" });
+    setEditDialog({ open: false, userId: null, full_name: "", email: "", password: "" });
+    fetchAll();
     setEditLoading(false);
   };
 
@@ -193,12 +207,13 @@ export default function UsersAdmin() {
       return;
     }
     setPwLoading(true);
-    const { data, error } = await supabase.functions.invoke("admin-reset-password", {
-      body: { user_id: pwDialog.userId, password: pwValue },
+    const { data, error } = await supabase.rpc("admin_reset_password", {
+      _user_id: pwDialog.userId,
+      _password: pwValue,
     });
     setPwLoading(false);
-    if (error || (data as any)?.error) {
-      toast({ variant: "destructive", title: "Error", description: (data as any)?.error || error?.message });
+    if (error) {
+      toast({ variant: "destructive", title: "Error", description: error.message });
     } else {
       toast({ title: "Contraseña actualizada", description: `Nueva contraseña para ${pwDialog.name}` });
       setPwDialog({ open: false, userId: null, name: "" });
@@ -363,14 +378,11 @@ export default function UsersAdmin() {
                       </TableCell>
                       <TableCell className="text-right">
                         <div className="flex justify-end gap-2">
-                          <Button size="sm" variant="outline" onClick={() => setEditDialog({ open: true, userId: p.user_id, full_name: p.full_name, email: p.email ?? "" })} disabled={!isOwnerOrAdmin}>
+                          <Button size="sm" variant="outline" onClick={() => setEditDialog({ open: true, userId: p.user_id, full_name: p.full_name, email: p.email ?? "", password: "" })} disabled={!isOwnerOrAdmin}>
                             <Pencil className="w-3 h-3 mr-1" /> Editar
                           </Button>
                           <Button size="sm" variant="outline" onClick={() => setPinDialog({ open: true, userId: p.user_id, name: p.full_name })} disabled={!isOwnerOrAdmin}>
                             <KeyRound className="w-3 h-3 mr-1" /> PIN
-                          </Button>
-                          <Button size="sm" variant="outline" onClick={() => setPwDialog({ open: true, userId: p.user_id, name: p.full_name })} disabled={!isOwnerOrAdmin}>
-                            <KeyRound className="w-3 h-3 mr-1" /> Password
                           </Button>
                           <Button size="sm" variant="outline" onClick={() => setAssignDialog({ open: true, userId: p.user_id, name: p.full_name })} disabled={!isOwnerOrAdmin}>
                             <Stethoscope className="w-3 h-3 mr-1" /> Unidades
@@ -480,11 +492,11 @@ export default function UsersAdmin() {
       </Dialog>
 
       {/* Edit user dialog */}
-      <Dialog open={editDialog.open} onOpenChange={(v) => { if (!v) setEditDialog({ open: false, userId: null, full_name: "", email: "" }); }}>
+      <Dialog open={editDialog.open} onOpenChange={(v) => { if (!v) setEditDialog({ open: false, userId: null, full_name: "", email: "", password: "" }); }}>
         <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle>Editar usuario</DialogTitle>
-            <DialogDescription>Actualiza el nombre completo y/o el correo electrónico de inicio de sesión.</DialogDescription>
+            <DialogDescription>Actualiza nombre, correo o contraseña del usuario.</DialogDescription>
           </DialogHeader>
           <div className="space-y-3">
             <div className="space-y-1.5">
@@ -496,9 +508,13 @@ export default function UsersAdmin() {
               <Input type="email" value={editDialog.email} onChange={(e) => setEditDialog((p) => ({ ...p, email: e.target.value }))} />
               <p className="text-xs text-muted-foreground">Cambiar el correo modifica también el usuario de inicio de sesión.</p>
             </div>
+            <div className="space-y-1.5">
+              <Label>Nueva contraseña <span className="text-muted-foreground font-normal">(opcional)</span></Label>
+              <Input type="text" minLength={8} value={editDialog.password} onChange={(e) => setEditDialog((p) => ({ ...p, password: e.target.value }))} placeholder="Mínimo 8 caracteres" />
+            </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setEditDialog({ open: false, userId: null, full_name: "", email: "" })}>Cancelar</Button>
+            <Button variant="outline" onClick={() => setEditDialog({ open: false, userId: null, full_name: "", email: "", password: "" })}>Cancelar</Button>
             <Button onClick={submitEdit} disabled={editLoading}>{editLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : "Guardar cambios"}</Button>
           </DialogFooter>
         </DialogContent>
