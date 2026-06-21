@@ -230,12 +230,12 @@ export default function Requisiciones() {
                         {reqType === "medicamentos" ? (
                           <>
                             <div className="grid grid-cols-12 gap-2 items-end">
-                              <div className="col-span-4">
+                              <div className="col-span-3">
                                 <Label className="text-xs">Medicamento</Label>
                                 <Input list="pastMeds" value={it.description} onChange={e => { const c = [...newItems]; c[idx].description = e.target.value; setNewItems(c); }} />
                                 <datalist id="pastMeds">{pastMeds.map(m => <option key={m} value={m} />)}</datalist>
                               </div>
-                              <div className="col-span-2">
+                              <div className="col-span-3">
                                 <Label className="text-xs">Paciente</Label>
                                 <Input value={it.patient_name} onChange={e => { const c = [...newItems]; c[idx].patient_name = e.target.value; setNewItems(c); }} />
                               </div>
