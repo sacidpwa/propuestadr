@@ -36,12 +36,17 @@ export default function SynapsiaLogin() {
       navigate("/synapsia");
       return;
     }
-    const { data } = await supabase.from("user_roles").select("role").eq("user_id", user.id);
-    const roles = (data || []).map((r) => r.role as string);
-    const target = routeForRoles(roles);
     const displayName =
       (user.user_metadata as any)?.full_name ||
       (user.email ? user.email.split("@")[0] : "Usuario");
+    let target = "/synapsia";
+    if (user.email?.toLowerCase() === "esther.z@synapsia.mx") {
+      target = "/synapsia/dashboard";
+    } else {
+      const { data } = await supabase.from("user_roles").select("role").eq("user_id", user.id);
+      const roles = (data || []).map((r) => r.role as string);
+      target = routeForRoles(roles);
+    }
     setWelcome({ name: displayName, target });
   };
 

@@ -38,6 +38,8 @@ import Inventario from "./pages/synapsia/Inventario";
 import ConfirmacionInventario from "./pages/synapsia/ConfirmacionInventario";
 import LogMovimientos from "./pages/synapsia/LogMovimientos";
 import AsistenteAdminHome from "./pages/synapsia/AsistenteAdminHome";
+import RegistroPaciente from "./pages/synapsia/RegistroPaciente";
+import DetallePaciente from "./pages/synapsia/DetallePaciente";
 import ProtectedRoute from "./components/synapsia/ProtectedRoute";
 import OwnerOnlyRoute from "./components/synapsia/OwnerOnlyRoute";
 import { AuthProvider, useAuth } from "./hooks/useAuth";
@@ -47,8 +49,11 @@ const queryClient = new QueryClient({
 });
 
 const SynapsiaHome = () => {
-  const { hasRole, loading } = useAuth();
+  const { hasRole, user, loading } = useAuth();
   if (loading) return null;
+  if (user?.email?.toLowerCase() === "esther.z@synapsia.mx") {
+    return <Navigate to="/synapsia/dashboard" replace />;
+  }
   // Si es dueño (con o sin especialista), mostrar selector de perfil
   if (hasRole("dueno")) {
     return <ProfileSelector />;
@@ -93,6 +98,8 @@ const App = () => (
             <Route path="/synapsia/floor" element={<ProtectedRoute requiredRole={["admin", "dueno", "recepcion"]}><FloorPlan /></ProtectedRoute>} />
             <Route path="/synapsia/unidades" element={<ProtectedRoute requiredRole={["admin", "dueno", "administrativo", "asistente_admin", "contador", "rrhh", "enfermera", "intendencia", "mantenimiento"]}><Unidades /></ProtectedRoute>} />
             <Route path="/synapsia/unidades/:id" element={<ProtectedRoute requiredRole={["admin", "dueno", "administrativo", "asistente_admin", "contador", "rrhh", "enfermera", "intendencia", "mantenimiento"]}><UnidadDetalle /></ProtectedRoute>} />
+            <Route path="/synapsia/unidades/:id/registro-paciente" element={<ProtectedRoute requiredRole={["admin", "dueno", "administrativo", "asistente_admin", "recepcion", "enfermera", "especialista"]}><RegistroPaciente /></ProtectedRoute>} />
+            <Route path="/synapsia/unidades/:unitId/paciente/:patientId" element={<ProtectedRoute requiredRole={["admin", "dueno", "administrativo", "asistente_admin", "recepcion", "enfermera", "especialista"]}><DetallePaciente /></ProtectedRoute>} />
             <Route path="/synapsia/unidades/:id/enfermeria" element={<ProtectedRoute requiredRole={["admin", "dueno", "administrativo", "asistente_admin", "enfermera", "especialista"]}><Enfermeria /></ProtectedRoute>} />
             <Route path="/synapsia/unidades/:id/requisiciones/:type" element={<ProtectedRoute requiredRole={["admin", "dueno", "administrativo", "asistente_admin", "enfermera", "intendencia", "mantenimiento"]}><Requisiciones /></ProtectedRoute>} />
             <Route path="/synapsia/unidades/:id/gastos" element={<ProtectedRoute requiredRole={["admin", "dueno", "administrativo", "asistente_admin"]}><GastosUnidad /></ProtectedRoute>} />

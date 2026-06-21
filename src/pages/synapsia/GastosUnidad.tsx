@@ -39,6 +39,11 @@ export default function GastosUnidad() {
   const [unitName, setUnitName] = useState("");
   const [entries, setEntries] = useState<Entry[]>([]);
   const [filter, setFilter] = useState("todos");
+  const [search, setSearch] = useState("");
+  const [dateFrom, setDateFrom] = useState("");
+  const [dateTo, setDateTo] = useState("");
+  const [amountMin, setAmountMin] = useState("");
+  const [amountMax, setAmountMax] = useState("");
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState({ entry_type: "gasto", description: "", amount: 0, category: "", notes: "", operation_date: new Date().toISOString().slice(0, 10), file: undefined as File | undefined });
 
@@ -70,12 +75,29 @@ export default function GastosUnidad() {
   }
   useEffect(() => { load(); }, [unitId, filter]);
 
+  const filtered = useMemo(() => {
+    let list = entries;
+    if (search.trim()) {
+      const q = search.toLowerCase();
+      list = list.filter(e =>
+        e.description.toLowerCase().includes(q) ||
+        (e.category && e.category.toLowerCase().includes(q)) ||
+        (e.notes && e.notes.toLowerCase().includes(q))
+      );
+    }
+    if (dateFrom) list = list.filter(e => e.expense_date >= dateFrom);
+    if (dateTo) list = list.filter(e => e.expense_date <= dateTo);
+    if (amountMin) list = list.filter(e => Number(e.amount) >= parseFloat(amountMin));
+    if (amountMax) list = list.filter(e => Number(e.amount) <= parseFloat(amountMax));
+    return list;
+  }, [entries, search, dateFrom, dateTo, amountMin, amountMax]);
+
   const totals = useMemo(() => {
-    const g = entries.filter(e => e.entry_type === "gasto").reduce((s, e) => s + Number(e.amount), 0);
-    const i = entries.filter(e => e.entry_type === "ingreso").reduce((s, e) => s + Number(e.amount), 0);
-    const o = entries.filter(e => e.entry_type === "orden_pago").reduce((s, e) => s + Number(e.amount), 0);
+    const g = filtered.filter(e => e.entry_type === "gasto").reduce((s, e) => s + Number(e.amount), 0);
+    const i = filtered.filter(e => e.entry_type === "ingreso").reduce((s, e) => s + Number(e.amount), 0);
+    const o = filtered.filter(e => e.entry_type === "orden_pago").reduce((s, e) => s + Number(e.amount), 0);
     return { g, i, o, balance: i - g };
-  }, [entries]);
+  }, [filtered]);
 
   async function uploadReceipt(file: File): Promise<string | null> {
     const path = `${user!.id}/${Date.now()}-${file.name.replace(/[^a-zA-Z0-9.\-_]/g, "_")}`;
@@ -131,7 +153,7 @@ export default function GastosUnidad() {
             <Button variant="ghost" size="icon" onClick={() => navigate(`/synapsia/unidades/${unitId}`)}><ArrowLeft className="w-4 h-4" /></Button>
             <img src={synapsiaIcon} alt="" className="w-9 h-9" />
             <div>
-              <h1 className="text-lg font-bold">Control de gastos — {unitName}</h1>
+              <h1 className="text-lg font-bold">Control de flujos — {unitName}</h1>
               <p className="text-xs text-muted-foreground">{user?.email}</p>
             </div>
           </div>
@@ -184,9 +206,38 @@ export default function GastosUnidad() {
           </Dialog>
         </div>
 
+        {/* Filtros de búsqueda */}
+        <div className="flex flex-wrap gap-2 items-end">
+          <div className="flex-1 min-w-[200px]">
+            <Label className="text-xs">Buscar por concepto</Label>
+            <Input placeholder="Descripción, categoría o notas..." value={search} onChange={e => setSearch(e.target.value)} className="h-9" />
+          </div>
+          <div>
+            <Label className="text-xs">Fecha desde</Label>
+            <Input type="date" value={dateFrom} onChange={e => setDateFrom(e.target.value)} className="h-9 w-40" />
+          </div>
+          <div>
+            <Label className="text-xs">Fecha hasta</Label>
+            <Input type="date" value={dateTo} onChange={e => setDateTo(e.target.value)} className="h-9 w-40" />
+          </div>
+          <div>
+            <Label className="text-xs">Monto mínimo</Label>
+            <Input type="number" min="0" step="0.01" placeholder="$0" value={amountMin} onChange={e => setAmountMin(e.target.value)} className="h-9 w-28" />
+          </div>
+          <div>
+            <Label className="text-xs">Monto máximo</Label>
+            <Input type="number" min="0" step="0.01" placeholder="$9999" value={amountMax} onChange={e => setAmountMax(e.target.value)} className="h-9 w-28" />
+          </div>
+          {(search || dateFrom || dateTo || amountMin || amountMax) && (
+            <Button variant="ghost" size="sm" className="h-9" onClick={() => { setSearch(""); setDateFrom(""); setDateTo(""); setAmountMin(""); setAmountMax(""); }}>
+              Limpiar filtros
+            </Button>
+          )}
+        </div>
+
         <div className="space-y-2">
-          {entries.length === 0 && <Card><CardContent className="py-10 text-center text-muted-foreground">Sin registros.</CardContent></Card>}
-          {entries.map(e => {
+          {filtered.length === 0 && <Card><CardContent className="py-10 text-center text-muted-foreground">Sin registros.</CardContent></Card>}
+          {filtered.map(e => {
             const canDrill = e.purchase_order_id && unitId;
             return (
             <Card key={e.id} className={canDrill ? "cursor-pointer hover:border-primary/50 transition-colors" : ""}
