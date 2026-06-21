@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -42,6 +42,10 @@ export default function AsistenteAdminHome() {
   const [pendingPays, setPendingPays] = useState<Req[]>([]);
   const [lowStockAlerts, setLowStockAlerts] = useState<InvAlert[]>([]);
   const [loading, setLoading] = useState(true);
+
+  const medReqs = useMemo(() => pendingReqs.filter(r => r.req_type === "medicamentos"), [pendingReqs]);
+  const limpiezaReqs = useMemo(() => pendingReqs.filter(r => r.req_type === "limpieza"), [pendingReqs]);
+  const mantenimientoReqs = useMemo(() => pendingReqs.filter(r => r.req_type === "mantenimiento" || r.req_type === "servicio_mantenimiento"), [pendingReqs]);
 
   useEffect(() => {
     if (!hasRole("asistente_admin") && !hasRole("admin") && !hasRole("dueno")) {
@@ -167,6 +171,86 @@ export default function AsistenteAdminHome() {
               </Card>
             )}
 
+            {limpiezaReqs.length > 0 && (
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Sparkles className="w-5 h-5 text-green-600" />
+                    <CardTitle className="text-base">Requisiciones de limpieza</CardTitle>
+                  </div>
+                  <Badge variant="outline">{limpiezaReqs.length} pendientes</Badge>
+                </CardHeader>
+                <CardContent>
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Unidad</TableHead>
+                        <TableHead>Título</TableHead>
+                        <TableHead>Monto</TableHead>
+                        <TableHead>Estado</TableHead>
+                        <TableHead className="text-right">Acción</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {limpiezaReqs.slice(0, 10).map((r) => (
+                        <TableRow key={r.id}>
+                          <TableCell className="text-xs">{unitName(r.health_unit_id)}</TableCell>
+                          <TableCell className="font-medium max-w-[200px] truncate">{r.title}</TableCell>
+                          <TableCell>${(r.total_amount || 0).toLocaleString()}</TableCell>
+                          <TableCell><Badge className={`text-[10px] ${STATUS_STYLE[r.status] || ""}`} variant="outline">{r.status}</Badge></TableCell>
+                          <TableCell className="text-right">
+                            <Button size="sm" variant="outline" onClick={() => navigate(`/synapsia/unidades/${r.health_unit_id}/ordenes-compra?req_id=${r.id}`)}>
+                              <ShoppingCart className="w-3 h-3 mr-1" /> OC
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </CardContent>
+              </Card>
+            )}
+
+            {mantenimientoReqs.length > 0 && (
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Wrench className="w-5 h-5 text-orange-600" />
+                    <CardTitle className="text-base">Requisiciones de mantenimiento</CardTitle>
+                  </div>
+                  <Badge variant="outline">{mantenimientoReqs.length} pendientes</Badge>
+                </CardHeader>
+                <CardContent>
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Unidad</TableHead>
+                        <TableHead>Título</TableHead>
+                        <TableHead>Monto</TableHead>
+                        <TableHead>Estado</TableHead>
+                        <TableHead className="text-right">Acción</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {mantenimientoReqs.slice(0, 10).map((r) => (
+                        <TableRow key={r.id}>
+                          <TableCell className="text-xs">{unitName(r.health_unit_id)}</TableCell>
+                          <TableCell className="font-medium max-w-[200px] truncate">{r.title}</TableCell>
+                          <TableCell>${(r.total_amount || 0).toLocaleString()}</TableCell>
+                          <TableCell><Badge className={`text-[10px] ${STATUS_STYLE[r.status] || ""}`} variant="outline">{r.status}</Badge></TableCell>
+                          <TableCell className="text-right">
+                            <Button size="sm" variant="outline" onClick={() => navigate(`/synapsia/unidades/${r.health_unit_id}/ordenes-compra?req_id=${r.id}`)}>
+                              <ShoppingCart className="w-3 h-3 mr-1" /> OC
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </CardContent>
+              </Card>
+            )}
+
             {pendingPays.length > 0 && (
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between">
@@ -252,15 +336,23 @@ export default function AsistenteAdminHome() {
               </Card>
             )}
 
-            <div>
-              <h3 className="text-lg font-semibold mb-3">Acceso rápido</h3>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                <QuickLink icon={<Pill className="w-5 h-5" />} label="Control de medicamentos" onClick={() => { const u = units[0]; if (u) navigate(`/synapsia/unidades/${u.id}/enfermeria`); }} />
-                <QuickLink icon={<ClipboardList className="w-5 h-5" />} label="Menús semanales" onClick={() => { const u = units[0]; if (u) navigate(`/synapsia/unidades/${u.id}/enfermeria`); }} />
-                <QuickLink icon={<ShoppingCart className="w-5 h-5" />} label="Órdenes de compra" onClick={() => { const u = units[0]; if (u) navigate(`/synapsia/unidades/${u.id}/ordenes-compra`); }} />
-                <QuickLink icon={<Package className="w-5 h-5" />} label="Inventario" onClick={() => { const u = units[0]; if (u) navigate(`/synapsia/unidades/${u.id}/inventario`); }} />
+            {units.length > 1 && (
+              <div>
+                <h3 className="text-lg font-semibold mb-3">Unidades de salud</h3>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                  {units.map(u => (
+                    <Card key={u.id} className="cursor-pointer hover:shadow-md transition" onClick={() => navigate(`/synapsia/unidades/${u.id}`)}>
+                      <CardContent className="py-4 flex items-center gap-3">
+                        <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary">
+                          <Building2 className="w-5 h-5" />
+                        </div>
+                        <p className="text-sm font-medium">{u.name}</p>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
               </div>
-            </div>
+            )}
           </>
         )}
       </main>
@@ -284,13 +376,4 @@ function StatCard({ icon, label, value }: { icon: React.ReactNode; label: string
   );
 }
 
-function QuickLink({ icon, label, onClick }: { icon: React.ReactNode; label: string; onClick: () => void }) {
-  return (
-    <Card className="cursor-pointer hover:shadow-md transition" onClick={onClick}>
-      <CardContent className="py-4 flex items-center gap-3">
-        <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary">{icon}</div>
-        <p className="text-sm font-medium">{label}</p>
-      </CardContent>
-    </Card>
-  );
-}
+

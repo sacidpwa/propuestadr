@@ -82,6 +82,18 @@ export default function OrdenesCompra() {
 
   const [reqs, setReqs] = useState<Req[]>([]);
   const [availReqs, setAvailReqs] = useState<Req[]>([]);
+  const [pastMeds, setPastMeds] = useState<string[]>([]);
+
+  useEffect(() => {
+    if (!unitId) return;
+    (async () => {
+      const { data: poItems } = await (supabase.from as any)("purchase_order_items")
+        .select("medication_name")
+        .in("purchase_order_id", (await (supabase.from as any)("purchase_orders").select("id").eq("health_unit_id", unitId)).data?.map((p: any) => p.id) || []);
+      const names = [...new Set((poItems || []).map((r: any) => r.medication_name).filter(Boolean))] as string[];
+      setPastMeds(names.sort());
+    })();
+  }, [unitId]);
 
   const canDiana = hasRole("admin") || hasRole("dueno") || hasRole("asistente_admin");
   const canEsther = hasRole("admin") || hasRole("dueno") || hasRole("administrativo");
@@ -176,6 +188,7 @@ export default function OrdenesCompra() {
         medication_name: it.medication_name,
         quantity: it.quantity, unit: it.unit,
         unit_price: it.unit_price,
+        patient_name: it.patient_name || null,
       });
     }
     toast({ title: "Orden de compra creada", description: `Folio: ${poNum}` });
@@ -389,10 +402,10 @@ export default function OrdenesCompra() {
               </div>
               {poItems.map((it, idx) => (
                 <div key={idx} className="grid grid-cols-12 gap-2 items-end border rounded p-2">
-                  <div className="col-span-2"><Label className="text-xs">Medicamento</Label><Input value={it.medication_name} onChange={e => updatePoItem(idx, "medication_name", e.target.value)} /></div>
-                  <div className="col-span-2"><Label className="text-xs">Paciente</Label><Input value={it.patient_name || ""} onChange={e => updatePoItem(idx, "patient_name", e.target.value)} /></div>
-                  <div className="col-span-2"><Label className="text-xs">Cant.</Label><Input type="number" min="0" step="0.01" value={it.quantity} onChange={e => updatePoItem(idx, "quantity", parseFloat(e.target.value) || 0)} /></div>
-                  <div className="col-span-2"><Label className="text-xs">Unidad</Label>
+                  <div className="col-span-4"><Label className="text-xs">Medicamento</Label><Input list="poPastMeds" value={it.medication_name} onChange={e => updatePoItem(idx, "medication_name", e.target.value)} /><datalist id="poPastMeds">{pastMeds.map(m => <option key={m} value={m} />)}</datalist></div>
+                  <div className="col-span-3"><Label className="text-xs">Paciente</Label><Input value={it.patient_name || ""} onChange={e => updatePoItem(idx, "patient_name", e.target.value)} /></div>
+                  <div className="col-span-1"><Label className="text-xs">Cant.</Label><Input type="number" min="0" step="0.01" value={it.quantity} onChange={e => updatePoItem(idx, "quantity", parseFloat(e.target.value) || 0)} /></div>
+                  <div className="col-span-1"><Label className="text-xs">Unidad</Label>
                     <Select value={it.unit} onValueChange={v => updatePoItem(idx, "unit", v)}>
                       <SelectTrigger><SelectValue /></SelectTrigger>
                       <SelectContent>
@@ -401,7 +414,7 @@ export default function OrdenesCompra() {
                     </Select>
                   </div>
                   <div className="col-span-2"><Label className="text-xs">P. unit.</Label><Input type="number" min="0" step="0.01" value={it.unit_price} onChange={e => updatePoItem(idx, "unit_price", parseFloat(e.target.value) || 0)} /></div>
-                  <div className="col-span-2 flex items-end justify-center">
+                  <div className="col-span-1 flex items-end justify-center">
                     <p className="text-xs font-mono">{fmt((it.quantity || 0) * (it.unit_price || 0))}</p>
                   </div>
                 </div>

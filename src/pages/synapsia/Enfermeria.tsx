@@ -63,7 +63,7 @@ export default function Enfermeria() {
     (async () => {
       const { data: u } = await (supabase.from as any)("health_units").select("id,name").eq("id", unitId).maybeSingle();
       setUnit((u as any) || null);
-      const { data: p } = await supabase.from("patients").select("id, full_name, health_unit_id").or(`health_unit_id.eq.${unitId},health_unit_id.is.null`).order("full_name");
+      const { data: p } = await supabase.from("patients").select("id, full_name, health_unit_id").eq("health_unit_id", unitId).order("full_name");
       setPatients((p as any) || []);
     })();
   }, [unitId]);
