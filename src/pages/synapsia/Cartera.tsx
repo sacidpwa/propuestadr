@@ -32,8 +32,8 @@ export default function Cartera() {
   const [filter, setFilter] = useState("morosos");
   const [open, setOpen] = useState(false);
   const [payOpen, setPayOpen] = useState<Fee | null>(null);
-  const [form, setForm] = useState({ patient_name: "", amount: 0, recurrence: "mensual", start_date: new Date().toISOString().slice(0, 10), next_due_date: new Date().toISOString().slice(0, 10), notes: "" });
-  const [payment, setPayment] = useState({ amount: 0, method: "", reference: "", notes: "", paid_at: new Date().toISOString().slice(0, 10) });
+  const [form, setForm] = useState({ patient_name: "", amount: 0, recurrence: "mensual", start_date: format(new Date(), "yyyy-MM-dd"), next_due_date: format(new Date(), "yyyy-MM-dd"), notes: "" });
+  const [payment, setPayment] = useState({ amount: 0, method: "", reference: "", notes: "", paid_at: format(new Date(), "yyyy-MM-dd") });
 
   const canManage = hasRole("admin") || hasRole("dueno") || hasRole("contador");
 
@@ -77,7 +77,7 @@ export default function Cartera() {
     if (error) { toast({ title: "Error", description: error.message, variant: "destructive" }); return; }
     toast({ title: "Cuota creada" });
     setOpen(false);
-    setForm({ patient_name: "", amount: 0, recurrence: "mensual", start_date: new Date().toISOString().slice(0, 10), next_due_date: new Date().toISOString().slice(0, 10), notes: "" });
+    setForm({ patient_name: "", amount: 0, recurrence: "mensual", start_date: format(new Date(), "yyyy-MM-dd"), next_due_date: format(new Date(), "yyyy-MM-dd"), notes: "" });
     load();
   }
 
@@ -91,7 +91,7 @@ export default function Cartera() {
     if (error) { toast({ title: "Error", description: error.message, variant: "destructive" }); return; }
     toast({ title: "Pago registrado" });
     setPayOpen(null);
-    setPayment({ amount: 0, method: "", reference: "", notes: "", paid_at: new Date().toISOString().slice(0, 10) });
+    setPayment({ amount: 0, method: "", reference: "", notes: "", paid_at: format(new Date(), "yyyy-MM-dd") });
     load();
   }
 

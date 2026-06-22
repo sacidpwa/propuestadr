@@ -42,7 +42,7 @@ export default function Facturas() {
   const [pinOpen, setPinOpen] = useState(false);
   const [pinAction, setPinAction] = useState<() => Promise<void>>(() => async () => {});
   const [pinTitle, setPinTitle] = useState("");
-  const [form, setForm] = useState({ patient_name: "", invoice_number: "", invoice_date: new Date().toISOString().slice(0, 10), amount: 0, concept: "", file: undefined as File | undefined });
+  const [form, setForm] = useState({ patient_name: "", invoice_number: "", invoice_date: format(new Date(), "yyyy-MM-dd"), amount: 0, concept: "", file: undefined as File | undefined });
 
   const canUpload = hasRole("admin") || hasRole("dueno") || hasRole("contador");
   const canVerify = hasRole("admin") || hasRole("dueno") || hasRole("administrativo");
@@ -89,7 +89,7 @@ export default function Facturas() {
     if (error) { toast({ title: "Error", description: error.message, variant: "destructive" }); return; }
     toast({ title: "Factura subida" });
     setOpen(false);
-    setForm({ patient_name: "", invoice_number: "", invoice_date: new Date().toISOString().slice(0, 10), amount: 0, concept: "", file: undefined });
+    setForm({ patient_name: "", invoice_number: "", invoice_date: format(new Date(), "yyyy-MM-dd"), amount: 0, concept: "", file: undefined });
     load();
   }
 

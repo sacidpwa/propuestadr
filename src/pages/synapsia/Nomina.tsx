@@ -165,7 +165,7 @@ export default function Nomina() {
     if (run) {
       await (supabase.from as any)("expense_entries").insert({
         health_unit_id: unitId, entry_type: "gasto", description: `Nómina ${run.area} ${run.period_start} - ${run.period_end}`,
-        amount: run.total_amount, expense_date: new Date().toISOString().slice(0, 10),
+        amount: run.total_amount, expense_date: format(new Date(), "yyyy-MM-dd"),
         period_year: new Date().getFullYear(), period_month: new Date().getMonth() + 1,
         category: "nomina", created_by: user!.id,
       });

@@ -571,7 +571,7 @@ export default function DetallePaciente() {
                     )}
                     {manualPrice && servicePrices.length > 0 && (
                       <p className="text-xs text-muted-foreground text-right">
-                        <button type="button" onClick={() => { setManualPrice(false); setInvForm({ concept: "", amount: 0 }); }} className="underline">Usar catálogo de precios</button>
+                        <button type="button" onClick={() => { setManualPrice(false); setInvForm({ concept: "", amount: 0, invoice_date: format(new Date(), "yyyy-MM-dd") }); }} className="underline">Usar catálogo de precios</button>
                       </p>
                     )}
                     <div className="flex justify-end gap-2">

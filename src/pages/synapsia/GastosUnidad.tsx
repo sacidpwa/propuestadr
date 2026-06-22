@@ -45,7 +45,7 @@ export default function GastosUnidad() {
   const [amountMin, setAmountMin] = useState("");
   const [amountMax, setAmountMax] = useState("");
   const [open, setOpen] = useState(false);
-  const [form, setForm] = useState({ entry_type: "gasto", description: "", amount: 0, category: "", notes: "", operation_date: new Date().toISOString().slice(0, 10), file: undefined as File | undefined });
+  const [form, setForm] = useState({ entry_type: "gasto", description: "", amount: 0, category: "", notes: "", operation_date: format(new Date(), "yyyy-MM-dd"), file: undefined as File | undefined });
 
   function waitForFile(): Promise<File | null> {
     return new Promise((resolve) => {
@@ -129,7 +129,7 @@ export default function GastosUnidad() {
     if (error) { toast({ title: "Error", description: error.message, variant: "destructive" }); return; }
     toast({ title: "Registrado" });
     setOpen(false);
-    setForm({ entry_type: "gasto", description: "", amount: 0, category: "", notes: "", operation_date: new Date().toISOString().slice(0, 10), file: undefined });
+    setForm({ entry_type: "gasto", description: "", amount: 0, category: "", notes: "", operation_date: format(new Date(), "yyyy-MM-dd"), file: undefined });
     load();
   }
 

@@ -52,7 +52,7 @@ export default function Enfermeria() {
   const [search, setSearch] = useState("");
   const [logs, setLogs] = useState<MedLog[]>([]);
   const [newOpen, setNewOpen] = useState(false);
-  const [form, setForm] = useState({ log_type: "medicamento", medication: "", dose: "", route: "", description: "", notes: "", event_at: new Date().toISOString().slice(0, 16) });
+  const [form, setForm] = useState({ log_type: "medicamento", medication: "", dose: "", route: "", description: "", notes: "", event_at: format(new Date(), "yyyy-MM-dd'T'HH:mm") });
 
   // Menus
   const [weekStart, setWeekStart] = useState(() => format(startOfWeek(new Date(), { weekStartsOn: 1 }), "yyyy-MM-dd"));
@@ -119,7 +119,7 @@ export default function Enfermeria() {
         health_unit_id: unitId,
         amount: 0,
         concept: `MEDICAMENTO - ${form.medication.toUpperCase()}${form.dose ? ` (${form.dose})` : ""}`,
-        invoice_date: new Date(form.event_at).toISOString().slice(0, 10),
+        invoice_date: form.event_at.slice(0, 10),
         status: "pendiente",
         uploaded_by: user.id,
         source: "medication",
@@ -128,7 +128,7 @@ export default function Enfermeria() {
     }
     toast({ title: "Registrado" });
     setNewOpen(false);
-    setForm({ log_type: "medicamento", medication: "", dose: "", route: "", description: "", notes: "", event_at: new Date().toISOString().slice(0, 16) });
+    setForm({ log_type: "medicamento", medication: "", dose: "", route: "", description: "", notes: "", event_at: format(new Date(), "yyyy-MM-dd'T'HH:mm") });
     loadLogs();
   }
 

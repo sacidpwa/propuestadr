@@ -11,6 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { ArrowLeft, LogOut, Plus, Save, Trash2, ClipboardList } from "lucide-react";
 import { toast } from "sonner";
+import { format } from "date-fns";
 import synapsiaIcon from "@/assets/synapsia-icon.svg";
 
 interface HealthUnit { id: string; name: string; }
@@ -32,7 +33,7 @@ interface Evaluation {
 }
 
 const empty = {
-  interview_date: new Date().toISOString().slice(0, 10),
+  interview_date: format(new Date(), "yyyy-MM-dd"),
   full_name: "",
   position: "",
   health_unit_id: "",
