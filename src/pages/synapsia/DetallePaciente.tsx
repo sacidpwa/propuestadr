@@ -174,15 +174,20 @@ export default function DetallePaciente() {
 
   async function loadInvoices() {
     const { data } = await (supabase.from as any)("patient_invoices")
-      .select("*, creator:profiles!uploaded_by(full_name, email)").eq("patient_id", patientId)
+      .select("*").eq("patient_id", patientId)
       .gte("invoice_date", periodStart)
       .lte("invoice_date", periodEnd)
       .order("invoice_date", { ascending: false });
-    const mapped = ((data as any) || []).map((inv: any) => ({
-      ...inv,
-      created_by_name: inv.creator?.full_name || inv.creator?.email || inv.uploaded_by?.slice(0, 8) || "—",
-    }));
-    setInvoices(mapped);
+    const invs = (data as any) || [];
+    if (invs.length) {
+      const uids = [...new Set(invs.map((i: any) => i.uploaded_by))];
+      const { data: profs } = await (supabase.from as any)("profiles")
+        .select("user_id, full_name, email").in("user_id", uids);
+      const nameMap: Record<string, string> = {};
+      (profs as any[] || []).forEach((p: any) => { nameMap[p.user_id] = p.full_name || p.email; });
+      invs.forEach((i: any) => { i.created_by_name = nameMap[i.uploaded_by] || i.uploaded_by?.slice(0, 8) || "—"; });
+    }
+    setInvoices(invs);
   }
 
   function buildStatementData() {
