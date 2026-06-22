@@ -45,6 +45,7 @@ interface PatientInvoice {
   id: string; invoice_number: string | null; invoice_date: string;
   amount: number; concept: string | null; status: string;
   verified_by: string | null; verified_at: string | null; source: string | null;
+  uploaded_by: string | null; created_by_name?: string;
 }
 
 const UNIT_LOGOS: Record<string, string> = {
@@ -69,7 +70,7 @@ export default function DetallePaciente() {
   const [payments, setPayments] = useState<FeePayment[]>([]);
   const [invoices, setInvoices] = useState<PatientInvoice[]>([]);
   const [newInvoiceOpen, setNewInvoiceOpen] = useState(false);
-  const [invForm, setInvForm] = useState({ concept: "", amount: 0 });
+  const [invForm, setInvForm] = useState({ concept: "", amount: 0, invoice_date: format(new Date(), "yyyy-MM-dd") });
   const [servicePrices, setServicePrices] = useState<any[]>([]);
   const [manualPrice, setManualPrice] = useState(false);
   const [periodKey, setPeriodKey] = useState("este-mes");
@@ -173,11 +174,15 @@ export default function DetallePaciente() {
 
   async function loadInvoices() {
     const { data } = await (supabase.from as any)("patient_invoices")
-      .select("*").eq("patient_id", patientId)
+      .select("*, creator:profiles!uploaded_by(full_name, email)").eq("patient_id", patientId)
       .gte("invoice_date", periodStart)
       .lte("invoice_date", periodEnd)
       .order("invoice_date", { ascending: false });
-    setInvoices((data as any) || []);
+    const mapped = ((data as any) || []).map((inv: any) => ({
+      ...inv,
+      created_by_name: inv.creator?.full_name || inv.creator?.email || inv.uploaded_by?.slice(0, 8) || "—",
+    }));
+    setInvoices(mapped);
   }
 
   function buildStatementData() {
@@ -262,20 +267,20 @@ export default function DetallePaciente() {
 
   async function handleNewInvoice() {
     if (!patientId || !unitId || !patient) return;
-    if (!invForm.concept.trim() || !invForm.amount) { toast({ title: "Completa concepto y monto", variant: "destructive" }); return; }
+    if (!invForm.concept.trim() || !invForm.amount || !invForm.invoice_date) { toast({ title: "Completa concepto, monto y fecha", variant: "destructive" }); return; }
     const { error } = await (supabase.from as any)("patient_invoices").insert({
       patient_id: patientId,
       patient_name: patient.full_name,
       health_unit_id: unitId,
       amount: invForm.amount,
       concept: invForm.concept,
-      invoice_date: format(new Date(), "yyyy-MM-dd"),
+      invoice_date: invForm.invoice_date,
       status: "pendiente",
       uploaded_by: user!.id,
     });
     if (error) { toast({ title: "Error", description: error.message, variant: "destructive" }); return; }
     toast({ title: "Gasto extra registrado" });
-    setInvForm({ concept: "", amount: 0 });
+    setInvForm({ concept: "", amount: 0, invoice_date: format(new Date(), "yyyy-MM-dd") });
     setNewInvoiceOpen(false);
     setManualPrice(false);
     loadInvoices();
@@ -518,6 +523,10 @@ export default function DetallePaciente() {
                     </CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-3">
+                    <div>
+                      <Label>Fecha del gasto</Label>
+                      <Input type="date" value={invForm.invoice_date} onChange={e => setInvForm({ ...invForm, invoice_date: e.target.value })} />
+                    </div>
                     {!manualPrice && servicePrices.length > 0 ? (
                       <div>
                         <Label>Servicio</Label>
@@ -590,6 +599,7 @@ export default function DetallePaciente() {
                             <th className="text-left px-4 py-2 font-medium">Concepto</th>
                             <th className="text-left px-4 py-2 font-medium">Estado</th>
                             <th className="text-center px-4 py-2 font-medium">Validación</th>
+                            <th className="text-left px-4 py-2 font-medium">Registró</th>
                             <th className="text-right px-4 py-2 font-medium">Monto</th>
                           </tr>
                         </thead>
@@ -614,6 +624,7 @@ export default function DetallePaciente() {
                                   <span className="text-xs text-muted-foreground">—</span>
                                 )}
                               </td>
+                              <td className="px-4 py-2 text-xs text-muted-foreground">{inv.created_by_name || "—"}</td>
                               <td className="px-4 py-2 text-right font-mono font-medium">${Number(inv.amount).toLocaleString()}</td>
                             </tr>
                           ))}
