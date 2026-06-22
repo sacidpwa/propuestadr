@@ -111,6 +111,21 @@ export default function Enfermeria() {
     };
     const { error } = await (supabase.from as any)("medication_log").insert(payload);
     if (error) { toast({ title: "Error", description: error.message, variant: "destructive" }); return; }
+    if (form.log_type === "medicamento" && form.medication) {
+      const patient = patients.find(p => p.id === selectedPatient);
+      await (supabase.from as any)("patient_invoices").insert({
+        patient_id: selectedPatient,
+        patient_name: patient?.full_name || "—",
+        health_unit_id: unitId,
+        amount: 0,
+        concept: `MEDICAMENTO - ${form.medication.toUpperCase()}${form.dose ? ` (${form.dose})` : ""}`,
+        invoice_date: new Date(form.event_at).toISOString().slice(0, 10),
+        status: "pendiente",
+        uploaded_by: user.id,
+        source: "medication",
+        source_id: null,
+      });
+    }
     toast({ title: "Registrado" });
     setNewOpen(false);
     setForm({ log_type: "medicamento", medication: "", dose: "", route: "", description: "", notes: "", event_at: new Date().toISOString().slice(0, 16) });

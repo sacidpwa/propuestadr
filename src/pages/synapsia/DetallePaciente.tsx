@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
@@ -14,12 +14,16 @@ import PinPrompt from "@/components/synapsia/PinPrompt";
 import {
   ArrowLeft, LogOut, Save, Pencil, Phone, Mail, Cake, MapPin,
   DollarSign, Calendar, ShieldAlert, UserCheck, FileText, Plus,
-  History, CreditCard, Download, AlertCircle, Receipt
+  History, CreditCard, Download, AlertCircle, Receipt, Check
 } from "lucide-react";
 import synapsiaIcon from "@/assets/synapsia-icon.svg";
+import logoAlcatraces from "@/assets/logo-alcatraces.jpg";
+import logoSenior from "@/assets/logo-senior-living.jpg";
+import logoBenesse from "@/assets/logo-benesse.jpg";
 import { toast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
+import { printStatement, downloadStatementPDF } from "@/utils/estadoCuentaPDF";
 
 interface PatientData {
   id: string; full_name: string; phone: string | null; email: string | null;
@@ -40,13 +44,23 @@ interface FeePayment {
 interface PatientInvoice {
   id: string; invoice_number: string | null; invoice_date: string;
   amount: number; concept: string | null; status: string;
+  verified_by: string | null; verified_at: string | null; source: string | null;
 }
+
+const UNIT_LOGOS: Record<string, string> = {
+  "CT Alcatraces": logoAlcatraces,
+  "Senior Living": logoSenior,
+  "Centro Benesse": logoBenesse,
+};
 
 export default function DetallePaciente() {
   const { unitId, patientId } = useParams<{ unitId: string; patientId: string }>();
-  const { user, signOut } = useAuth();
+  const { user, signOut, hasRole } = useAuth();
   const navigate = useNavigate();
-  const [tab, setTab] = useState("resumen");
+  const [searchParams] = useSearchParams();
+  const [tab, setTab] = useState(searchParams.get("tab") === "nota-venta" ? "nota-venta" : "resumen");
+  const [unitName, setUnitName] = useState("");
+  const [logoDataUrl, setLogoDataUrl] = useState("");
   const [patient, setPatient] = useState<PatientData | null>(null);
   const [editing, setEditing] = useState(false);
   const [pinOpen, setPinOpen] = useState(false);
@@ -56,6 +70,13 @@ export default function DetallePaciente() {
   const [invoices, setInvoices] = useState<PatientInvoice[]>([]);
   const [newInvoiceOpen, setNewInvoiceOpen] = useState(false);
   const [invForm, setInvForm] = useState({ concept: "", amount: 0 });
+  const [servicePrices, setServicePrices] = useState<any[]>([]);
+  const [manualPrice, setManualPrice] = useState(false);
+  const [periodKey, setPeriodKey] = useState("este-mes");
+  const [periodStart, setPeriodStart] = useState(() => format(new Date(), "yyyy-MM-01"));
+  const [periodEnd, setPeriodEnd] = useState(() => format(new Date(), "yyyy-MM-dd"));
+  const [customStart, setCustomStart] = useState(() => format(new Date(), "yyyy-MM-01"));
+  const [customEnd, setCustomEnd] = useState(() => format(new Date(), "yyyy-MM-dd"));
 
   const [form, setForm] = useState({
     full_name: "", phone: "", email: "", date_of_birth: "", address: "",
@@ -64,11 +85,47 @@ export default function DetallePaciente() {
   });
 
   useEffect(() => {
+    if (periodKey === "este-mes") {
+      setPeriodStart(format(new Date(), "yyyy-MM-01"));
+      setPeriodEnd(format(new Date(), "yyyy-MM-dd"));
+    } else if (periodKey === "mes-pasado") {
+      const d = new Date();
+      setPeriodStart(format(new Date(d.getFullYear(), d.getMonth() - 1, 1), "yyyy-MM-dd"));
+      setPeriodEnd(format(new Date(d.getFullYear(), d.getMonth(), 0), "yyyy-MM-dd"));
+    } else if (periodKey === "este-ano") {
+      setPeriodStart(`${new Date().getFullYear()}-01-01`);
+      setPeriodEnd(`${new Date().getFullYear()}-12-31`);
+    }
+  }, [periodKey]);
+
+  useEffect(() => {
     if (!patientId) return;
     loadPatient();
+    loadServicePrices();
+    if (unitId) loadUnit();
+  }, [patientId]);
+
+  useEffect(() => {
+    if (!patientId || !patient) return;
     loadPayments();
     loadInvoices();
-  }, [patientId]);
+  }, [patientId, patient, periodStart, periodEnd]);
+
+  async function loadUnit() {
+    const { data } = await (supabase.from as any)("health_units").select("name").eq("id", unitId).maybeSingle();
+    const name = data ? (data as any).name : "";
+    setUnitName(name);
+    const logoPath = UNIT_LOGOS[name];
+    if (logoPath) {
+      try {
+        const resp = await fetch(logoPath);
+        const blob = await resp.blob();
+        const reader = new FileReader();
+        reader.onloadend = () => setLogoDataUrl(reader.result as string);
+        reader.readAsDataURL(blob);
+      } catch {}
+    }
+  }
 
   async function loadPatient() {
     const { data } = await (supabase.from as any)("patients").select("*").eq("id", patientId).maybeSingle();
@@ -99,23 +156,84 @@ export default function DetallePaciente() {
   }
 
   async function loadPayments() {
+    if (!patient || !patient.full_name) return;
     const { data: fees } = await (supabase.from as any)("client_fees")
-      .select("id, amount, patient_name").eq("health_unit_id", unitId).contains("patient_name", patient ? patient.full_name : "");
+      .select("id, amount, patient_name").eq("health_unit_id", unitId).ilike("patient_name", `%${patient.full_name}%`);
     if (!fees) return;
     const feeIds = (fees as any[]).map((f: any) => f.id);
     if (feeIds.length === 0) return;
     const { data: pmts } = await (supabase.from as any)("client_fee_payments")
       .select("*, fee:client_fees(amount, patient_name)")
       .in("fee_id", feeIds)
-      .gte("paid_at", `${new Date().getFullYear()}-01-01`)
+      .gte("paid_at", periodStart)
+      .lte("paid_at", periodEnd + "T23:59:59")
       .order("paid_at", { ascending: false });
     setPayments((pmts as any) || []);
   }
 
   async function loadInvoices() {
     const { data } = await (supabase.from as any)("patient_invoices")
-      .select("*").eq("patient_id", patientId).order("invoice_date", { ascending: false });
+      .select("*").eq("patient_id", patientId)
+      .gte("invoice_date", periodStart)
+      .lte("invoice_date", periodEnd)
+      .order("invoice_date", { ascending: false });
     setInvoices((data as any) || []);
+  }
+
+  function buildStatementData() {
+    if (!patient || !unitId) return null as any;
+    const rows = invoices.map(inv => ({
+      date: format(new Date(inv.invoice_date), "dd/MM/yyyy"),
+      quantity: 1,
+      description: inv.concept || "—",
+      charge: Number(inv.amount),
+      payment: 0,
+    }));
+    payments.forEach(p => {
+      rows.push({
+        date: format(new Date(p.paid_at), "dd/MM/yyyy"),
+        quantity: 1,
+        description: `PAGO - ${(p.method || "").toUpperCase()}`,
+        charge: 0,
+        payment: Number(p.amount),
+      });
+    });
+    rows.sort((a, b) => a.date.localeCompare(b.date));
+    const totalCharges = rows.reduce((s, r) => s + r.charge, 0);
+    const totalPayments = rows.reduce((s, r) => s + r.payment, 0);
+    return {
+      unit: {
+        name: unitName || "UNIDAD DE SALUD",
+        address: "",
+        phone: "",
+        email: "",
+        logoUrl: logoDataUrl,
+      },
+      patient: {
+        name: patient.full_name,
+        address: patient.address,
+        locality: "TOLUCA",
+        state: "MÉXICO",
+        country: "MÉXICO",
+        phone: patient.phone || "",
+        email: patient.email || "",
+      },
+      clientNumber: patientId?.slice(0, 8).toUpperCase() || "—",
+      date: new Date(),
+      creditLimit: 60000,
+      creditAvailable: Math.max(0, 60000 - (totalCharges - totalPayments)),
+      overdueBalance: 0,
+      totalBalance: totalCharges - totalPayments,
+      rows,
+      title: tab === "nota-venta" ? "Nota de Gastos" : "Estado de Cuenta",
+    };
+  }
+
+  async function loadServicePrices() {
+    if (!unitId) return;
+    const { data } = await (supabase.from as any)("service_prices")
+      .select("*").eq("health_unit_id", unitId).eq("is_active", true).order("category").order("concept");
+    setServicePrices((data as any) || []);
   }
 
   async function handleSave() {
@@ -159,6 +277,7 @@ export default function DetallePaciente() {
     toast({ title: "Gasto extra registrado" });
     setInvForm({ concept: "", amount: 0 });
     setNewInvoiceOpen(false);
+    setManualPrice(false);
     loadInvoices();
   }
 
@@ -195,7 +314,7 @@ export default function DetallePaciente() {
           <TabsList className="mb-6">
             <TabsTrigger value="resumen"><UserCheck className="w-4 h-4 mr-1" />Resumen</TabsTrigger>
             <TabsTrigger value="estado-cuenta"><DollarSign className="w-4 h-4 mr-1" />Estado de cuenta</TabsTrigger>
-            <TabsTrigger value="nota-venta"><Receipt className="w-4 h-4 mr-1" />Nota de venta</TabsTrigger>
+            <TabsTrigger value="nota-venta"><Receipt className="w-4 h-4 mr-1" />Nota de gastos</TabsTrigger>
             <TabsTrigger value="historial"><History className="w-4 h-4 mr-1" />Historial</TabsTrigger>
           </TabsList>
 
@@ -304,12 +423,39 @@ export default function DetallePaciente() {
 
           {/* === ESTADO DE CUENTA === */}
           <TabsContent value="estado-cuenta">
+            <div className="flex items-center justify-between mb-2">
+              <div className="flex items-center gap-3">
+                <Select value={periodKey} onValueChange={v => setPeriodKey(v)}>
+                  <SelectTrigger className="w-44"><SelectValue placeholder="Período" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="este-mes">Este mes</SelectItem>
+                    <SelectItem value="mes-pasado">Mes pasado</SelectItem>
+                    <SelectItem value="este-ano">Este año</SelectItem>
+                    <SelectItem value="custom">Personalizado</SelectItem>
+                  </SelectContent>
+                </Select>
+                {periodKey === "custom" && (
+                  <div className="flex items-center gap-2">
+                    <Input type="date" className="w-36" value={customStart} onChange={e => { setCustomStart(e.target.value); setPeriodStart(e.target.value); }} />
+                    <span>—</span>
+                    <Input type="date" className="w-36" value={customEnd} onChange={e => { setCustomEnd(e.target.value); setPeriodEnd(e.target.value); }} />
+                  </div>
+                )}
+              </div>
+              <div className="flex gap-2">
+                <Button variant="outline" size="sm" onClick={() => printStatement(buildStatementData())}>
+                  <Download className="w-4 h-4 mr-1" /> Imprimir
+                </Button>
+                <Button variant="outline" size="sm" onClick={() => downloadStatementPDF(buildStatementData())}>
+                  <FileText className="w-4 h-4 mr-1" /> PDF
+                </Button>
+              </div>
+            </div>
             <Card>
               <CardHeader>
-                <CardTitle className="text-base flex items-center gap-2">
-                  <CreditCard className="w-5 h-5" /> Pagos registrados — {new Date().getFullYear()}
+                <CardTitle className="text-sm flex items-center gap-2">
+                  <CreditCard className="w-4 h-4" /> Pagos registrados
                 </CardTitle>
-                <CardDescription>Total pagado: ${totalPaid.toLocaleString()}</CardDescription>
               </CardHeader>
               <CardContent className="p-0">
                 {payments.length === 0 ? (
@@ -350,35 +496,77 @@ export default function DetallePaciente() {
                   <h3 className="text-lg font-semibold">Gastos extras del paciente</h3>
                   <p className="text-sm text-muted-foreground">Agrega consumos adicionales (enfermería, alimentación, servicios, etc.)</p>
                 </div>
-                <Button onClick={() => setNewInvoiceOpen(true)}><Plus className="w-4 h-4 mr-1" /> Agregar gasto</Button>
+                <div className="flex gap-2">
+                  <Button variant="outline" size="sm" onClick={() => printStatement(buildStatementData())}>
+                    <Download className="w-4 h-4 mr-1" /> Imprimir
+                  </Button>
+                  <Button variant="outline" size="sm" onClick={() => downloadStatementPDF(buildStatementData())}>
+                    <FileText className="w-4 h-4 mr-1" /> PDF
+                  </Button>
+                  {(hasRole("admin") || hasRole("dueno") || hasRole("administrativo") || hasRole("asistente_admin")) && (
+                    <Button onClick={() => setNewInvoiceOpen(true)}><Plus className="w-4 h-4 mr-1" /> Agregar gasto</Button>
+                  )}
+                </div>
               </div>
 
               {newInvoiceOpen && (
                 <Card>
-                  <CardHeader><CardTitle className="text-sm">Nuevo gasto extra</CardTitle></CardHeader>
+                  <CardHeader>
+                    <CardTitle className="text-sm">Nuevo gasto extra</CardTitle>
+                    <CardDescription>
+                      {!manualPrice ? "Selecciona un servicio del catálogo de precios" : "Ingresa el concepto manualmente"}
+                    </CardDescription>
+                  </CardHeader>
                   <CardContent className="space-y-3">
-                    <div className="grid sm:grid-cols-2 gap-3">
-                      <div><Label>Concepto</Label>
-                        <Select value={invForm.concept} onValueChange={v => setInvForm({ ...invForm, concept: v })}>
-                          <SelectTrigger><SelectValue placeholder="Seleccionar..." /></SelectTrigger>
+                    {!manualPrice && servicePrices.length > 0 ? (
+                      <div>
+                        <Label>Servicio</Label>
+                        <Select value={invForm.concept} onValueChange={v => {
+                          const sp = servicePrices.find(p => p.id === v);
+                          if (sp) setInvForm({ concept: sp.concept, amount: sp.price });
+                        }}>
+                          <SelectTrigger><SelectValue placeholder="Seleccionar servicio..." /></SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="enfermeria">Enfermería (curaciones, cuidados)</SelectItem>
-                            <SelectItem value="alimentacion">Alimentación especial / suplementos</SelectItem>
-                            <SelectItem value="medicamentos">Medicamentos no cubiertos</SelectItem>
-                            <SelectItem value="transporte">Transporte / traslado</SelectItem>
-                            <SelectItem value="terapias">Terapias adicionales</SelectItem>
-                            <SelectItem value="servicios">Servicios generales</SelectItem>
-                            <SelectItem value="otro">Otro</SelectItem>
+                            {servicePrices.map(p => (
+                              <SelectItem key={p.id} value={p.id}>
+                                {p.concept} — ${Number(p.price).toLocaleString()}
+                              </SelectItem>
+                            ))}
                           </SelectContent>
                         </Select>
                       </div>
-                      <div><Label>Monto $</Label><Input type="number" min="0" step="0.01" value={invForm.amount} onChange={e => setInvForm({ ...invForm, amount: parseFloat(e.target.value) || 0 })} /></div>
-                    </div>
-                    {invForm.concept === "otro" && (
-                      <div><Label>Especificar concepto</Label><Input placeholder="Describe el gasto..." onChange={e => setInvForm({ ...invForm, concept: e.target.value })} /></div>
+                    ) : (
+                      <div className="grid sm:grid-cols-2 gap-3">
+                        <div><Label>Concepto</Label>
+                          <Select value={invForm.concept} onValueChange={v => setInvForm({ ...invForm, concept: v })}>
+                            <SelectTrigger><SelectValue placeholder="Seleccionar..." /></SelectTrigger>
+                            <SelectContent>
+                              {[
+                                { v: "ENFERMERIA (CURACIONES, CUIDADOS)", l: "Enfermería" },
+                                { v: "ALIMENTACION ESPECIAL / SUPLEMENTOS", l: "Alimentación" },
+                                { v: "MEDICAMENTOS NO CUBIERTOS", l: "Medicamentos" },
+                                { v: "TRANSPORTE / TRASLADO", l: "Transporte" },
+                                { v: "TERAPIAS ADICIONALES", l: "Terapias" },
+                                { v: "SERVICIOS GENERALES", l: "Servicios" },
+                              ].map(o => <SelectItem key={o.v} value={o.v}>{o.l}</SelectItem>)}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div><Label>Monto $</Label><Input type="number" min="0" step="0.01" value={invForm.amount} onChange={e => setInvForm({ ...invForm, amount: parseFloat(e.target.value) || 0 })} /></div>
+                      </div>
+                    )}
+                    {!manualPrice && servicePrices.length > 0 && (
+                      <p className="text-xs text-muted-foreground text-right">
+                        <button type="button" onClick={() => setManualPrice(true)} className="underline">Ingresar manualmente</button>
+                      </p>
+                    )}
+                    {manualPrice && servicePrices.length > 0 && (
+                      <p className="text-xs text-muted-foreground text-right">
+                        <button type="button" onClick={() => { setManualPrice(false); setInvForm({ concept: "", amount: 0 }); }} className="underline">Usar catálogo de precios</button>
+                      </p>
                     )}
                     <div className="flex justify-end gap-2">
-                      <Button variant="outline" onClick={() => setNewInvoiceOpen(false)}>Cancelar</Button>
+                      <Button variant="outline" onClick={() => { setNewInvoiceOpen(false); setManualPrice(false); }}>Cancelar</Button>
                       <Button onClick={handleNewInvoice}>Registrar</Button>
                     </div>
                   </CardContent>
@@ -401,6 +589,7 @@ export default function DetallePaciente() {
                             <th className="text-left px-4 py-2 font-medium">Fecha</th>
                             <th className="text-left px-4 py-2 font-medium">Concepto</th>
                             <th className="text-left px-4 py-2 font-medium">Estado</th>
+                            <th className="text-center px-4 py-2 font-medium">Validación</th>
                             <th className="text-right px-4 py-2 font-medium">Monto</th>
                           </tr>
                         </thead>
@@ -408,11 +597,22 @@ export default function DetallePaciente() {
                           {invoices.map(inv => (
                             <tr key={inv.id} className="border-b last:border-0 hover:bg-muted/50">
                               <td className="px-4 py-2">{format(new Date(inv.invoice_date), "PP", { locale: es })}</td>
-                              <td className="px-4 py-2">{inv.concept || "—"}</td>
+                              <td className="px-4 py-2 text-xs">{inv.concept || "—"}</td>
                               <td className="px-4 py-2">
                                 <Badge variant={inv.status === "verificada" ? "secondary" : inv.status === "erronea" ? "destructive" : "outline"}>
                                   {inv.status}
                                 </Badge>
+                              </td>
+                              <td className="px-4 py-2 text-center">
+                                {inv.verified_by ? (
+                                  <span className="inline-flex items-center gap-1 text-xs text-green-700 bg-green-100 px-2 py-0.5 rounded-full font-medium">
+                                    <Check className="w-3 h-3" /> Validado
+                                  </span>
+                                ) : inv.status === "pendiente" ? (
+                                  <span className="text-xs text-muted-foreground">—</span>
+                                ) : (
+                                  <span className="text-xs text-muted-foreground">—</span>
+                                )}
                               </td>
                               <td className="px-4 py-2 text-right font-mono font-medium">${Number(inv.amount).toLocaleString()}</td>
                             </tr>
@@ -436,7 +636,7 @@ export default function DetallePaciente() {
                 <CardDescription>Todos los registros asociados al paciente</CardDescription>
               </CardHeader>
               <CardContent className="p-0">
-                {invoices.length === 0 ? (
+                  {invoices.length === 0 ? (
                   <CardContent className="text-center text-muted-foreground py-8">Sin historial disponible.</CardContent>
                 ) : (
                   <div className="overflow-x-auto">
@@ -447,6 +647,7 @@ export default function DetallePaciente() {
                           <th className="text-left px-4 py-2 font-medium">Tipo</th>
                           <th className="text-left px-4 py-2 font-medium">Concepto</th>
                           <th className="text-left px-4 py-2 font-medium">Estado</th>
+                          <th className="text-center px-4 py-2 font-medium">Validación</th>
                           <th className="text-right px-4 py-2 font-medium">Monto</th>
                         </tr>
                       </thead>
@@ -455,11 +656,20 @@ export default function DetallePaciente() {
                           <tr key={inv.id} className="border-b last:border-0 hover:bg-muted/50">
                             <td className="px-4 py-2">{format(new Date(inv.invoice_date), "PP", { locale: es })}</td>
                             <td className="px-4 py-2">Gasto extra</td>
-                            <td className="px-4 py-2">{inv.concept || "—"}</td>
+                            <td className="px-4 py-2 text-xs">{inv.concept || "—"}</td>
                             <td className="px-4 py-2">
                               <Badge variant={inv.status === "verificada" ? "secondary" : inv.status === "erronea" ? "destructive" : "outline"}>
                                 {inv.status}
                               </Badge>
+                            </td>
+                            <td className="px-4 py-2 text-center">
+                              {inv.verified_by ? (
+                                <span className="inline-flex items-center gap-1 text-xs text-green-700 bg-green-100 px-2 py-0.5 rounded-full font-medium">
+                                  <Check className="w-3 h-3" /> Validado
+                                </span>
+                              ) : (
+                                <span className="text-xs text-muted-foreground">—</span>
+                              )}
                             </td>
                             <td className="px-4 py-2 text-right font-mono font-medium">${Number(inv.amount).toLocaleString()}</td>
                           </tr>

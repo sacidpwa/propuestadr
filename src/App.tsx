@@ -36,6 +36,8 @@ import CentroAutorizaciones from "./pages/synapsia/CentroAutorizaciones";
 import OrdenesCompra from "./pages/synapsia/OrdenesCompra";
 import Inventario from "./pages/synapsia/Inventario";
 import ConfirmacionInventario from "./pages/synapsia/ConfirmacionInventario";
+import ServicePrices from "./pages/synapsia/ServicePrices";
+import PlantillaLaboral from "./pages/synapsia/PlantillaLaboral";
 import LogMovimientos from "./pages/synapsia/LogMovimientos";
 import AsistenteAdminHome from "./pages/synapsia/AsistenteAdminHome";
 import RegistroPaciente from "./pages/synapsia/RegistroPaciente";
@@ -106,12 +108,14 @@ const App = () => (
             <Route path="/synapsia/unidades/:id/facturas" element={<ProtectedRoute requiredRole={["admin", "dueno", "administrativo", "contador"]}><Facturas /></ProtectedRoute>} />
             <Route path="/synapsia/unidades/:id/cartera" element={<ProtectedRoute requiredRole={["admin", "dueno", "administrativo", "contador"]}><Cartera /></ProtectedRoute>} />
             <Route path="/synapsia/unidades/:id/nomina" element={<ProtectedRoute requiredRole={["admin", "dueno", "administrativo", "asistente_admin", "contador", "rrhh"]}><Nomina /></ProtectedRoute>} />
+            <Route path="/synapsia/plantilla" element={<ProtectedRoute requiredRole={["admin", "dueno", "administrativo", "asistente_admin", "contador", "rrhh"]}><PlantillaLaboral /></ProtectedRoute>} />
             <Route path="/synapsia/evaluaciones" element={<ProtectedRoute requiredRole={["admin", "dueno"]}><Evaluaciones /></ProtectedRoute>} />
             <Route path="/synapsia/dashboard" element={<ProtectedRoute requiredRole={["admin", "dueno", "administrativo"]}><DashboardEjecutivo /></ProtectedRoute>} />
-            <Route path="/synapsia/autorizaciones" element={<ProtectedRoute requiredRole={["admin", "dueno", "administrativo"]}><CentroAutorizaciones /></ProtectedRoute>} />
+            <Route path="/synapsia/autorizaciones" element={<ProtectedRoute requiredRole={["admin", "dueno", "administrativo", "asistente_admin"]}><CentroAutorizaciones /></ProtectedRoute>} />
             <Route path="/synapsia/unidades/:id/ordenes-compra" element={<ProtectedRoute requiredRole={["admin", "dueno", "administrativo", "asistente_admin"]}><OrdenesCompra /></ProtectedRoute>} />
             <Route path="/synapsia/unidades/:id/inventario" element={<ProtectedRoute requiredRole={["admin", "dueno", "administrativo", "asistente_admin", "enfermera"]}><Inventario /></ProtectedRoute>} />
             <Route path="/synapsia/unidades/:id/confirmar-inventario" element={<ProtectedRoute requiredRole={["admin", "dueno", "enfermera"]}><ConfirmacionInventario /></ProtectedRoute>} />
+            <Route path="/synapsia/unidades/:id/precios" element={<ProtectedRoute requiredRole={["admin", "dueno", "administrativo", "asistente_admin", "contador", "enfermera"]}><ServicePrices /></ProtectedRoute>} />
             <Route path="/synapsia/log-movimientos" element={<ProtectedRoute requiredRole={["admin", "dueno", "administrativo"]}><LogMovimientos /></ProtectedRoute>} />
             <Route path="/synapsia/asistente-admin" element={<ProtectedRoute requiredRole={["admin", "dueno", "asistente_admin"]}><AsistenteAdminHome /></ProtectedRoute>} />
             <Route path="/synapsia/elegir-perfil" element={<ProtectedRoute><ProfileSelector /></ProtectedRoute>} />

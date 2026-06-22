@@ -12,7 +12,10 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
 import PinPrompt from "@/components/synapsia/PinPrompt";
-import { ArrowLeft, LogOut, Plus, Trash2, Image as ImageIcon, Check, X, ShoppingCart, CreditCard } from "lucide-react";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem } from "@/components/ui/command";
+import { cn } from "@/lib/utils";
+import { ArrowLeft, LogOut, Plus, Trash2, Image as ImageIcon, Check, X, ShoppingCart, CreditCard, ChevronsUpDown } from "lucide-react";
 import synapsiaIcon from "@/assets/synapsia-icon.svg";
 import { toast } from "@/hooks/use-toast";
 import { fmt } from "@/lib/utils";
@@ -43,6 +46,34 @@ const STATUS_STYLE: Record<string, string> = {
   pagada: "bg-green-600/10 text-green-700 border-green-600/30",
   cancelada: "bg-muted text-muted-foreground border-border",
 };
+
+function PatientSelect({ value, onChange, patients }: { value: string; onChange: (v: string) => void; patients: string[] }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <Button variant="outline" role="combobox" aria-expanded={open} className="w-full justify-between h-9 text-sm font-normal px-2">
+          {value || <span className="text-muted-foreground">Seleccionar...</span>}
+          <ChevronsUpDown className="ml-1 h-4 w-4 shrink-0 opacity-50" />
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent className="w-[300px] p-0">
+        <Command>
+          <CommandInput placeholder="Buscar paciente..." />
+          <CommandEmpty>Sin resultados</CommandEmpty>
+          <CommandGroup className="max-h-48 overflow-y-auto">
+            {patients.map(p => (
+              <CommandItem key={p} value={p} onSelect={() => { onChange(p); setOpen(false); }}>
+                <Check className={cn("mr-2 h-4 w-4", value === p ? "opacity-100" : "opacity-0")} />
+                {p}
+              </CommandItem>
+            ))}
+          </CommandGroup>
+        </Command>
+      </PopoverContent>
+    </Popover>
+  );
+}
 
 export default function Requisiciones() {
   const { id: unitId, type: typeKey } = useParams<{ id: string; type: string }>();
@@ -76,6 +107,7 @@ export default function Requisiciones() {
 
   const [inventory, setInventory] = useState<Record<string, number>>({});
   const [pastMeds, setPastMeds] = useState<string[]>([]);
+  const [patients, setPatients] = useState<string[]>([]);
 
   useEffect(() => {
     if (!unitId || reqType !== "medicamentos") return;
@@ -90,6 +122,9 @@ export default function Requisiciones() {
         .in("purchase_order_id", (await (supabase.from as any)("purchase_orders").select("id").eq("health_unit_id", unitId)).data?.map((p: any) => p.id) || []);
       const names = [...new Set((poItems || []).map((r: any) => r.medication_name).filter(Boolean))] as string[];
       setPastMeds(names.sort());
+
+      const { data: pats } = await supabase.from("patients").select("full_name").eq("health_unit_id", unitId).order("full_name");
+      setPatients((pats || []).map((p: any) => p.full_name));
     })();
   }, [unitId, reqType]);
 
@@ -235,9 +270,9 @@ export default function Requisiciones() {
                                 <Input list="pastMeds" value={it.description} onChange={e => { const c = [...newItems]; c[idx].description = e.target.value; setNewItems(c); }} />
                                 <datalist id="pastMeds">{pastMeds.map(m => <option key={m} value={m} />)}</datalist>
                               </div>
-                              <div className="col-span-3">
+                              <div className="col-span-4">
                                 <Label className="text-xs">Paciente</Label>
-                                <Input value={it.patient_name} onChange={e => { const c = [...newItems]; c[idx].patient_name = e.target.value; setNewItems(c); }} />
+                                <PatientSelect value={it.patient_name || ""} onChange={v => { const c = [...newItems]; c[idx].patient_name = v; setNewItems(c); }} patients={patients} />
                               </div>
                               <div className="col-span-1">
                                 <Label className="text-xs">Dosis/día</Label>
@@ -260,6 +295,8 @@ export default function Requisiciones() {
                                 <Label className="text-xs">P. unit.</Label>
                                 <Input type="number" min="0" step="0.01" value={it.unit_price} onChange={e => { const c = [...newItems]; c[idx].unit_price = parseFloat(e.target.value) || 0; setNewItems(c); }} />
                               </div>
+                            </div>
+                            <div className="grid grid-cols-12 gap-2 items-end">
                               <div className="col-span-1">
                                 <Label className="text-xs">Stock</Label>
                                 <div className="h-9 flex items-center text-sm font-medium">
@@ -270,8 +307,6 @@ export default function Requisiciones() {
                                   ) : <span className="text-muted-foreground">—</span>}
                                 </div>
                               </div>
-                            </div>
-                            <div className="grid grid-cols-12 gap-2 items-end">
                               <div className="col-span-1 flex items-end pb-1">
                                 <label className="flex items-center gap-1 text-xs cursor-pointer">
                                   <input type="checkbox" checked={it.requires_prescription} onChange={e => { const c = [...newItems]; c[idx].requires_prescription = e.target.checked; setNewItems(c); }} className="rounded" />
@@ -303,13 +338,19 @@ export default function Requisiciones() {
                           </>
                         ) : (
                           <>
-                            <div className="col-span-5"><Label className="text-xs">Descripción</Label><Input value={it.description} onChange={e => { const c = [...newItems]; c[idx].description = e.target.value; setNewItems(c); }} /></div>
-                            <div className="col-span-1"><Label className="text-xs">Cant.</Label><Input type="number" min="0" step="0.01" value={it.quantity} onChange={e => { const c = [...newItems]; c[idx].quantity = parseFloat(e.target.value) || 0; setNewItems(c); }} /></div>
-                            <div className="col-span-2"><Label className="text-xs">Unidad</Label><Input value={it.unit} onChange={e => { const c = [...newItems]; c[idx].unit = e.target.value; setNewItems(c); }} placeholder="pza, kg" /></div>
-                            <div className="col-span-2"><Label className="text-xs">P. unit.</Label><Input type="number" min="0" step="0.01" value={it.unit_price} onChange={e => { const c = [...newItems]; c[idx].unit_price = parseFloat(e.target.value) || 0; setNewItems(c); }} /></div>
-                            <div className="col-span-1"><Label className="text-xs">Foto</Label><Input type="file" accept="image/*" onChange={e => { const c = [...newItems]; c[idx].file = e.target.files?.[0]; setNewItems(c); }} /></div>
-                            <div className="col-span-1 flex items-end pb-1">
-                              <Button type="button" variant="ghost" size="icon" onClick={() => setNewItems(newItems.filter((_, i) => i !== idx))}><Trash2 className="w-4 h-4" /></Button>
+                            <div className="grid grid-cols-12 gap-2 items-end">
+                              <div className="col-span-6"><Label className="text-xs">Descripción</Label><Input value={it.description} onChange={e => { const c = [...newItems]; c[idx].description = e.target.value; setNewItems(c); }} /></div>
+                              <div className="col-span-2"><Label className="text-xs">Cant.</Label><Input type="number" min="0" step="0.01" value={it.quantity} onChange={e => { const c = [...newItems]; c[idx].quantity = parseFloat(e.target.value) || 0; setNewItems(c); }} /></div>
+                              <div className="col-span-2"><Label className="text-xs">Unidad</Label><Input value={it.unit} onChange={e => { const c = [...newItems]; c[idx].unit = e.target.value; setNewItems(c); }} placeholder="pza, kg" /></div>
+                              <div className="col-span-2"><Label className="text-xs">P. unit.</Label><Input type="number" min="0" step="0.01" value={it.unit_price} onChange={e => { const c = [...newItems]; c[idx].unit_price = parseFloat(e.target.value) || 0; setNewItems(c); }} /></div>
+                            </div>
+                            <div className="grid grid-cols-12 gap-2 items-end">
+                              <div className="col-span-4"><Label className="text-xs">Paciente</Label><Input value={it.patient_name} onChange={e => { const c = [...newItems]; c[idx].patient_name = e.target.value; setNewItems(c); }} /></div>
+                              <div className="col-span-2"><Label className="text-xs">Notas</Label><Input value={it.notes} onChange={e => { const c = [...newItems]; c[idx].notes = e.target.value; setNewItems(c); }} /></div>
+                              <div className="col-span-1"><Label className="text-xs">Foto</Label><Input type="file" accept="image/*" onChange={e => { const c = [...newItems]; c[idx].file = e.target.files?.[0]; setNewItems(c); }} /></div>
+                              <div className="col-span-1 flex items-end pb-1">
+                                <Button type="button" variant="ghost" size="icon" onClick={() => setNewItems(newItems.filter((_, i) => i !== idx))}><Trash2 className="w-4 h-4" /></Button>
+                              </div>
                             </div>
                           </>
                         )}
@@ -351,7 +392,7 @@ export default function Requisiciones() {
 
       {/* Detail dialog */}
       <Dialog open={!!editing} onOpenChange={(v) => !v && setEditing(null)}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
           {editing && (
             <>
               <DialogHeader>

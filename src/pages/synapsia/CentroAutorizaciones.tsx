@@ -17,7 +17,7 @@ import { es } from "date-fns/locale";
 interface HealthUnit { id: string; name: string; }
 interface PendingReq { id: string; title: string; req_type: string; priority: string; total_amount: number; created_at: string; health_unit_id: string; requested_by: string; description: string | null; }
 interface PendingPayroll { id: string; area: string; period_start: string; period_end: string; total_amount: number; frequency: string; health_unit_id: string; }
-interface PendingInv { id: string; patient_name: string; amount: number; invoice_date: string; concept: string | null; health_unit_id: string | null; }
+interface PendingInv { id: string; patient_name: string; amount: number; invoice_date: string; concept: string | null; health_unit_id: string | null; patient_id: string | null; }
 
 const REQ_TYPE_LABEL: Record<string, string> = {
   medicamentos: "Medicamentos", limpieza: "Limpieza", mantenimiento: "Mantenimiento",
@@ -36,6 +36,7 @@ export default function CentroAutorizaciones() {
   const [pendingReqs, setPendingReqs] = useState<PendingReq[]>([]);
   const [pendingPayroll, setPendingPayroll] = useState<PendingPayroll[]>([]);
   const [pendingInv, setPendingInv] = useState<PendingInv[]>([]);
+  const [verifiedByIds, setVerifiedByIds] = useState<Record<string, string>>({});
   const [pinOpen, setPinOpen] = useState(false);
   const [pinAction, setPinAction] = useState<() => Promise<void>>(() => async () => {});
   const [pinTitle, setPinTitle] = useState("");
@@ -247,7 +248,18 @@ export default function CentroAutorizaciones() {
                     <TableBody>
                       {pendingInv.map(f => (
                         <TableRow key={f.id}>
-                          <TableCell className="font-medium">{f.patient_name}</TableCell>
+                          <TableCell className="font-medium">
+                            <button
+                              className="underline text-left hover:text-primary"
+                              onClick={() => {
+                                if (f.health_unit_id) {
+                                  navigate(`/synapsia/unidades/${f.health_unit_id}/paciente/${f.patient_id}?tab=nota-venta`);
+                                }
+                              }}
+                            >
+                              {f.patient_name}
+                            </button>
+                          </TableCell>
                           <TableCell>{f.health_unit_id ? unitName(f.health_unit_id) : "—"}</TableCell>
                           <TableCell className="text-sm text-muted-foreground">{f.concept || "—"}</TableCell>
                           <TableCell className="text-xs">{format(new Date(f.invoice_date), "dd/MM/yyyy", { locale: es })}</TableCell>

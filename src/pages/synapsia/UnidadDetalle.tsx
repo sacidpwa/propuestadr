@@ -31,7 +31,8 @@ const APPS: AppEntry[] = [
   { key: "menus", label: "Menús semanales", desc: "Plan alimenticio y consumo", icon: ClipboardList, route: "enfermeria", roles: ["admin", "dueno", "administrativo", "asistente_admin", "enfermera", "especialista"] },
   { key: "gastos", label: "Control de flujos", desc: "Flujo de efectivo, ingresos y gastos", icon: Wallet, route: "gastos", roles: ["admin", "dueno", "administrativo", "asistente_admin"] },
   { key: "ingresos", label: "Facturas de ingreso", desc: "Facturas de pacientes y verificación", icon: Receipt, route: "facturas", roles: ["admin", "dueno", "administrativo", "contador"] },
-  { key: "nomina", label: "Nómina", desc: "Plantilla, periodos y pagos", icon: Users, route: "nomina", roles: ["admin", "dueno", "administrativo", "contador", "rrhh"] },
+  { key: "nomina", label: "Nómina", desc: "Periodos y pagos", icon: Users, route: "nomina", roles: ["admin", "dueno", "administrativo", "contador", "rrhh"] },
+  { key: "plantilla", label: "Plantilla laboral", desc: "Empleados y asignación de unidades", icon: ClipboardCheck, route: "/synapsia/plantilla", roles: ["admin", "dueno", "administrativo", "asistente_admin", "contador", "rrhh"] },
   { key: "req-medicamentos", label: "Requisición de medicamentos", desc: "Solicitudes de insumos médicos", icon: ShoppingBag, route: "requisiciones/medicamentos", roles: ["admin", "dueno", "administrativo", "asistente_admin", "enfermera", "intendencia", "mantenimiento"] },
   { key: "req-limpieza", label: "Requisición de limpieza", desc: "Insumos de intendencia", icon: Sparkles, route: "requisiciones/limpieza", roles: ["admin", "dueno", "administrativo", "asistente_admin", "enfermera", "intendencia", "mantenimiento"] },
   { key: "req-mantenimiento", label: "Requisición de mantenimiento", desc: "Insumos de mantenimiento", icon: Wrench, route: "requisiciones/mantenimiento", roles: ["admin", "dueno", "administrativo", "asistente_admin", "enfermera", "intendencia", "mantenimiento"] },
@@ -41,6 +42,7 @@ const APPS: AppEntry[] = [
   { key: "ordenes-compra", label: "Órdenes de compra", desc: "Generar, autorizar y abastecer", icon: ShoppingCart, route: "ordenes-compra", roles: ["admin", "dueno", "administrativo", "asistente_admin"] },
   { key: "inventario", label: "Inventario de medicamentos", desc: "Stock, entradas, alertas de mínimo", icon: Package, route: "inventario", roles: ["admin", "dueno", "administrativo", "asistente_admin", "enfermera"] },
   { key: "confirmar-inventario", label: "Confirmar inventario", desc: "Conteo físico cada 3 días", icon: ClipboardCheck, route: "confirmar-inventario", roles: ["admin", "dueno", "enfermera"] },
+  { key: "precios", label: "Precios por servicio", desc: "Catálogo de precios de la unidad", icon: DollarSign, route: "precios", roles: ["admin", "dueno", "administrativo", "asistente_admin", "contador", "enfermera"] },
 ];
 
 interface MonthlyEntry { month: string; ingresos: number; gastos: number; }
@@ -179,7 +181,7 @@ export default function UnidadDetalle() {
                 return (
                   <button
                     key={key}
-                    onClick={() => navigate(isDashboard ? `/synapsia/unidades/${id}` : `/synapsia/unidades/${id}/${route}`)}
+                    onClick={() => navigate(isDashboard ? `/synapsia/unidades/${id}` : route.startsWith("/") ? route : `/synapsia/unidades/${id}/${route}`)}
                     className={`w-full flex items-center gap-3 px-3 py-2 rounded-md text-sm transition-colors ${isDashboard ? "bg-primary/10 text-primary font-medium" : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"}`}
                     title={sidebarOpen ? undefined : label}
                   >
@@ -207,7 +209,7 @@ export default function UnidadDetalle() {
                     return (
                       <button
                         key={key}
-                        onClick={() => { setSidebarOpen(false); navigate(isDashboard ? `/synapsia/unidades/${id}` : `/synapsia/unidades/${id}/${route}`); }}
+                        onClick={() => { setSidebarOpen(false); navigate(isDashboard ? `/synapsia/unidades/${id}` : route.startsWith("/") ? route : `/synapsia/unidades/${id}/${route}`); }}
                         className="w-full flex items-center gap-3 px-3 py-2 rounded-md text-sm text-muted-foreground hover:bg-accent hover:text-accent-foreground"
                       >
                         <Icon className="w-4 h-4 shrink-0" />
