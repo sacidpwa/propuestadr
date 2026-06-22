@@ -269,7 +269,7 @@ export default function DetallePaciente() {
       health_unit_id: unitId,
       amount: invForm.amount,
       concept: invForm.concept,
-      invoice_date: new Date().toISOString().slice(0, 10),
+      invoice_date: format(new Date(), "yyyy-MM-dd"),
       status: "pendiente",
       uploaded_by: user!.id,
     });
