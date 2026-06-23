@@ -520,6 +520,33 @@ export default function DetallePaciente() {
                 </div>
               </div>
 
+              {/* Mensualidad sugerida */}
+              {patient?.monthly_fee && !newInvoiceOpen && (
+                <Card className="border-teal-200 bg-teal-50/40">
+                  <CardContent className="py-3 flex items-center justify-between">
+                    <div>
+                      <p className="text-xs text-muted-foreground">Mensualidad pactada</p>
+                      <p className="text-lg font-bold text-teal-800">${Number(patient.monthly_fee).toLocaleString()}</p>
+                    </div>
+                    <div className="flex gap-2">
+                      <Button size="sm" variant="outline" className="border-teal-300 text-teal-800" onClick={() => {
+                        setNewInvoiceOpen(true);
+                        setInvForm({ concept: "MENSUALIDAD", amount: Number(patient.monthly_fee), invoice_date: format(new Date(), "yyyy-MM-dd"), category: "COLEGIATURA" });
+                      }}>
+                        <Plus className="w-4 h-4 mr-1" /> Agregar a la nota
+                      </Button>
+                      <Button size="sm" variant="outline" onClick={() => {
+                        setInvForm({ concept: "", amount: 0, invoice_date: format(new Date(), "yyyy-MM-dd"), category: "" });
+                        setManualPrice(true);
+                        setNewInvoiceOpen(true);
+                      }}>
+                        <Plus className="w-4 h-4 mr-1" /> Otro monto
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+
               {newInvoiceOpen && (
                 <Card>
                   <CardHeader>
