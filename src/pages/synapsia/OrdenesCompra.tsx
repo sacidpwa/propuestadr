@@ -75,6 +75,7 @@ export default function OrdenesCompra() {
   });
   const [poItems, setPoItems] = useState<Array<{ medication_name: string; quantity: number; unit: string; unit_price: number; patient_name?: string }>>([]);
   const [addPatientCol, setAddPatientCol] = useState(false);
+  const [includeIVA, setIncludeIVA] = useState(true);
 
   const [detailOpen, setDetailOpen] = useState(false);
   const [detailPo, setDetailPo] = useState<PO | null>(null);
@@ -159,7 +160,7 @@ export default function OrdenesCompra() {
   }
 
   const calcSubtotal = () => poItems.reduce((s, i) => s + (i.quantity || 0) * (i.unit_price || 0), 0);
-  const calcTax = () => Math.round(calcSubtotal() * 0.16 * 100) / 100;
+  const calcTax = () => includeIVA ? Math.round(calcSubtotal() * 0.16 * 100) / 100 : 0;
   const calcTotal = () => calcSubtotal() + calcTax();
 
   async function createPO() {
@@ -420,8 +421,14 @@ export default function OrdenesCompra() {
                 </div>
               ))}
               <div className="border-t pt-2 space-y-1 text-right text-sm">
+                <div className="flex items-center justify-end gap-2">
+                  <label className="flex items-center gap-1.5 cursor-pointer text-xs text-muted-foreground">
+                    <input type="checkbox" checked={includeIVA} onChange={e => setIncludeIVA(e.target.checked)} className="rounded" />
+                    Incluir IVA (16%)
+                  </label>
+                </div>
                 <p>Subtotal: <span className="font-mono">{fmt(calcSubtotal())}</span></p>
-                <p>IVA (16%): <span className="font-mono">{fmt(calcTax())}</span></p>
+                <p>IVA: <span className="font-mono">{fmt(calcTax())}</span></p>
                 <p className="text-base font-bold">TOTAL: <span className="font-mono">{fmt(calcTotal())}</span></p>
               </div>
             </div>

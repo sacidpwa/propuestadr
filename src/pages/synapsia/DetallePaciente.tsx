@@ -43,7 +43,7 @@ interface FeePayment {
 
 interface PatientInvoice {
   id: string; invoice_number: string | null; invoice_date: string;
-  amount: number; concept: string | null; status: string;
+  amount: number; concept: string | null; status: string; category: string | null;
   verified_by: string | null; verified_at: string | null; source: string | null;
   uploaded_by: string | null; created_by_name?: string;
 }
@@ -70,7 +70,7 @@ export default function DetallePaciente() {
   const [payments, setPayments] = useState<FeePayment[]>([]);
   const [invoices, setInvoices] = useState<PatientInvoice[]>([]);
   const [newInvoiceOpen, setNewInvoiceOpen] = useState(false);
-  const [invForm, setInvForm] = useState({ concept: "", amount: 0, invoice_date: format(new Date(), "yyyy-MM-dd") });
+  const [invForm, setInvForm] = useState({ concept: "", amount: 0, invoice_date: format(new Date(), "yyyy-MM-dd"), category: "" });
   const [servicePrices, setServicePrices] = useState<any[]>([]);
   const [manualPrice, setManualPrice] = useState(false);
   const [periodKey, setPeriodKey] = useState("este-mes");
@@ -279,13 +279,14 @@ export default function DetallePaciente() {
       health_unit_id: unitId,
       amount: invForm.amount,
       concept: invForm.concept,
+      category: invForm.category || null,
       invoice_date: invForm.invoice_date,
       status: "pendiente",
       uploaded_by: user!.id,
     });
     if (error) { toast({ title: "Error", description: error.message, variant: "destructive" }); return; }
     toast({ title: "Gasto extra registrado" });
-    setInvForm({ concept: "", amount: 0, invoice_date: format(new Date(), "yyyy-MM-dd") });
+    setInvForm({ concept: "", amount: 0, invoice_date: format(new Date(), "yyyy-MM-dd"), category: "" });
     setNewInvoiceOpen(false);
     setManualPrice(false);
     loadInvoices();
@@ -552,19 +553,10 @@ export default function DetallePaciente() {
                     ) : (
                       <div className="grid sm:grid-cols-2 gap-3">
                         <div><Label>Concepto</Label>
-                          <Select value={invForm.concept} onValueChange={v => setInvForm({ ...invForm, concept: v })}>
-                            <SelectTrigger><SelectValue placeholder="Seleccionar..." /></SelectTrigger>
-                            <SelectContent>
-                              {[
-                                { v: "ENFERMERIA (CURACIONES, CUIDADOS)", l: "Enfermería" },
-                                { v: "ALIMENTACION ESPECIAL / SUPLEMENTOS", l: "Alimentación" },
-                                { v: "MEDICAMENTOS NO CUBIERTOS", l: "Medicamentos" },
-                                { v: "TRANSPORTE / TRASLADO", l: "Transporte" },
-                                { v: "TERAPIAS ADICIONALES", l: "Terapias" },
-                                { v: "SERVICIOS GENERALES", l: "Servicios" },
-                              ].map(o => <SelectItem key={o.v} value={o.v}>{o.l}</SelectItem>)}
-                            </SelectContent>
-                          </Select>
+                          <Input value={invForm.concept} onChange={e => setInvForm({ ...invForm, concept: e.target.value })} placeholder="Ej: Terapia física, Pañales, etc." />
+                        </div>
+                        <div><Label>Categoría</Label>
+                          <Input value={invForm.category} onChange={e => setInvForm({ ...invForm, category: e.target.value })} placeholder="Ej: Enfermería, Alimentación, etc." />
                         </div>
                         <div><Label>Monto $</Label><Input type="number" min="0" step="0.01" value={invForm.amount} onChange={e => setInvForm({ ...invForm, amount: parseFloat(e.target.value) || 0 })} /></div>
                       </div>
@@ -576,7 +568,7 @@ export default function DetallePaciente() {
                     )}
                     {manualPrice && servicePrices.length > 0 && (
                       <p className="text-xs text-muted-foreground text-right">
-                        <button type="button" onClick={() => { setManualPrice(false); setInvForm({ concept: "", amount: 0, invoice_date: format(new Date(), "yyyy-MM-dd") }); }} className="underline">Usar catálogo de precios</button>
+                        <button type="button" onClick={() => { setManualPrice(false); setInvForm({ concept: "", amount: 0, invoice_date: format(new Date(), "yyyy-MM-dd"), category: "" }); }} className="underline">Usar catálogo de precios</button>
                       </p>
                     )}
                     <div className="flex justify-end gap-2">
@@ -602,6 +594,7 @@ export default function DetallePaciente() {
                           <tr className="border-b text-muted-foreground text-xs">
                             <th className="text-left px-4 py-2 font-medium">Fecha</th>
                             <th className="text-left px-4 py-2 font-medium">Concepto</th>
+                            <th className="text-left px-4 py-2 font-medium">Categoría</th>
                             <th className="text-left px-4 py-2 font-medium">Estado</th>
                             <th className="text-center px-4 py-2 font-medium">Validación</th>
                             <th className="text-left px-4 py-2 font-medium">Registró</th>
@@ -613,6 +606,7 @@ export default function DetallePaciente() {
                             <tr key={inv.id} className="border-b last:border-0 hover:bg-muted/50">
                               <td className="px-4 py-2">{format(new Date(inv.invoice_date), "PP", { locale: es })}</td>
                               <td className="px-4 py-2 text-xs">{inv.concept || "—"}</td>
+                              <td className="px-4 py-2 text-xs text-muted-foreground">{inv.category || "—"}</td>
                               <td className="px-4 py-2">
                                 <Badge variant={inv.status === "verificada" ? "secondary" : inv.status === "erronea" ? "destructive" : "outline"}>
                                   {inv.status}

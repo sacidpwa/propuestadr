@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
-import { ArrowLeft, LogOut, Plus, Paperclip, Trash2, ArrowRight } from "lucide-react";
+import { ArrowLeft, LogOut, Plus, Paperclip, Trash2, ArrowRight, Pencil } from "lucide-react";
 import synapsiaIcon from "@/assets/synapsia-icon.svg";
 import { toast } from "@/hooks/use-toast";
 import { format } from "date-fns";
@@ -23,6 +23,7 @@ interface Entry {
   category: string | null; notes: string | null; entry_type: string;
   receipt_url: string | null; operation_date: string | null; health_unit_id: string | null;
   period_month: number; period_year: number; purchase_order_id: string | null;
+  patient_id: string | null; patient_name: string | null;
 }
 
 const TYPE_LABEL: Record<string, string> = { gasto: "Gasto", ingreso: "Ingreso", orden_pago: "Orden de pago" };
@@ -45,7 +46,12 @@ export default function GastosUnidad() {
   const [amountMin, setAmountMin] = useState("");
   const [amountMax, setAmountMax] = useState("");
   const [open, setOpen] = useState(false);
-  const [form, setForm] = useState({ entry_type: "gasto", description: "", amount: 0, category: "", notes: "", operation_date: format(new Date(), "yyyy-MM-dd"), file: undefined as File | undefined });
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [form, setForm] = useState({ entry_type: "gasto", description: "", amount: 0, category: "", notes: "", operation_date: format(new Date(), "yyyy-MM-dd"), file: undefined as File | undefined, patient_id: "", patient_name: "" });
+  const [patients, setPatients] = useState<{ id: string; full_name: string }[]>([]);
+  const [patientSearch, setPatientSearch] = useState("");
+
+  const isEditing = !!editingId;
 
   function waitForFile(): Promise<File | null> {
     return new Promise((resolve) => {
@@ -66,6 +72,14 @@ export default function GastosUnidad() {
     })();
   }, [unitId]);
 
+  useEffect(() => {
+    if (!unitId) return;
+    (async () => {
+      const { data } = await (supabase.from as any)("patients").select("id, full_name").eq("health_unit_id", unitId).order("full_name");
+      setPatients((data as any) || []);
+    })();
+  }, [unitId]);
+
   async function load() {
     if (!unitId) return;
     let q = (supabase.from as any)("expense_entries").select("*").eq("health_unit_id", unitId).order("expense_date", { ascending: false });
@@ -75,6 +89,12 @@ export default function GastosUnidad() {
   }
   useEffect(() => { load(); }, [unitId, filter]);
 
+  const filteredPatients = useMemo(() => {
+    if (!patientSearch.trim()) return patients;
+    const q = patientSearch.toLowerCase();
+    return patients.filter(p => p.full_name.toLowerCase().includes(q));
+  }, [patients, patientSearch]);
+
   const filtered = useMemo(() => {
     let list = entries;
     if (search.trim()) {
@@ -82,7 +102,8 @@ export default function GastosUnidad() {
       list = list.filter(e =>
         e.description.toLowerCase().includes(q) ||
         (e.category && e.category.toLowerCase().includes(q)) ||
-        (e.notes && e.notes.toLowerCase().includes(q))
+        (e.notes && e.notes.toLowerCase().includes(q)) ||
+        (e.patient_name && e.patient_name.toLowerCase().includes(q))
       );
     }
     if (dateFrom) list = list.filter(e => e.expense_date >= dateFrom);
@@ -106,14 +127,40 @@ export default function GastosUnidad() {
     return path;
   }
 
+  const defaultForm = () => ({ entry_type: "gasto", description: "", amount: 0, category: "", notes: "", operation_date: format(new Date(), "yyyy-MM-dd"), file: undefined as File | undefined, patient_id: "", patient_name: "" });
+
+  function openNew() {
+    setEditingId(null);
+    setForm(defaultForm());
+    setPatientSearch("");
+    setOpen(true);
+  }
+
+  function openEdit(entry: Entry) {
+    setEditingId(entry.id);
+    setForm({
+      entry_type: entry.entry_type,
+      description: entry.description,
+      amount: Number(entry.amount),
+      category: entry.category || "",
+      notes: entry.notes || "",
+      operation_date: entry.operation_date || entry.expense_date,
+      file: undefined,
+      patient_id: entry.patient_id || "",
+      patient_name: entry.patient_name || "",
+    });
+    setPatientSearch(entry.patient_name || "");
+    setOpen(true);
+  }
+
   async function save() {
     if (!unitId || !user) return;
     if (!form.description.trim() || !form.amount) { toast({ title: "Faltan datos", variant: "destructive" }); return; }
     const opDate = new Date(form.operation_date);
     let receipt: string | null = null;
     if (form.file) receipt = await uploadReceipt(form.file);
-    const { error } = await (supabase.from as any)("expense_entries").insert({
-      health_unit_id: unitId,
+
+    const payload: any = {
       entry_type: form.entry_type,
       description: form.description,
       amount: form.amount,
@@ -123,13 +170,28 @@ export default function GastosUnidad() {
       expense_date: form.operation_date,
       period_month: opDate.getMonth() + 1,
       period_year: opDate.getFullYear(),
-      receipt_url: receipt,
-      created_by: user.id,
-    });
-    if (error) { toast({ title: "Error", description: error.message, variant: "destructive" }); return; }
-    toast({ title: "Registrado" });
+      patient_id: form.patient_id || null,
+      patient_name: form.patient_name || null,
+    };
+
+    if (isEditing) {
+      if (receipt) payload.receipt_url = receipt;
+      const { error } = await (supabase.from as any)("expense_entries").update(payload).eq("id", editingId);
+      if (error) { toast({ title: "Error", description: error.message, variant: "destructive" }); return; }
+      toast({ title: "Actualizado" });
+    } else {
+      payload.health_unit_id = unitId;
+      payload.receipt_url = receipt;
+      payload.created_by = user.id;
+      const { error } = await (supabase.from as any)("expense_entries").insert(payload);
+      if (error) { toast({ title: "Error", description: error.message, variant: "destructive" }); return; }
+      toast({ title: "Registrado" });
+    }
+
     setOpen(false);
-    setForm({ entry_type: "gasto", description: "", amount: 0, category: "", notes: "", operation_date: format(new Date(), "yyyy-MM-dd"), file: undefined });
+    setEditingId(null);
+    setForm(defaultForm());
+    setPatientSearch("");
     load();
   }
 
@@ -178,35 +240,9 @@ export default function GastosUnidad() {
               <TabsTrigger value="orden_pago">Órdenes de pago</TabsTrigger>
             </TabsList>
           </Tabs>
-          <Dialog open={open} onOpenChange={setOpen}>
-            <DialogTrigger asChild><Button><Plus className="w-4 h-4 mr-1" /> Nuevo registro</Button></DialogTrigger>
-            <DialogContent>
-              <DialogHeader><DialogTitle>Nuevo registro</DialogTitle></DialogHeader>
-              <div className="space-y-3">
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <Label>Tipo</Label>
-                    <Select value={form.entry_type} onValueChange={v => setForm({ ...form, entry_type: v })}>
-                      <SelectTrigger><SelectValue /></SelectTrigger>
-                      <SelectContent>{Object.entries(TYPE_LABEL).map(([k, l]) => <SelectItem key={k} value={k}>{l}</SelectItem>)}</SelectContent>
-                    </Select>
-                  </div>
-                  <div><Label>Fecha</Label><Input type="date" value={form.operation_date} onChange={e => setForm({ ...form, operation_date: e.target.value })} /></div>
-                </div>
-                <div><Label>Descripción</Label><Input value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} /></div>
-                <div className="grid grid-cols-2 gap-3">
-                  <div><Label>Monto</Label><Input type="number" min="0" step="0.01" value={form.amount} onChange={e => setForm({ ...form, amount: parseFloat(e.target.value) || 0 })} /></div>
-                  <div><Label>Categoría</Label><Input value={form.category} onChange={e => setForm({ ...form, category: e.target.value })} /></div>
-                </div>
-                <div><Label>Comprobante (foto/PDF)</Label><Input type="file" accept="image/*,application/pdf" onChange={e => setForm({ ...form, file: e.target.files?.[0] })} /></div>
-                <div><Label>Notas</Label><Textarea rows={2} value={form.notes} onChange={e => setForm({ ...form, notes: e.target.value })} /></div>
-              </div>
-              <DialogFooter><Button onClick={save}>Guardar</Button></DialogFooter>
-            </DialogContent>
-          </Dialog>
+          <Button onClick={openNew}><Plus className="w-4 h-4 mr-1" /> Nuevo registro</Button>
         </div>
 
-        {/* Filtros de búsqueda */}
         <div className="flex flex-wrap gap-2 items-end">
           <div className="flex-1 min-w-[200px]">
             <Label className="text-xs">Buscar por concepto</Label>
@@ -235,6 +271,71 @@ export default function GastosUnidad() {
           )}
         </div>
 
+        <Dialog open={open} onOpenChange={(v) => { if (!v) { setEditingId(null); setPatientSearch(""); } setOpen(v); }}>
+          <DialogContent className="max-w-lg">
+            <DialogHeader><DialogTitle>{isEditing ? "Editar registro" : "Nuevo registro"}</DialogTitle></DialogHeader>
+            <div className="space-y-3 max-h-[65vh] overflow-y-auto pr-1">
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <Label>Tipo</Label>
+                  <Select value={form.entry_type} onValueChange={v => setForm({ ...form, entry_type: v })}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>{Object.entries(TYPE_LABEL).map(([k, l]) => <SelectItem key={k} value={k}>{l}</SelectItem>)}</SelectContent>
+                  </Select>
+                </div>
+                <div><Label>Fecha</Label><Input type="date" value={form.operation_date} onChange={e => setForm({ ...form, operation_date: e.target.value })} /></div>
+              </div>
+
+              {form.entry_type === "ingreso" && (
+                <div>
+                  <Label>Paciente (opcional)</Label>
+                  <Input
+                    placeholder="Buscar paciente..."
+                    value={patientSearch}
+                    onChange={e => {
+                      setPatientSearch(e.target.value);
+                      setForm({ ...form, patient_id: "", patient_name: "" });
+                    }}
+                    list="incomePatients"
+                  />
+                  <datalist id="incomePatients">
+                    {filteredPatients.map(p => (
+                      <option key={p.id} value={p.full_name} />
+                    ))}
+                  </datalist>
+                  {patientSearch && (
+                    <div className="mt-1 max-h-32 overflow-y-auto border rounded text-sm">
+                      {filteredPatients.map(p => (
+                        <button
+                          key={p.id}
+                          type="button"
+                          className="w-full text-left px-2 py-1 hover:bg-accent"
+                          onClick={() => { setPatientSearch(p.full_name); setForm({ ...form, patient_id: p.id, patient_name: p.full_name }); }}
+                        >
+                          {p.full_name}
+                        </button>
+                      ))}
+                      {!filteredPatients.length && <p className="px-2 py-1 text-muted-foreground">Sin resultados</p>}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              <div><Label>Descripción</Label><Input value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} /></div>
+              <div className="grid grid-cols-2 gap-3">
+                <div><Label>Monto</Label><Input type="number" min="0" step="0.01" value={form.amount} onChange={e => setForm({ ...form, amount: parseFloat(e.target.value) || 0 })} /></div>
+                <div><Label>Categoría</Label><Input value={form.category} onChange={e => setForm({ ...form, category: e.target.value })} /></div>
+              </div>
+              <div><Label>Comprobante (foto/PDF)</Label><Input type="file" accept="image/*,application/pdf" onChange={e => setForm({ ...form, file: e.target.files?.[0] })} /></div>
+              <div><Label>Notas</Label><Textarea rows={2} value={form.notes} onChange={e => setForm({ ...form, notes: e.target.value })} /></div>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => { setOpen(false); setEditingId(null); }}>Cancelar</Button>
+              <Button onClick={save}>{isEditing ? "Actualizar" : "Guardar"}</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
         <div className="space-y-2">
           {filtered.length === 0 && <Card><CardContent className="py-10 text-center text-muted-foreground">Sin registros.</CardContent></Card>}
           {filtered.map(e => {
@@ -248,6 +349,7 @@ export default function GastosUnidad() {
                     <Badge variant="outline" className={`capitalize ${TYPE_STYLE[e.entry_type]}`}>{TYPE_LABEL[e.entry_type]}</Badge>
                     <span className="text-xs text-muted-foreground">{format(new Date(e.expense_date), "PP", { locale: es })}</span>
                     {e.category && <span className="text-xs text-muted-foreground">· {e.category}</span>}
+                    {e.patient_name && <span className="text-xs text-muted-foreground">· Paciente: {e.patient_name}</span>}
                     {canDrill && <Badge variant="outline" className="bg-indigo-500/10 text-indigo-700 border-indigo-500/30 text-[10px]">OC</Badge>}
                   </div>
                   <p className="font-medium mt-1">{e.description}</p>
@@ -277,6 +379,7 @@ export default function GastosUnidad() {
                         <ArrowRight className="w-3 h-3 mr-1" /> Pagar
                       </Button>
                     )}
+                    <Button size="icon" variant="ghost" onClick={() => openEdit(e)}><Pencil className="w-4 h-4" /></Button>
                     {e.receipt_url && <Button size="icon" variant="ghost" onClick={() => viewReceipt(e.receipt_url!)}><Paperclip className="w-4 h-4" /></Button>}
                     <Button size="icon" variant="ghost" onClick={() => remove(e.id)}><Trash2 className="w-4 h-4" /></Button>
                   </div>
