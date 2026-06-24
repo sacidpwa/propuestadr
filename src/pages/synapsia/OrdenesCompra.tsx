@@ -547,7 +547,7 @@ export default function OrdenesCompra() {
                     </Button>
                   )}
             {detailPo.status === "abastecida" && canPay && (
-              <Button size="sm" onClick={() => { setPayMethod("transferencia"); setPayRef(""); setPayOpen(true); }} disabled={loading}>
+              <Button size="sm" onClick={() => { setDetailOpen(false); setTimeout(() => { setPayMethod("transferencia"); setPayRef(""); setPayOpen(true); }, 100); }} disabled={loading}>
                 <CreditCard className="w-4 h-4 mr-1" />
                 Registrar pago
               </Button>
