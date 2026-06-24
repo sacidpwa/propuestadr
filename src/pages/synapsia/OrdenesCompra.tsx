@@ -80,6 +80,9 @@ export default function OrdenesCompra() {
   const [detailOpen, setDetailOpen] = useState(false);
   const [detailPo, setDetailPo] = useState<PO | null>(null);
   const [detailItems, setDetailItems] = useState<POItem[]>([]);
+  const [payOpen, setPayOpen] = useState(false);
+  const [payMethod, setPayMethod] = useState("transferencia");
+  const [payRef, setPayRef] = useState("");
 
   const [reqs, setReqs] = useState<Req[]>([]);
   const [availReqs, setAvailReqs] = useState<Req[]>([]);
@@ -264,11 +267,8 @@ export default function OrdenesCompra() {
     setLoading(false);
   }
 
-  async function payPO(po: PO) {
+  async function payPO(po: PO, method: string, ref: string) {
     if (!user || !unitId) return;
-    const method = window.prompt("Método de pago (efectivo, transferencia, tarjeta, cheque):") || "";
-    if (!method) return;
-    const ref = window.prompt("Referencia / folio:") || "";
     setLoading(true);
     const today = new Date();
     const { error: expErr } = await (supabase.from as any)("expense_entries").insert({
@@ -546,16 +546,46 @@ export default function OrdenesCompra() {
                       Abastecer e ingresar a inventario
                     </Button>
                   )}
-                  {detailPo.status === "abastecida" && canPay && (
-                    <Button size="sm" onClick={() => askPin("Registrar pago", () => payPO(detailPo))} disabled={loading}>
-                      {loading ? <Loader2 className="w-4 h-4 mr-1 animate-spin" /> : <CreditCard className="w-4 h-4 mr-1" />}
-                      Registrar pago
-                    </Button>
-                  )}
+            {detailPo.status === "abastecida" && canPay && (
+              <Button size="sm" onClick={() => { setPayMethod("transferencia"); setPayRef(""); setPayOpen(true); }} disabled={loading}>
+                <CreditCard className="w-4 h-4 mr-1" />
+                Registrar pago
+              </Button>
+            )}
                 </div>
               </div>
             </>
           )}
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={payOpen} onOpenChange={setPayOpen}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader><DialogTitle>Registrar pago</DialogTitle></DialogHeader>
+          <div className="space-y-3">
+            <div>
+              <Label>Método de pago</Label>
+              <Select value={payMethod} onValueChange={setPayMethod}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="efectivo">Efectivo</SelectItem>
+                  <SelectItem value="transferencia">Transferencia</SelectItem>
+                  <SelectItem value="tarjeta">Tarjeta</SelectItem>
+                  <SelectItem value="cheque">Cheque</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label>Referencia / folio</Label>
+              <Input value={payRef} onChange={e => setPayRef(e.target.value)} placeholder="Opcional" />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setPayOpen(false)}>Cancelar</Button>
+            <Button onClick={() => { setPayOpen(false); askPin("Confirmar pago", async () => { if (detailPo) await payPO(detailPo, payMethod, payRef); }); }}>
+              <CreditCard className="w-4 h-4 mr-1" /> Continuar
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
 
