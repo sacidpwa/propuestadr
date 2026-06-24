@@ -216,6 +216,22 @@ export default function GastosUnidad() {
     load();
   }
 
+  function askPin(title: string, action: () => Promise<void>) {
+    setPinTitle(title);
+    setPinAction(() => action);
+    setPinOpen(true);
+  }
+
+  async function convertPay(entry: Entry, method: string, ref: string) {
+    const { error } = await (supabase.from as any)("expense_entries").update({
+      entry_type: "gasto",
+      notes: `Pagado: ${method}${ref ? ", ref: " + ref : ""}`,
+    }).eq("id", entry.id);
+    if (error) { toast({ title: "Error", description: error.message, variant: "destructive" }); return; }
+    toast({ title: "Orden de pago convertida a gasto" });
+    load();
+  }
+
   return (
     <div className="min-h-screen bg-background">
       <header className="border-b bg-card shadow-sm">
@@ -349,23 +365,7 @@ export default function GastosUnidad() {
           {filtered.length === 0 && <Card><CardContent className="py-10 text-center text-muted-foreground">Sin registros.</CardContent></Card>}
           {filtered.map(e => {
             const canDrill = e.purchase_order_id && unitId;
-  function askPin(title: string, action: () => Promise<void>) {
-    setPinTitle(title);
-    setPinAction(() => action);
-    setPinOpen(true);
-  }
-
-  async function convertPay(entry: Entry, method: string, ref: string) {
-    const { error } = await (supabase.from as any)("expense_entries").update({
-      entry_type: "gasto",
-      notes: `Pagado: ${method}${ref ? ", ref: " + ref : ""}`,
-    }).eq("id", entry.id);
-    if (error) { toast({ title: "Error", description: error.message, variant: "destructive" }); return; }
-    toast({ title: "Orden de pago convertida a gasto" });
-    load();
-  }
-
-  return (
+            return (
             <Card key={e.id} className={canDrill ? "cursor-pointer hover:border-primary/50 transition-colors" : ""}
                 onClick={canDrill ? () => navigate(`/synapsia/unidades/${unitId}/ordenes-compra?po_id=${e.purchase_order_id}`) : undefined}>
               <CardContent className="py-3 flex items-center justify-between gap-3">
