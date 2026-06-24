@@ -8,10 +8,11 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import PinPrompt from "@/components/synapsia/PinPrompt";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
-import { ArrowLeft, LogOut, Plus, Paperclip, Trash2, ArrowRight, Pencil } from "lucide-react";
+import { ArrowLeft, LogOut, Plus, Paperclip, Trash2, ArrowRight, Pencil, CreditCard, Loader2 } from "lucide-react";
 import synapsiaIcon from "@/assets/synapsia-icon.svg";
 import { toast } from "@/hooks/use-toast";
 import { format } from "date-fns";
@@ -52,6 +53,14 @@ export default function GastosUnidad() {
   const [patientSearch, setPatientSearch] = useState("");
 
   const isEditing = !!editingId;
+
+  const [payOpen, setPayOpen] = useState(false);
+  const [payEntry, setPayEntry] = useState<Entry | null>(null);
+  const [payMethod, setPayMethod] = useState("transferencia");
+  const [payRef, setPayRef] = useState("");
+  const [pinOpen, setPinOpen] = useState(false);
+  const [pinAction, setPinAction] = useState<() => Promise<void>>(() => async () => {});
+  const [pinTitle, setPinTitle] = useState("");
 
   function waitForFile(): Promise<File | null> {
     return new Promise((resolve) => {
@@ -340,7 +349,23 @@ export default function GastosUnidad() {
           {filtered.length === 0 && <Card><CardContent className="py-10 text-center text-muted-foreground">Sin registros.</CardContent></Card>}
           {filtered.map(e => {
             const canDrill = e.purchase_order_id && unitId;
-            return (
+  function askPin(title: string, action: () => Promise<void>) {
+    setPinTitle(title);
+    setPinAction(() => action);
+    setPinOpen(true);
+  }
+
+  async function convertPay(entry: Entry, method: string, ref: string) {
+    const { error } = await (supabase.from as any)("expense_entries").update({
+      entry_type: "gasto",
+      notes: `Pagado: ${method}${ref ? ", ref: " + ref : ""}`,
+    }).eq("id", entry.id);
+    if (error) { toast({ title: "Error", description: error.message, variant: "destructive" }); return; }
+    toast({ title: "Orden de pago convertida a gasto" });
+    load();
+  }
+
+  return (
             <Card key={e.id} className={canDrill ? "cursor-pointer hover:border-primary/50 transition-colors" : ""}
                 onClick={canDrill ? () => navigate(`/synapsia/unidades/${unitId}/ordenes-compra?po_id=${e.purchase_order_id}`) : undefined}>
               <CardContent className="py-3 flex items-center justify-between gap-3">
@@ -359,23 +384,7 @@ export default function GastosUnidad() {
                   <p className="font-bold">{fmt(Number(e.amount))}</p>
                   <div className="flex gap-1 justify-end mt-1">
                     {e.entry_type === "orden_pago" && (hasRole("admin") || hasRole("dueno") || hasRole("administrativo")) && (
-                      <Button size="sm" variant="outline" className="h-7 text-xs" onClick={async () => {
-                        if (!confirm("¿Convertir esta orden de pago en gasto?")) return;
-                        const method = window.prompt("Método de pago (efectivo, transferencia, tarjeta, cheque):") || "";
-                        if (!method) return;
-                        const ref = window.prompt("Referencia / folio (opcional):") || "";
-                        const file = await waitForFile();
-                        let receipt: string | null = null;
-                        if (file) receipt = await uploadReceipt(file);
-                        const { error } = await (supabase.from as any)("expense_entries").update({
-                          entry_type: "gasto",
-                          notes: `Pagado: ${method}${ref ? ", ref: " + ref : ""}`,
-                          receipt_url: receipt,
-                        }).eq("id", e.id);
-                        if (error) { toast({ title: "Error", description: error.message, variant: "destructive" }); return; }
-                        toast({ title: "Orden de pago convertida a gasto" });
-                        load();
-                      }}>
+                      <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => { setPayEntry(e); setPayMethod("transferencia"); setPayRef(""); setPayOpen(true); }}>
                         <ArrowRight className="w-3 h-3 mr-1" /> Pagar
                       </Button>
                     )}
@@ -389,6 +398,38 @@ export default function GastosUnidad() {
             );
           })}
         </div>
+
+        <Dialog open={payOpen} onOpenChange={setPayOpen}>
+          <DialogContent className="max-w-sm">
+            <DialogHeader><DialogTitle>Pagar orden de pago</DialogTitle></DialogHeader>
+            <div className="space-y-3">
+              <div>
+                <Label>Método de pago</Label>
+                <Select value={payMethod} onValueChange={setPayMethod}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="efectivo">Efectivo</SelectItem>
+                    <SelectItem value="transferencia">Transferencia</SelectItem>
+                    <SelectItem value="tarjeta">Tarjeta</SelectItem>
+                    <SelectItem value="cheque">Cheque</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label>Referencia / folio</Label>
+                <Input value={payRef} onChange={e => setPayRef(e.target.value)} placeholder="Opcional" />
+              </div>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setPayOpen(false)}>Cancelar</Button>
+              <Button onClick={() => { setPayOpen(false); askPin("Confirmar pago", async () => { if (payEntry) await convertPay(payEntry, payMethod, payRef); }); }}>
+                <CreditCard className="w-4 h-4 mr-1" /> Continuar
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        <PinPrompt open={pinOpen} onOpenChange={setPinOpen} title={pinTitle} onConfirm={pinAction} />
       </main>
     </div>
   );
