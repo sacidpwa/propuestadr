@@ -50,6 +50,8 @@ export default function DiarioPacientes() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [saving, setSaving] = useState(false);
   const [specialistList, setSpecialistList] = useState<{ id: string; full_name: string }[]>([]);
+  const [patientList, setPatientList] = useState<{ id: string; full_name: string }[]>([]);
+  const [selectedPatientId, setSelectedPatientId] = useState("");
 
   useEffect(() => {
     if (!unitId) return;
@@ -63,6 +65,10 @@ export default function DiarioPacientes() {
     (async () => {
       const { data: s } = await (supabase.from as any)("specialists").select("id, full_name").eq("is_active", true).order("full_name");
       setSpecialistList((s as any) ?? []);
+    })();
+    (async () => {
+      const { data: p } = await (supabase.from as any)("patients").select("id, full_name").eq("is_active", true).order("full_name");
+      setPatientList((p as any) ?? []);
     })();
   }, []);
 
@@ -90,7 +96,7 @@ export default function DiarioPacientes() {
     return true;
   });
 
-  function openAdd() { setEditId(null); setForm(defaultForm); setDialogOpen(true); }
+  function openAdd() { setEditId(null); setForm(defaultForm); setSelectedPatientId(""); setDialogOpen(true); }
 
   function openEdit(row: ConsultRow) {
     setEditId(row.id);
@@ -100,6 +106,8 @@ export default function DiarioPacientes() {
       const match = specialistList.find(sp => sp.full_name.toLowerCase() === sname.toLowerCase());
       if (match) sid = match.id;
     }
+    const matchPt = patientList.find(pt => pt.full_name.toLowerCase() === row.patient_name.toLowerCase());
+    setSelectedPatientId(matchPt?.id ?? "");
     setForm({
       record_date: row.record_date, specialist_id: sid, specialist_name: sname,
       patient_name: row.patient_name, service_type: row.service_type,
@@ -261,9 +269,21 @@ export default function DiarioPacientes() {
               </Select>
               <Input value={form.specialist_name} onChange={e => setForm({ ...form, specialist_name: e.target.value, specialist_id: "" })} placeholder="O escribirlo manualmente..." />
             </div>
-            <div className="col-span-2">
+            <div className="col-span-2 space-y-2">
               <Label>Nombre del paciente *</Label>
-              <Input value={form.patient_name} onChange={e => setForm({ ...form, patient_name: e.target.value })} placeholder="Nombre completo" />
+              <Select value={selectedPatientId || "__unset__"} onValueChange={v => {
+                if (v === "__unset__") { setSelectedPatientId(""); setForm({ ...form, patient_name: "" }); return }
+                const p = patientList.find(pt => pt.id === v);
+                setSelectedPatientId(v);
+                setForm({ ...form, patient_name: p?.full_name ?? "" });
+              }}>
+                <SelectTrigger><SelectValue placeholder="Seleccionar paciente" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="__unset__">— Nuevo paciente —</SelectItem>
+                  {patientList.map(pt => <SelectItem key={pt.id} value={pt.id}>{pt.full_name}</SelectItem>)}
+                </SelectContent>
+              </Select>
+              <Input value={form.patient_name} onChange={e => { setSelectedPatientId(""); setForm({ ...form, patient_name: e.target.value }) }} placeholder="O escribir nombre manualmente..." />
             </div>
             <div className="col-span-2">
               <Label>Servicio</Label>
