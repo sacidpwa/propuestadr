@@ -87,7 +87,7 @@ export default function DiarioPacientes() {
   useEffect(() => {
     if (!unitId) return;
     (async () => {
-      const { data: p } = await (supabase.from as any)("patients").select("id, full_name").eq("is_active", true).eq("health_unit_id", unitId).order("full_name");
+      const { data: p } = await (supabase.from as any)("patients").select("id, full_name").order("full_name");
       setPatientList((p as any) ?? []);
     })();
   }, [unitId]);
