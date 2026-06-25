@@ -9,7 +9,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogClose, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { ArrowLeft, LogOut, Plus, Pencil, Trash2, Search } from "lucide-react";
+import { ArrowLeft, LogOut, Plus, Pencil, Trash2, Search, Calendar } from "lucide-react";
 import synapsiaIcon from "@/assets/synapsia-icon.svg";
 import { toast } from "@/hooks/use-toast";
 import { fmt } from "@/lib/utils";
@@ -24,6 +24,7 @@ type ConsultRow = {
   amount_collected: number | null; payment_date: string | null; transfer_to: string | null;
   has_invoice: boolean; invoice_date: string | null; invoice_folio: string | null;
   notes: string | null; created_by: string; created_at: string;
+  appointment_id: string | null;
 };
 
 const defaultForm = {
@@ -52,6 +53,8 @@ export default function DiarioPacientes() {
   const [specialistList, setSpecialistList] = useState<{ id: string; full_name: string }[]>([]);
   const [patientList, setPatientList] = useState<{ id: string; full_name: string }[]>([]);
   const [selectedPatientId, setSelectedPatientId] = useState("");
+  const [appointmentList, setAppointmentList] = useState<{ id: string; scheduled_at: string; status: string; patient_name: string }[]>([]);
+  const [selectedAppointmentId, setSelectedAppointmentId] = useState("");
 
   useEffect(() => {
     if (!unitId) return;
@@ -69,6 +72,19 @@ export default function DiarioPacientes() {
     (async () => {
       const { data: p } = await (supabase.from as any)("patients").select("id, full_name").eq("is_active", true).order("full_name");
       setPatientList((p as any) ?? []);
+    })();
+    (async () => {
+      const { data: a } = await (supabase.from as any)("appointments")
+        .select("id, scheduled_at, status, patients(full_name)")
+        .in("status", ["completada", "confirmada", "no_asistio"])
+        .order("scheduled_at", { ascending: false })
+        .limit(200);
+      setAppointmentList(((a as any) ?? []).map((r: any) => ({
+        id: r.id,
+        scheduled_at: r.scheduled_at,
+        status: r.status,
+        patient_name: r.patients?.full_name ?? "",
+      })));
     })();
   }, []);
 
@@ -96,7 +112,7 @@ export default function DiarioPacientes() {
     return true;
   });
 
-  function openAdd() { setEditId(null); setForm(defaultForm); setSelectedPatientId(""); setDialogOpen(true); }
+  function openAdd() { setEditId(null); setForm(defaultForm); setSelectedPatientId(""); setSelectedAppointmentId(""); setDialogOpen(true); }
 
   function openEdit(row: ConsultRow) {
     setEditId(row.id);
@@ -108,6 +124,7 @@ export default function DiarioPacientes() {
     }
     const matchPt = patientList.find(pt => pt.full_name.toLowerCase() === row.patient_name.toLowerCase());
     setSelectedPatientId(matchPt?.id ?? "");
+    setSelectedAppointmentId(row.appointment_id ?? "");
     setForm({
       record_date: row.record_date, specialist_id: sid, specialist_name: sname,
       patient_name: row.patient_name, service_type: row.service_type,
@@ -146,6 +163,7 @@ export default function DiarioPacientes() {
       invoice_date: form.invoice_date || null,
       invoice_folio: form.invoice_folio || null,
       notes: form.notes || null,
+      appointment_id: selectedAppointmentId || null,
     } as any;
 
     if (editId) {
@@ -209,6 +227,7 @@ export default function DiarioPacientes() {
                 <TableHead>Fecha</TableHead>
                 <TableHead>Médico</TableHead>
                 <TableHead>Paciente</TableHead>
+                <TableHead>Cita</TableHead>
                 <TableHead>Servicio</TableHead>
                 <TableHead className="text-right">Costo</TableHead>
                 <TableHead>Pago</TableHead>
@@ -218,14 +237,15 @@ export default function DiarioPacientes() {
             </TableHeader>
             <TableBody>
               {loading ? (
-                <TableRow><TableCell colSpan={8} className="text-center text-muted-foreground">Cargando...</TableCell></TableRow>
+                <TableRow><TableCell colSpan={9} className="text-center text-muted-foreground">Cargando...</TableCell></TableRow>
               ) : filtered.length === 0 ? (
-                <TableRow><TableCell colSpan={8} className="text-center text-muted-foreground">Sin registros</TableCell></TableRow>
+                <TableRow><TableCell colSpan={9} className="text-center text-muted-foreground">Sin registros</TableCell></TableRow>
               ) : filtered.map(row => (
                 <TableRow key={row.id}>
                   <TableCell>{row.record_date}</TableCell>
                   <TableCell>{row.specialist_name}</TableCell>
                   <TableCell>{row.patient_name}</TableCell>
+                  <TableCell>{row.appointment_id ? <span className="inline-flex items-center gap-1 text-xs bg-muted px-1.5 py-0.5 rounded"><Calendar className="w-3 h-3" />Vinculada</span> : "—"}</TableCell>
                   <TableCell>{row.service_type}</TableCell>
                   <TableCell className="text-right">{fmt(row.cost)}</TableCell>
                   <TableCell>{row.payment_method ?? "—"}</TableCell>
@@ -284,6 +304,23 @@ export default function DiarioPacientes() {
                 </SelectContent>
               </Select>
               <Input value={form.patient_name} onChange={e => { setSelectedPatientId(""); setForm({ ...form, patient_name: e.target.value }) }} placeholder="O escribir nombre manualmente..." />
+            </div>
+            <div className="col-span-2 space-y-2">
+              <Label>Vincular a cita (opcional)</Label>
+              <Select value={selectedAppointmentId || "__unset__"} onValueChange={v => {
+                if (v === "__unset__") { setSelectedAppointmentId(""); return }
+                setSelectedAppointmentId(v);
+              }}>
+                <SelectTrigger><SelectValue placeholder="Sin cita" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="__unset__">— Sin cita —</SelectItem>
+                  {appointmentList.map(apt => {
+                    const d = apt.scheduled_at ? new Date(apt.scheduled_at) : null;
+                    const label = d ? `${d.toLocaleDateString("es-MX")} ${d.toLocaleTimeString("es-MX", { hour: "2-digit", minute: "2-digit" })} — ${apt.patient_name} (${apt.status})` : apt.patient_name;
+                    return <SelectItem key={apt.id} value={apt.id}>{label}</SelectItem>;
+                  })}
+                </SelectContent>
+              </Select>
             </div>
             <div className="col-span-2">
               <Label>Servicio</Label>
