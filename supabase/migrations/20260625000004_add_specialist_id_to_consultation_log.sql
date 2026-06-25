@@ -5,12 +5,12 @@ CREATE INDEX idx_consultation_log_specialist_id ON consultation_log(specialist_i
 -- Create missing specialists
 INSERT INTO specialists (id, full_name, specialty, consultation_fee, is_partner, is_active)
 VALUES
-  ('00000000-0000-0000-0000-000000000101', 'Dr. Octavio Márquez Mendoza', 'Psiquiatría', 0, false, true),
-  ('00000000-0000-0000-0000-000000000102', 'Alejandra Tonanzin', 'Psicología', 0, false, true),
-  ('00000000-0000-0000-0000-000000000103', 'Dra. Wendoline Flores', 'Pediatría', 0, false, true),
-  ('00000000-0000-0000-0000-000000000104', 'Itzel', 'Psicología', 0, false, true),
-  ('00000000-0000-0000-0000-000000000105', 'Karina', 'Tanatología', 0, false, true),
-  ('00000000-0000-0000-0000-000000000106', 'Karla', 'Nutrición', 0, false, true)
+  ('00000000-0000-0000-0000-000000000101', 'Dr. Octavio Márquez Mendoza', 'psiquiatra', 0, false, true),
+  ('00000000-0000-0000-0000-000000000102', 'Alejandra Tonanzin', 'psicologo', 0, false, true),
+  ('00000000-0000-0000-0000-000000000103', 'Dra. Wendoline Flores', 'psicologo', 0, false, true),
+  ('00000000-0000-0000-0000-000000000104', 'Itzel', 'psicologo', 0, false, true),
+  ('00000000-0000-0000-0000-000000000105', 'Karina', 'psicologo', 0, false, true),
+  ('00000000-0000-0000-0000-000000000106', 'Karla', 'psicologo', 0, false, true)
 ON CONFLICT (id) DO NOTHING;
 
 -- Map existing records by specialist_name
