@@ -111,8 +111,10 @@ export default function FloorPlan() {
   const [synapsiaUnitId, setSynapsiaUnitId] = useState<string | null>(null);
   useEffect(() => {
     (async () => {
-      const { data } = await supabase.from("health_units").select("id").eq("name", "Synapsia Consultorio").maybeSingle();
-      setSynapsiaUnitId((data as any)?.id ?? null);
+      try {
+        const { data, error } = await (supabase.from as any)("health_units").select("id").eq("name", "Synapsia Consultorio").maybeSingle();
+        if (!error) setSynapsiaUnitId(data?.id ?? null);
+      } catch (e) { /* ignore */ }
     })();
   }, []);
 
