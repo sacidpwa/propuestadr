@@ -3,14 +3,14 @@ ALTER TABLE consultation_log ADD COLUMN specialist_id UUID REFERENCES specialist
 CREATE INDEX idx_consultation_log_specialist_id ON consultation_log(specialist_id);
 
 -- Create missing specialists
-INSERT INTO specialists (id, full_name, is_partner, is_active)
+INSERT INTO specialists (id, full_name, specialty, consultation_fee, is_partner, is_active)
 VALUES
-  ('00000000-0000-0000-0000-000000000101', 'Dr. Octavio Márquez Mendoza', false, true),
-  ('00000000-0000-0000-0000-000000000102', 'Alejandra Tonanzin', false, true),
-  ('00000000-0000-0000-0000-000000000103', 'Dra. Wendoline Flores', false, true),
-  ('00000000-0000-0000-0000-000000000104', 'Itzel', false, true),
-  ('00000000-0000-0000-0000-000000000105', 'Karina', false, true),
-  ('00000000-0000-0000-0000-000000000106', 'Karla', false, true)
+  ('00000000-0000-0000-0000-000000000101', 'Dr. Octavio Márquez Mendoza', 'Psiquiatría', 0, false, true),
+  ('00000000-0000-0000-0000-000000000102', 'Alejandra Tonanzin', 'Psicología', 0, false, true),
+  ('00000000-0000-0000-0000-000000000103', 'Dra. Wendoline Flores', 'Pediatría', 0, false, true),
+  ('00000000-0000-0000-0000-000000000104', 'Itzel', 'Psicología', 0, false, true),
+  ('00000000-0000-0000-0000-000000000105', 'Karina', 'Tanatología', 0, false, true),
+  ('00000000-0000-0000-0000-000000000106', 'Karla', 'Nutrición', 0, false, true)
 ON CONFLICT (id) DO NOTHING;
 
 -- Map existing records by specialist_name
