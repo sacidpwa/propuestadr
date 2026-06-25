@@ -160,7 +160,7 @@ export default function DiarioPacientes() {
 
   const totalCobrado = filtered.reduce((s, r) => s + (r.amount_collected ?? 0), 0);
 
-  const specialists_menu = ["", ...specialists];
+  const specialists_menu = ["", ...specialistList.map(s => s.full_name)];
 
   return (
     <div className="min-h-screen bg-background">
