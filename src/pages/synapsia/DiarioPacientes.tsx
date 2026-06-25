@@ -70,10 +70,6 @@ export default function DiarioPacientes() {
       setSpecialistList((s as any) ?? []);
     })();
     (async () => {
-      const { data: p } = await (supabase.from as any)("patients").select("id, full_name").eq("is_active", true).order("full_name");
-      setPatientList((p as any) ?? []);
-    })();
-    (async () => {
       const { data: a } = await (supabase.from as any)("appointments")
         .select("id, scheduled_at, status, patients(full_name)")
         .in("status", ["completada", "confirmada", "no_asistio"])
@@ -87,6 +83,14 @@ export default function DiarioPacientes() {
       })));
     })();
   }, []);
+
+  useEffect(() => {
+    if (!unitId) return;
+    (async () => {
+      const { data: p } = await (supabase.from as any)("patients").select("id, full_name").eq("is_active", true).eq("health_unit_id", unitId).order("full_name");
+      setPatientList((p as any) ?? []);
+    })();
+  }, [unitId]);
 
   async function loadData() {
     if (!unitId) return;
