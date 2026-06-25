@@ -40,10 +40,18 @@ export default function Metrics() {
   const [expenses, setExpenses] = useState<ExpenseEntry[]>([]);
   const [profiles, setProfiles] = useState<{ user_id: string; full_name: string; email: string | null }[]>([]);
   const [consultLog, setConsultLog] = useState<ConsultRow[]>([]);
+  const [synapsiaUnitId, setSynapsiaUnitId] = useState<string | null>(null);
 
   const isOwner = hasRole("admin") || hasRole("dueno");
 
-  useEffect(() => { fetchAll(); }, [period]);
+  useEffect(() => {
+    (async () => {
+      const { data } = await supabase.from("health_units").select("id").eq("name", "Synapsia Consultorio").maybeSingle();
+      setSynapsiaUnitId((data as any)?.id ?? null);
+    })();
+  }, []);
+
+  useEffect(() => { fetchAll(); }, [period, synapsiaUnitId]);
 
   const fetchAll = async () => {
     const now = new Date();
@@ -54,7 +62,9 @@ export default function Metrics() {
 
     const visitsQ = supabase.from("visits").select("id, specialist_id, arrival_time, status, receptionist_id, patient_id").order("arrival_time", { ascending: true });
     const paymentsQ = supabase.from("payments").select("id, visit_id, amount, payment_method, collected_by, created_at").order("created_at", { ascending: true });
-    const expensesQ = supabase.from("expense_entries").select("id, amount, period_year, period_month, expense_date, description");
+    const expensesQ = synapsiaUnitId
+      ? supabase.from("expense_entries").select("id, amount, period_year, period_month, expense_date, description").eq("health_unit_id", synapsiaUnitId)
+      : supabase.from("expense_entries").select("id, amount, period_year, period_month, expense_date, description");
     let consultLogQ = supabase.from("consultation_log").select("id, specialist_name, specialist_id, patient_name, service_type, cost, amount_collected, record_date").order("record_date", { ascending: false });
     if (fromIso) consultLogQ = consultLogQ.gte("record_date", fromIso.slice(0, 10));
 

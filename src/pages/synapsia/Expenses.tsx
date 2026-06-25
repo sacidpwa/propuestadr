@@ -36,6 +36,14 @@ export default function Expenses() {
   const [partners, setPartners] = useState<PartnerSpec[]>([]);
   const [payments, setPayments] = useState<Payment[]>([]);
   const [loading, setLoading] = useState(false);
+  const [synapsiaUnitId, setSynapsiaUnitId] = useState<string | null>(null);
+
+  useEffect(() => {
+    (async () => {
+      const { data } = await supabase.from("health_units").select("id").eq("name", "Synapsia Consultorio").maybeSingle();
+      setSynapsiaUnitId((data as any)?.id ?? null);
+    })();
+  }, []);
 
   const [openFixed, setOpenFixed] = useState(false);
   const [fixedForm, setFixedForm] = useState({ name: "", category: "", default_amount: "" });
@@ -46,14 +54,16 @@ export default function Expenses() {
     expense_date: format(today, "yyyy-MM-dd"), category: "",
   });
 
-  useEffect(() => { fetchAll(); /* eslint-disable-next-line */ }, [year, month]);
+  useEffect(() => { fetchAll(); /* eslint-disable-next-line */ }, [year, month, synapsiaUnitId]);
 
   const fetchAll = async () => {
     const monthStart = new Date(year, month - 1, 1).toISOString();
     const monthEnd = new Date(year, month, 1).toISOString();
     const [{ data: f }, { data: e }, { data: s }, { data: p }] = await Promise.all([
       supabase.from("fixed_expenses").select("*").order("name"),
-      supabase.from("expense_entries").select("*").eq("period_year", year).eq("period_month", month).order("expense_date", { ascending: false }),
+      synapsiaUnitId
+        ? supabase.from("expense_entries").select("*").eq("period_year", year).eq("period_month", month).eq("health_unit_id", synapsiaUnitId).order("expense_date", { ascending: false })
+        : supabase.from("expense_entries").select("*").eq("period_year", year).eq("period_month", month).order("expense_date", { ascending: false }),
       supabase.from("specialists").select("id, full_name, is_partner").eq("is_partner", true).eq("is_active", true),
       supabase.from("payments").select("amount, created_at, visit_id, visits(specialist_id)").gte("created_at", monthStart).lt("created_at", monthEnd),
     ]);
