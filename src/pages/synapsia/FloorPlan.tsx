@@ -108,6 +108,14 @@ export default function FloorPlan() {
   const navigate = useNavigate();
   const canvasRef = useRef<HTMLDivElement>(null);
 
+  const [synapsiaUnitId, setSynapsiaUnitId] = useState<string | null>(null);
+  useEffect(() => {
+    (async () => {
+      const { data } = await supabase.from("health_units").select("id").eq("name", "Synapsia Consultorio").maybeSingle();
+      setSynapsiaUnitId((data as any)?.id ?? null);
+    })();
+  }, []);
+
   const [zones, setZones] = useState<Zone[]>([]);
   const [furniture, setFurniture] = useState<Furniture[]>([]);
   const [specialists, setSpecialists] = useState<Specialist[]>([]);
@@ -835,6 +843,11 @@ export default function FloorPlan() {
               {(isOwner || isReception) && (
                 <Link to="/synapsia/metrics" className="block">
                   <Button variant="outline" size="sm" className="w-full justify-start"><BarChart3 className="w-4 h-4 mr-2" />Métricas</Button>
+                </Link>
+              )}
+              {(isOwner || isReception) && synapsiaUnitId && (
+                <Link to={`/synapsia/unidades/${synapsiaUnitId}/diario`} className="block">
+                  <Button variant="outline" size="sm" className="w-full justify-start"><BookOpen className="w-4 h-4 mr-2" />Diario de pacientes</Button>
                 </Link>
               )}
               {isReception && !isOwner && (
