@@ -7,14 +7,14 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, LogOut, TrendingUp, DollarSign, Users, Activity, Wallet, AlertCircle, BookOpen } from "lucide-react";
+import { ArrowLeft, LogOut, TrendingUp, DollarSign, Users, Activity, Wallet, AlertCircle, BookOpen, FileText } from "lucide-react";
 import synapsiaIcon from "@/assets/synapsia-icon.svg";
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as ReTooltip, Legend, LineChart, Line } from "recharts";
 import { fmt } from "@/lib/utils";
 
 interface ConsultRow {
   id: string; specialist_name: string; specialist_id: string | null; patient_name: string; service_type: string;
-  cost: number; amount_collected: number | null; record_date: string;
+  cost: number; amount_collected: number | null; record_date: string; has_invoice: boolean;
 }
 
 interface Visit {
@@ -65,7 +65,7 @@ export default function Metrics() {
     const expensesQ = synapsiaUnitId
       ? supabase.from("expense_entries").select("id, amount, period_year, period_month, expense_date, description").eq("health_unit_id", synapsiaUnitId)
       : supabase.from("expense_entries").select("id, amount, period_year, period_month, expense_date, description");
-    let consultLogQ = supabase.from("consultation_log").select("id, specialist_name, specialist_id, patient_name, service_type, cost, amount_collected, record_date").order("record_date", { ascending: false });
+    let consultLogQ = supabase.from("consultation_log").select("id, specialist_name, specialist_id, patient_name, service_type, cost, amount_collected, record_date, has_invoice").order("record_date", { ascending: false });
     if (fromIso) consultLogQ = consultLogQ.gte("record_date", fromIso.slice(0, 10));
 
     const [{ data: v }, { data: pmt }, { data: s }, { data: e }, { data: pr }, { data: cl }] = await Promise.all([
@@ -90,8 +90,8 @@ export default function Metrics() {
 
   // Aggregations per specialist (visits/payments + consultation_log)
   const perSpecialist = useMemo(() => {
-    const acc: Record<string, { id: string; name: string; consultas: number; ingresos: number; pacientes: Set<string>; ticket: number; diarioConsultas: number; diarioFacturado: number; diarioCobrado: number; }> = {};
-    specialists.forEach((s) => { acc[s.id] = { id: s.id, name: s.full_name, consultas: 0, ingresos: 0, pacientes: new Set(), ticket: 0, diarioConsultas: 0, diarioFacturado: 0, diarioCobrado: 0 }; });
+    const acc: Record<string, { id: string; name: string; consultas: number; recepcion: number; totalIngresos: number; pacientes: Set<string>; ticket: number; diarioConsultas: number; diarioFacturado: number; diarioCobrado: number; }> = {};
+    specialists.forEach((s) => { acc[s.id] = { id: s.id, name: s.full_name, consultas: 0, recepcion: 0, totalIngresos: 0, pacientes: new Set(), ticket: 0, diarioConsultas: 0, diarioFacturado: 0, diarioCobrado: 0 }; });
     visits.forEach((v) => {
       const a = acc[v.specialist_id]; if (!a) return;
       if (v.status === "atendido" || v.status === "en_consulta") {
@@ -102,7 +102,7 @@ export default function Metrics() {
     payments.forEach((p) => {
       const v = visitById[p.visit_id]; if (!v) return;
       const a = acc[v.specialist_id]; if (!a) return;
-      a.ingresos += Number(p.amount);
+      a.recepcion += Number(p.amount);
     });
     consultLog.forEach((c) => {
       if (!c.specialist_id) return;
@@ -111,7 +111,7 @@ export default function Metrics() {
       a.diarioFacturado += Number(c.cost || 0);
       a.diarioCobrado += Number(c.amount_collected || 0);
     });
-    return Object.values(acc).map((a) => ({ ...a, pacientesCount: a.pacientes.size, ticket: a.consultas ? a.ingresos / a.consultas : 0 }));
+    return Object.values(acc).map((a) => ({ ...a, pacientesCount: a.pacientes.size, ticket: a.consultas ? a.recepcion / a.consultas : 0, totalIngresos: a.recepcion + a.diarioCobrado }));
   }, [visits, payments, specialists, visitById, consultLog]);
 
   // Per receptionist (collected_by)
@@ -144,12 +144,14 @@ export default function Metrics() {
   }, [visits, payments, specialistById]);
 
   const totals = useMemo(() => {
-    const ingresos = payments.reduce((s, p) => s + Number(p.amount), 0);
+    const recepcion = payments.reduce((s, p) => s + Number(p.amount), 0);
+    const cobradoDiario = consultLog.reduce((s, c) => s + Number(c.amount_collected || 0), 0);
+    const ingresos = recepcion + cobradoDiario;
     const consultas = visits.filter((v) => v.status === "atendido" || v.status === "en_consulta").length;
     const pacientesUnicos = new Set(visits.map((v) => v.patient_id)).size;
     const gastos = expenses.reduce((s, e) => s + Number(e.amount), 0);
-    return { ingresos, consultas, pacientesUnicos, gastos, neto: ingresos - gastos };
-  }, [payments, visits, expenses]);
+    return { recepcion, cobradoDiario, ingresos, consultas, pacientesUnicos, gastos, neto: ingresos - gastos };
+  }, [payments, visits, expenses, consultLog]);
 
   // Tendencia mensual (últimos 6 meses)
   const tendencia = useMemo(() => {
@@ -180,14 +182,15 @@ export default function Metrics() {
 
   // Consultation log aggregated per specialist (via specialist_id or specialist_name)
   const consultPerSpecialist = useMemo(() => {
-    const acc: Record<string, { nombre: string; consultas: number; cobrado: number; costo: number }> = {};
+    const acc: Record<string, { nombre: string; consultas: number; cobrado: number; costo: number; facturado: number }> = {};
     consultLog.forEach((c) => {
       const key = c.specialist_id || c.specialist_name || "Sin asignar";
       const name = c.specialist_id ? (specialistById[c.specialist_id]?.full_name || c.specialist_name) : (c.specialist_name || "Sin asignar");
-      if (!acc[key]) acc[key] = { nombre: name, consultas: 0, cobrado: 0, costo: 0 };
+      if (!acc[key]) acc[key] = { nombre: name, consultas: 0, cobrado: 0, costo: 0, facturado: 0 };
       acc[key].consultas++;
       acc[key].costo += Number(c.cost || 0);
       acc[key].cobrado += Number(c.amount_collected || 0);
+      if (c.has_invoice) acc[key].facturado += Number(c.cost || 0);
     });
     return Object.values(acc).sort((a, b) => b.cobrado - a.cobrado);
   }, [consultLog, specialistById]);
@@ -208,9 +211,11 @@ export default function Metrics() {
   const consultTotals = useMemo(() => {
     const consultas = consultLog.length;
     const cobrado = consultLog.reduce((s, c) => s + Number(c.amount_collected || 0), 0);
-    const costo = consultLog.reduce((s, c) => s + Number(c.cost || 0), 0);
-    return { consultas, cobrado, costo, pendiente: costo - cobrado };
-  }, [consultLog]);
+    const facturado = consultLog.filter((c) => c.has_invoice).reduce((s, c) => s + Number(c.cost || 0), 0);
+    const pendienteDiario = facturado - consultLog.filter((c) => c.has_invoice).reduce((s, c) => s + Number(c.amount_collected || 0), 0);
+    const pendienteRecepcion = pendientes.total;
+    return { consultas, cobrado, facturado, pendiente: pendienteDiario + pendienteRecepcion, pendienteDiario, pendienteRecepcion };
+  }, [consultLog, pendientes]);
 
   const focusedSpecialist = useMemo(() => {
     if (!focusedUserId) return null;
@@ -261,9 +266,9 @@ export default function Metrics() {
               {focusedRows ? (
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                   <Stat icon={<Activity />} label="Consultas" value={focusedRows.consultas.toString()} />
-                  <Stat icon={<DollarSign />} label="Ingresos" value={`$${focusedRows.ingresos.toLocaleString()}`} />
-                  <Stat icon={<Users />} label="Pacientes únicos" value={focusedRows.pacientesCount.toString()} />
-                  <Stat icon={<TrendingUp />} label="Ticket promedio" value={`$${focusedRows.ticket.toFixed(0)}`} />
+                  <Stat icon={<DollarSign />} label="Recepción" value={fmt(focusedRows.recepcion)} />
+                  <Stat icon={<BookOpen />} label="Total ingresos" value={fmt(focusedRows.totalIngresos)} />
+                  <Stat icon={<TrendingUp />} label="Ticket prom." value={`$${focusedRows.ticket.toFixed(0)}`} />
                 </div>
               ) : (
                 <p className="text-sm text-muted-foreground">Este usuario no está vinculado a un especialista. Solo se muestran métricas globales abajo.</p>
@@ -273,20 +278,20 @@ export default function Metrics() {
         )}
 
         <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-          <Stat icon={<DollarSign className="text-green-600" />} label="Ingresos" value={`$${totals.ingresos.toLocaleString()}`} />
-          <Stat icon={<Activity className="text-blue-600" />} label="Consultas" value={totals.consultas.toString()} />
-          <Stat icon={<Users className="text-purple-600" />} label="Pacientes" value={totals.pacientesUnicos.toString()} />
-          <Stat icon={<Wallet className="text-orange-600" />} label="Gastos" value={`$${totals.gastos.toLocaleString()}`} />
-          <Stat icon={<TrendingUp className="text-primary" />} label="Neto" value={`$${totals.neto.toLocaleString()}`} highlight />
+          <Stat icon={<DollarSign className="text-green-600" />} label="Recepción" value={fmt(totals.recepcion)} />
+          <Stat icon={<BookOpen className="text-violet-600" />} label="Diario cobrado" value={fmt(totals.cobradoDiario)} />
+          <Stat icon={<TrendingUp className="text-primary" />} label="Total ingresos" value={fmt(totals.ingresos)} highlight />
+          <Stat icon={<Wallet className="text-orange-600" />} label="Gastos" value={fmt(totals.gastos)} />
+          <Stat icon={<TrendingUp />} label="Neto" value={fmt(totals.neto)} />
         </div>
 
         <Card className="border-amber-200 bg-amber-50/40">
           <CardContent className="py-4 flex items-center gap-3">
             <AlertCircle className="w-5 h-5 text-amber-700" />
             <div className="text-sm">
-              <span className="font-semibold">Saldos pendientes de cobro:</span>{" "}
-              <span className="font-mono">${pendientes.total.toLocaleString()}</span>{" "}
-              <span className="text-muted-foreground">en {pendientes.count} consulta(s) atendida(s) sin pago completo.</span>
+              <span className="font-semibold">Pendiente de cobro total:</span>{" "}
+              <span className="font-mono">{fmt(consultTotals.pendiente)}</span>{" "}
+              <span className="text-muted-foreground">(Recepción: {fmt(consultTotals.pendienteRecepcion)} | Diario: {fmt(consultTotals.pendienteDiario)})</span>
             </div>
           </CardContent>
         </Card>
@@ -311,7 +316,8 @@ export default function Metrics() {
                     <YAxis />
                     <ReTooltip />
                     <Legend />
-                    <Bar dataKey="ingresos" fill="hsl(220 40% 30%)" name="Ingresos" />
+                    <Bar dataKey="totalIngresos" fill="hsl(220 40% 30%)" name="Total ingresos" />
+                    <Bar dataKey="recepcion" fill="hsl(160 50% 40%)" name="Recepción" />
                     <Bar dataKey="consultas" fill="hsl(40 70% 55%)" name="Consultas" />
                   </BarChart>
                 </ResponsiveContainer>
@@ -321,18 +327,19 @@ export default function Metrics() {
               <CardHeader className="pb-2"><CardTitle className="text-base">Detalle</CardTitle></CardHeader>
               <CardContent className="overflow-x-auto">
                 <table className="w-full text-sm">
-                  <thead><tr className="text-left text-muted-foreground"><th className="py-2">Especialista</th><th>Consultas</th><th>Pacientes</th><th>Ingresos</th><th>Ticket prom.</th><th>Del diario</th><th>Facturado</th><th>Cobrado</th><th></th></tr></thead>
+                  <thead><tr className="text-left text-muted-foreground"><th className="py-2">Especialista</th><th>Consultas</th><th>Pacientes</th><th>Recepción</th><th>Ticket prom.</th><th>Del diario</th><th>Facturado</th><th>Cobrado</th><th>Total</th><th></th></tr></thead>
                   <tbody>
                     {perSpecialist.map((s) => (
                       <tr key={s.id} className="border-t">
                         <td className="py-2 font-medium">{s.name} {specialistById[s.id]?.is_partner && <Badge className="ml-1" variant="outline">Socio</Badge>}</td>
                         <td>{s.consultas}</td>
                         <td>{s.pacientesCount}</td>
-                        <td className="font-mono">${s.ingresos.toLocaleString()}</td>
+                        <td className="font-mono">{s.recepcion ? fmt(s.recepcion) : "—"}</td>
                         <td className="font-mono">${s.ticket.toFixed(0)}</td>
                         <td className="font-mono">{s.diarioConsultas || "—"}</td>
                         <td className="font-mono">{s.diarioFacturado ? fmt(s.diarioFacturado) : "—"}</td>
                         <td className="font-mono">{s.diarioCobrado ? fmt(s.diarioCobrado) : "—"}</td>
+                        <td className="font-mono font-semibold">{fmt(s.totalIngresos)}</td>
                         <td className="text-right"><Badge variant={specialistById[s.id]?.is_active ? "secondary" : "outline"}>{specialistById[s.id]?.is_active ? "Activo" : "Inactivo"}</Badge></td>
                       </tr>
                     ))}
@@ -361,10 +368,10 @@ export default function Metrics() {
           <TabsContent value="consultorio">
             {/* KPIs */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
-              <Stat icon={<BookOpen className="text-violet-600" />} label="Consultas" value={consultTotals.consultas.toString()} />
-              <Stat icon={<DollarSign className="text-teal-600" />} label="Cobrado" value={fmt(consultTotals.cobrado)} />
-              <Stat icon={<TrendingUp className="text-blue-600" />} label="Total facturado" value={fmt(consultTotals.costo)} />
-              <Stat icon={<AlertCircle className={consultTotals.pendiente > 0 ? "text-amber-600" : "text-green-600"} />} label="Pendiente" value={fmt(consultTotals.pendiente)} />
+              <Stat icon={<BookOpen className="text-violet-600" />} label="Consultas diario" value={consultTotals.consultas.toString()} />
+              <Stat icon={<DollarSign className="text-teal-600" />} label="Cobrado diario" value={fmt(consultTotals.cobrado)} />
+              <Stat icon={<FileText className="text-blue-600" />} label="Facturado (con factura)" value={fmt(consultTotals.facturado)} />
+              <Stat icon={<AlertCircle className={consultTotals.pendiente > 0 ? "text-amber-600" : "text-green-600"} />} label="Pendiente total" value={fmt(consultTotals.pendiente)} />
             </div>
             {/* Daily chart */}
             {consultDaily.length > 0 && (
@@ -392,13 +399,14 @@ export default function Metrics() {
                 <CardHeader className="pb-2"><CardTitle className="text-base">Por médico</CardTitle></CardHeader>
                 <CardContent className="overflow-x-auto">
                   <table className="w-full text-sm">
-                    <thead><tr className="text-left text-muted-foreground"><th className="py-2">Médico</th><th>Consultas</th><th>Facturado</th><th>Cobrado</th><th>Pendiente</th></tr></thead>
+                    <thead><tr className="text-left text-muted-foreground"><th className="py-2">Médico</th><th>Consultas</th><th>Costo total</th><th>Facturado (con factura)</th><th>Cobrado</th><th>Pendiente</th></tr></thead>
                     <tbody>
                       {consultPerSpecialist.map((s) => (
                         <tr key={s.nombre} className="border-t">
                           <td className="py-2 font-medium">{s.nombre}</td>
                           <td>{s.consultas}</td>
                           <td className="font-mono">{fmt(s.costo)}</td>
+                          <td className="font-mono">{fmt(s.facturado)}</td>
                           <td className="font-mono">{fmt(s.cobrado)}</td>
                           <td className="font-mono">{fmt(s.costo - s.cobrado)}</td>
                         </tr>
