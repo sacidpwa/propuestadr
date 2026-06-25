@@ -11,7 +11,7 @@ import {
   ArrowLeft, LogOut, Menu, X, Pill, Wallet, FileText, Users, ClipboardList,
   Sparkles, Wrench, HandCoins, Receipt, ShoppingBag, ShoppingCart, Package,
   ClipboardCheck, Building2, UserCheck, TrendingUp, TrendingDown, DollarSign,
-  AlertCircle, ChevronLeft, ChevronRight
+  AlertCircle, ChevronLeft, ChevronRight, BookOpen
 } from "lucide-react";
 import synapsiaIcon from "@/assets/synapsia-icon.svg";
 import { format } from "date-fns";
@@ -43,6 +43,7 @@ const APPS: AppEntry[] = [
   { key: "inventario", label: "Inventario de medicamentos", desc: "Stock, entradas, alertas de mínimo", icon: Package, route: "inventario", roles: ["admin", "dueno", "administrativo", "asistente_admin", "enfermera"] },
   { key: "confirmar-inventario", label: "Confirmar inventario", desc: "Conteo físico cada 3 días", icon: ClipboardCheck, route: "confirmar-inventario", roles: ["admin", "dueno", "enfermera"] },
   { key: "precios", label: "Precios por servicio", desc: "Catálogo de precios de la unidad", icon: DollarSign, route: "precios", roles: ["admin", "dueno", "administrativo", "asistente_admin", "contador", "enfermera"] },
+  { key: "diario", label: "Diario de pacientes", desc: "Registro diario de consultas y pagos", icon: BookOpen, route: "diario", roles: ["admin", "dueno", "administrativo", "asistente_admin", "recepcion"] },
 ];
 
 interface MonthlyEntry { month: string; ingresos: number; gastos: number; }
@@ -63,6 +64,12 @@ interface DashboardData {
   monthly: MonthlyEntry[];
   overdueList: FeeOverdue[];
   recentExpenses: any[];
+  consultationsToday: number;
+  collectedToday: number;
+  consultationsMonth: number;
+  collectedMonth: number;
+  dailyConsultations: { day: string; consultas: number; cobrado: number }[];
+  todayConsultations: any[];
 }
 
 const MONTHS = ["Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"];
@@ -78,6 +85,9 @@ export default function UnidadDetalle() {
     inventoryItems: 0, pendingRequisitions: 0, activePOs: 0,
     activeFees: 0, overdueFees: 0, overdueAmount: 0,
     monthly: [], overdueList: [], recentExpenses: [],
+    consultationsToday: 0, collectedToday: 0,
+    consultationsMonth: 0, collectedMonth: 0,
+    dailyConsultations: [], todayConsultations: [],
   });
 
   useEffect(() => {
@@ -87,9 +97,11 @@ export default function UnidadDetalle() {
       setUnit((u as any) || null);
 
       const year = new Date().getFullYear();
+      const month = new Date().getMonth() + 1;
+      const todayStr = format(new Date(), "yyyy-MM-dd");
 
-      const [patientRes, staffRes, expenseRes, incomeRes, invRes, reqRes, poRes, feeRes, monthlyRes] = await Promise.all([
-        (supabase.from as any)("patients").select("id", { count: "exact", head: true }).eq("health_unit_id", id),
+      const [patientRes, staffRes, expenseRes, incomeRes, invRes, reqRes, poRes, feeRes, monthlyRes, consultTodayRes, consultMonthRes, consultDailyRes] = await Promise.all([
+        (supabase.from as any)("patients").select("id", { count: "exact", head: true }).eq("health_unit_id", id).eq("is_active", true),
         (supabase.from as any)("employee_assignments").select("id", { count: "exact", head: true }).eq("health_unit_id", id),
         (supabase.from as any)("expense_entries").select("amount").eq("health_unit_id", id).eq("entry_type", "gasto"),
         (supabase.from as any)("expense_entries").select("amount").eq("health_unit_id", id).eq("entry_type", "ingreso"),
@@ -98,6 +110,12 @@ export default function UnidadDetalle() {
         (supabase.from as any)("purchase_orders").select("id", { count: "exact", head: true }).eq("health_unit_id", id).in("status", ["pendiente", "autorizada", "comprada"]),
         (supabase.from as any)("client_fees").select("*").eq("health_unit_id", id).eq("is_active", true),
         (supabase.from as any)("expense_entries").select("amount, entry_type, period_month").eq("health_unit_id", id).eq("period_year", year),
+        // Consultation log today
+        (supabase.from as any)("consultation_log").select("amount_collected", { count: "exact", head: false }).eq("health_unit_id", id).eq("record_date", todayStr),
+        // Consultation log this month
+        (supabase.from as any)("consultation_log").select("amount_collected", { count: "exact", head: false }).eq("health_unit_id", id).gte("record_date", `${year}-${String(month).padStart(2,"0")}-01`),
+        // Consultation log daily for current month
+        (supabase.from as any)("consultation_log").select("record_date, amount_collected").eq("health_unit_id", id).gte("record_date", `${year}-${String(month).padStart(2,"0")}-01`).order("record_date"),
       ]);
 
       const expenses = ((expenseRes.data as any[]) || []).reduce((s: number, e: any) => s + Number(e.amount || 0), 0);
@@ -115,6 +133,36 @@ export default function UnidadDetalle() {
       });
       const monthly = Object.values(monthlyMap);
 
+      // Consultation log aggregation
+      const todayConsultations = (consultTodayRes.data as any[]) || [];
+      const consultationsToday = todayConsultations.length;
+      const collectedToday = todayConsultations.reduce((s: number, c: any) => s + Number(c.amount_collected || 0), 0);
+
+      const monthConsultations = (consultMonthRes.data as any[]) || [];
+      const consultationsMonth = monthConsultations.length;
+      const collectedMonth = monthConsultations.reduce((s: number, c: any) => s + Number(c.amount_collected || 0), 0);
+
+      // Daily chart data for current month
+      const dailyMap: Record<string, { consultas: number; cobrado: number }> = {};
+      const daysInMonth = new Date(year, month, 0).getDate();
+      for (let d = 1; d <= daysInMonth; d++) {
+        const key = `${year}-${String(month).padStart(2,"0")}-${String(d).padStart(2,"0")}`;
+        dailyMap[key] = { consultas: 0, cobrado: 0 };
+      }
+      ((consultDailyRes.data as any[]) || []).forEach((c: any) => {
+        const key = c.record_date?.slice(0, 10);
+        if (dailyMap[key]) {
+          dailyMap[key].consultas++;
+          dailyMap[key].cobrado += Number(c.amount_collected || 0);
+        }
+      });
+      const dailyConsultations = Object.entries(dailyMap).map(([day, v]) => ({
+        day: day.slice(8, 10), consultas: v.consultas, cobrado: v.cobrado,
+      }));
+
+      // Today's detail list
+      const todayEntries = (consultTodayRes.data as any[]) || [];
+
       // Fees / cobranza
       const activeFees = (feeRes.data as any[]) || [];
       const today = new Date();
@@ -129,6 +177,10 @@ export default function UnidadDetalle() {
       const { data: recent } = await (supabase.from as any)("expense_entries")
         .select("*").eq("health_unit_id", id).order("created_at", { ascending: false }).limit(5);
 
+      // Today's detail list
+      const { data: todayDetail } = await (supabase.from as any)("consultation_log")
+        .select("*").eq("health_unit_id", id).eq("record_date", todayStr).order("created_at");
+
       setData({
         patients: patientRes.count || 0,
         staff: staffRes.count || 0,
@@ -141,6 +193,10 @@ export default function UnidadDetalle() {
         overdueAmount,
         monthly, overdueList,
         recentExpenses: (recent as any[]) || [],
+        consultationsToday, collectedToday,
+        consultationsMonth, collectedMonth,
+        dailyConsultations,
+        todayConsultations: (todayDetail as any[]) || [],
       });
     })();
   }, [id]);
@@ -283,7 +339,127 @@ export default function UnidadDetalle() {
               </Card>
             </div>
 
-            {/* Gráfica anual Ingresos vs Gastos */}
+            {/* KPIs consultas del día */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+              <Card>
+                <CardContent className="py-4">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-lg bg-violet-500/10 flex items-center justify-center">
+                      <BookOpen className="w-5 h-5 text-violet-600" />
+                    </div>
+                    <div>
+                      <p className="text-xs text-muted-foreground">Consultas hoy</p>
+                      <p className="text-xl font-bold">{data.consultationsToday}</p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardContent className="py-4">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-lg bg-emerald-500/10 flex items-center justify-center">
+                      <DollarSign className="w-5 h-5 text-emerald-600" />
+                    </div>
+                    <div>
+                      <p className="text-xs text-muted-foreground">Cobrado hoy</p>
+                      <p className="text-xl font-bold text-emerald-700">${data.collectedToday.toLocaleString()}</p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardContent className="py-4">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-lg bg-sky-500/10 flex items-center justify-center">
+                      <BookOpen className="w-5 h-5 text-sky-600" />
+                    </div>
+                    <div>
+                      <p className="text-xs text-muted-foreground">Consultas del mes</p>
+                      <p className="text-xl font-bold">{data.consultationsMonth}</p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardContent className="py-4">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-lg bg-teal-500/10 flex items-center justify-center">
+                      <DollarSign className="w-5 h-5 text-teal-600" />
+                    </div>
+                    <div>
+                      <p className="text-xs text-muted-foreground">Cobrado del mes</p>
+                      <p className="text-xl font-bold text-teal-700">${data.collectedMonth.toLocaleString()}</p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Gráfica diaria consultas */}
+            {data.dailyConsultations.length > 0 && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-base flex items-center gap-2">
+                    <BookOpen className="w-5 h-5" /> Consultas del mes
+                  </CardTitle>
+                  <CardDescription>Consultas y cobro diario</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="h-64">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart data={data.dailyConsultations} margin={{ top: 5, right: 20, left: 0, bottom: 5 }}>
+                        <CartesianGrid strokeDasharray="3 3" className="stroke-border/50" />
+                        <XAxis dataKey="day" tick={{ fontSize: 12 }} />
+                        <YAxis yAxisId="left" tick={{ fontSize: 12 }} />
+                        <YAxis yAxisId="right" orientation="right" tick={{ fontSize: 12 }} tickFormatter={(v: number) => `$${v.toLocaleString()}`} />
+                        <ReTooltip formatter={(v: number, name: string) => name === "consultas" ? v : `$${v.toLocaleString()}`} />
+                        <Legend />
+                        <Bar yAxisId="left" dataKey="consultas" fill="#8b5cf6" name="Consultas" radius={[4, 4, 0, 0]} />
+                        <Bar yAxisId="right" dataKey="cobrado" fill="#14b8a6" name="Cobrado" radius={[4, 4, 0, 0]} />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Consultas de hoy */}
+            {data.todayConsultations.length > 0 && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-base flex items-center gap-2">
+                    <BookOpen className="w-5 h-5" /> Consultas de hoy
+                  </CardTitle>
+                  <CardDescription>{data.consultationsToday} consulta(s) — ${data.collectedToday.toLocaleString()} cobrado</CardDescription>
+                </CardHeader>
+                <CardContent className="p-0">
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr className="border-b text-muted-foreground text-xs">
+                          <th className="text-left px-4 py-2 font-medium">Médico</th>
+                          <th className="text-left px-4 py-2 font-medium">Paciente</th>
+                          <th className="text-left px-4 py-2 font-medium">Servicio</th>
+                          <th className="text-right px-4 py-2 font-medium">Costo</th>
+                          <th className="text-right px-4 py-2 font-medium">Cobrado</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {data.todayConsultations.map((c: any) => (
+                          <tr key={c.id} className="border-b last:border-0 hover:bg-muted/50">
+                            <td className="px-4 py-2">{c.specialist_name}</td>
+                            <td className="px-4 py-2 font-medium">{c.patient_name}</td>
+                            <td className="px-4 py-2">{c.service_type}</td>
+                            <td className="px-4 py-2 text-right">${Number(c.cost).toLocaleString()}</td>
+                            <td className="px-4 py-2 text-right">${(c.amount_collected ? Number(c.amount_collected) : 0).toLocaleString()}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
             <Card>
               <CardHeader>
                 <CardTitle className="text-base flex items-center gap-2">

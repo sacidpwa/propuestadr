@@ -7,9 +7,15 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, LogOut, TrendingUp, DollarSign, Users, Activity, Wallet, AlertCircle } from "lucide-react";
+import { ArrowLeft, LogOut, TrendingUp, DollarSign, Users, Activity, Wallet, AlertCircle, BookOpen } from "lucide-react";
 import synapsiaIcon from "@/assets/synapsia-icon.svg";
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as ReTooltip, Legend, LineChart, Line } from "recharts";
+import { fmt } from "@/lib/utils";
+
+interface ConsultRow {
+  id: string; specialist_name: string; specialist_id: string | null; patient_name: string; service_type: string;
+  cost: number; amount_collected: number | null; record_date: string;
+}
 
 interface Visit {
   id: string; specialist_id: string; arrival_time: string; status: string; receptionist_id: string | null;
@@ -33,6 +39,7 @@ export default function Metrics() {
   const [specialists, setSpecialists] = useState<Specialist[]>([]);
   const [expenses, setExpenses] = useState<ExpenseEntry[]>([]);
   const [profiles, setProfiles] = useState<{ user_id: string; full_name: string; email: string | null }[]>([]);
+  const [consultLog, setConsultLog] = useState<ConsultRow[]>([]);
 
   const isOwner = hasRole("admin") || hasRole("dueno");
 
@@ -48,29 +55,33 @@ export default function Metrics() {
     const visitsQ = supabase.from("visits").select("id, specialist_id, arrival_time, status, receptionist_id, patient_id").order("arrival_time", { ascending: true });
     const paymentsQ = supabase.from("payments").select("id, visit_id, amount, payment_method, collected_by, created_at").order("created_at", { ascending: true });
     const expensesQ = supabase.from("expense_entries").select("id, amount, period_year, period_month, expense_date, description");
+    let consultLogQ = supabase.from("consultation_log").select("id, specialist_name, specialist_id, patient_name, service_type, cost, amount_collected, record_date").order("record_date", { ascending: false });
+    if (fromIso) consultLogQ = consultLogQ.gte("record_date", fromIso.slice(0, 10));
 
-    const [{ data: v }, { data: pmt }, { data: s }, { data: e }, { data: pr }] = await Promise.all([
+    const [{ data: v }, { data: pmt }, { data: s }, { data: e }, { data: pr }, { data: cl }] = await Promise.all([
       fromIso ? visitsQ.gte("arrival_time", fromIso) : visitsQ,
       fromIso ? paymentsQ.gte("created_at", fromIso) : paymentsQ,
       supabase.from("specialists").select("id, full_name, consultation_fee, is_partner, is_active, user_id").order("full_name"),
       expensesQ,
       supabase.from("profiles").select("user_id, full_name, email"),
+      consultLogQ,
     ]);
     setVisits((v as any) || []);
     setPayments((pmt as any) || []);
     setSpecialists((s as any) || []);
     setExpenses((e as any) || []);
     setProfiles((pr as any) || []);
+    setConsultLog((cl as any) || []);
   };
 
   // Map visit -> specialist; payment -> visit
   const visitById = useMemo(() => Object.fromEntries(visits.map((v) => [v.id, v])), [visits]);
   const specialistById = useMemo(() => Object.fromEntries(specialists.map((s) => [s.id, s])), [specialists]);
 
-  // Aggregations per specialist
+  // Aggregations per specialist (visits/payments + consultation_log)
   const perSpecialist = useMemo(() => {
-    const acc: Record<string, { id: string; name: string; consultas: number; ingresos: number; pacientes: Set<string>; ticket: number; }> = {};
-    specialists.forEach((s) => { acc[s.id] = { id: s.id, name: s.full_name, consultas: 0, ingresos: 0, pacientes: new Set(), ticket: 0 }; });
+    const acc: Record<string, { id: string; name: string; consultas: number; ingresos: number; pacientes: Set<string>; ticket: number; diarioConsultas: number; diarioFacturado: number; diarioCobrado: number; }> = {};
+    specialists.forEach((s) => { acc[s.id] = { id: s.id, name: s.full_name, consultas: 0, ingresos: 0, pacientes: new Set(), ticket: 0, diarioConsultas: 0, diarioFacturado: 0, diarioCobrado: 0 }; });
     visits.forEach((v) => {
       const a = acc[v.specialist_id]; if (!a) return;
       if (v.status === "atendido" || v.status === "en_consulta") {
@@ -83,8 +94,15 @@ export default function Metrics() {
       const a = acc[v.specialist_id]; if (!a) return;
       a.ingresos += Number(p.amount);
     });
+    consultLog.forEach((c) => {
+      if (!c.specialist_id) return;
+      const a = acc[c.specialist_id]; if (!a) return;
+      a.diarioConsultas++;
+      a.diarioFacturado += Number(c.cost || 0);
+      a.diarioCobrado += Number(c.amount_collected || 0);
+    });
     return Object.values(acc).map((a) => ({ ...a, pacientesCount: a.pacientes.size, ticket: a.consultas ? a.ingresos / a.consultas : 0 }));
-  }, [visits, payments, specialists, visitById]);
+  }, [visits, payments, specialists, visitById, consultLog]);
 
   // Per receptionist (collected_by)
   const perReceptionist = useMemo(() => {
@@ -149,6 +167,40 @@ export default function Metrics() {
     });
     return Object.values(map);
   }, [payments, visits, expenses]);
+
+  // Consultation log aggregated per specialist (via specialist_id or specialist_name)
+  const consultPerSpecialist = useMemo(() => {
+    const acc: Record<string, { nombre: string; consultas: number; cobrado: number; costo: number }> = {};
+    consultLog.forEach((c) => {
+      const key = c.specialist_id || c.specialist_name || "Sin asignar";
+      const name = c.specialist_id ? (specialistById[c.specialist_id]?.full_name || c.specialist_name) : (c.specialist_name || "Sin asignar");
+      if (!acc[key]) acc[key] = { nombre: name, consultas: 0, cobrado: 0, costo: 0 };
+      acc[key].consultas++;
+      acc[key].costo += Number(c.cost || 0);
+      acc[key].cobrado += Number(c.amount_collected || 0);
+    });
+    return Object.values(acc).sort((a, b) => b.cobrado - a.cobrado);
+  }, [consultLog, specialistById]);
+
+  // Consultation log daily totals for current period
+  const consultDaily = useMemo(() => {
+    const map: Record<string, { day: string; consultas: number; cobrado: number }> = {};
+    consultLog.forEach((c) => {
+      const d = c.record_date?.slice(0, 10);
+      if (!d) return;
+      map[d] = map[d] || { day: d, consultas: 0, cobrado: 0 };
+      map[d].consultas++;
+      map[d].cobrado += Number(c.amount_collected || 0);
+    });
+    return Object.values(map).sort((a, b) => a.day.localeCompare(b.day));
+  }, [consultLog]);
+
+  const consultTotals = useMemo(() => {
+    const consultas = consultLog.length;
+    const cobrado = consultLog.reduce((s, c) => s + Number(c.amount_collected || 0), 0);
+    const costo = consultLog.reduce((s, c) => s + Number(c.cost || 0), 0);
+    return { consultas, cobrado, costo, pendiente: costo - cobrado };
+  }, [consultLog]);
 
   const focusedSpecialist = useMemo(() => {
     if (!focusedUserId) return null;
@@ -233,6 +285,7 @@ export default function Metrics() {
           <TabsList>
             <TabsTrigger value="specialists">Por especialista</TabsTrigger>
             <TabsTrigger value="reception">Recepción</TabsTrigger>
+            <TabsTrigger value="consultorio">Consultorio</TabsTrigger>
             <TabsTrigger value="trends">Tendencias</TabsTrigger>
             {isOwner && <TabsTrigger value="partners">Socios</TabsTrigger>}
           </TabsList>
@@ -258,7 +311,7 @@ export default function Metrics() {
               <CardHeader className="pb-2"><CardTitle className="text-base">Detalle</CardTitle></CardHeader>
               <CardContent className="overflow-x-auto">
                 <table className="w-full text-sm">
-                  <thead><tr className="text-left text-muted-foreground"><th className="py-2">Especialista</th><th>Consultas</th><th>Pacientes</th><th>Ingresos</th><th>Ticket prom.</th><th></th></tr></thead>
+                  <thead><tr className="text-left text-muted-foreground"><th className="py-2">Especialista</th><th>Consultas</th><th>Pacientes</th><th>Ingresos</th><th>Ticket prom.</th><th>Del diario</th><th>Facturado</th><th>Cobrado</th><th></th></tr></thead>
                   <tbody>
                     {perSpecialist.map((s) => (
                       <tr key={s.id} className="border-t">
@@ -267,6 +320,9 @@ export default function Metrics() {
                         <td>{s.pacientesCount}</td>
                         <td className="font-mono">${s.ingresos.toLocaleString()}</td>
                         <td className="font-mono">${s.ticket.toFixed(0)}</td>
+                        <td className="font-mono">{s.diarioConsultas || "—"}</td>
+                        <td className="font-mono">{s.diarioFacturado ? fmt(s.diarioFacturado) : "—"}</td>
+                        <td className="font-mono">{s.diarioCobrado ? fmt(s.diarioCobrado) : "—"}</td>
                         <td className="text-right"><Badge variant={specialistById[s.id]?.is_active ? "secondary" : "outline"}>{specialistById[s.id]?.is_active ? "Activo" : "Inactivo"}</Badge></td>
                       </tr>
                     ))}
@@ -290,6 +346,66 @@ export default function Metrics() {
                 </table>
               </CardContent>
             </Card>
+          </TabsContent>
+
+          <TabsContent value="consultorio">
+            {/* KPIs */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+              <Stat icon={<BookOpen className="text-violet-600" />} label="Consultas" value={consultTotals.consultas.toString()} />
+              <Stat icon={<DollarSign className="text-teal-600" />} label="Cobrado" value={fmt(consultTotals.cobrado)} />
+              <Stat icon={<TrendingUp className="text-blue-600" />} label="Total facturado" value={fmt(consultTotals.costo)} />
+              <Stat icon={<AlertCircle className={consultTotals.pendiente > 0 ? "text-amber-600" : "text-green-600"} />} label="Pendiente" value={fmt(consultTotals.pendiente)} />
+            </div>
+            {/* Daily chart */}
+            {consultDaily.length > 0 && (
+              <Card className="mb-4">
+                <CardHeader className="pb-2"><CardTitle className="text-base">Consultas diarias</CardTitle><CardDescription>Últimos registros del periodo</CardDescription></CardHeader>
+                <CardContent style={{ height: 300 }}>
+                  <ResponsiveContainer>
+                    <BarChart data={consultDaily}>
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis dataKey="day" tick={{ fontSize: 11 }} />
+                      <YAxis yAxisId="left" />
+                      <YAxis yAxisId="right" orientation="right" tickFormatter={(v: number) => `$${v.toLocaleString()}`} />
+                      <ReTooltip formatter={(v: number, name: string) => name === "consultas" ? v : `$${v.toLocaleString()}`} />
+                      <Legend />
+                      <Bar yAxisId="left" dataKey="consultas" fill="#8b5cf6" name="Consultas" radius={[4, 4, 0, 0]} />
+                      <Bar yAxisId="right" dataKey="cobrado" fill="#14b8a6" name="Cobrado" radius={[4, 4, 0, 0]} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </CardContent>
+              </Card>
+            )}
+            {/* By specialist */}
+            {consultPerSpecialist.length > 0 && (
+              <Card>
+                <CardHeader className="pb-2"><CardTitle className="text-base">Por médico</CardTitle></CardHeader>
+                <CardContent className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead><tr className="text-left text-muted-foreground"><th className="py-2">Médico</th><th>Consultas</th><th>Facturado</th><th>Cobrado</th><th>Pendiente</th></tr></thead>
+                    <tbody>
+                      {consultPerSpecialist.map((s) => (
+                        <tr key={s.nombre} className="border-t">
+                          <td className="py-2 font-medium">{s.nombre}</td>
+                          <td>{s.consultas}</td>
+                          <td className="font-mono">{fmt(s.costo)}</td>
+                          <td className="font-mono">{fmt(s.cobrado)}</td>
+                          <td className="font-mono">{fmt(s.costo - s.cobrado)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </CardContent>
+              </Card>
+            )}
+            {consultLog.length === 0 && (
+              <Card>
+                <CardContent className="py-8 text-center text-muted-foreground">
+                  <BookOpen className="w-8 h-8 mx-auto mb-2 opacity-40" />
+                  <p>No hay registros en el diario para este periodo.</p>
+                </CardContent>
+              </Card>
+            )}
           </TabsContent>
 
           <TabsContent value="trends">
