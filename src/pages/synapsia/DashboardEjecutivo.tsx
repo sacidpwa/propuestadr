@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { ArrowLeft, LogOut, ClipboardList, ShoppingCart, FileSpreadsheet, FileText, DollarSign, AlertTriangle, Building2, ShieldCheck } from "lucide-react";
+import { ArrowLeft, LogOut, ClipboardList, ShoppingCart, FileSpreadsheet, FileText, DollarSign, AlertTriangle, Building2, ShieldCheck, Users, UserCheck, Scale, Calculator, Crown, Wallet } from "lucide-react";
 import synapsiaIcon from "@/assets/synapsia-icon.svg";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
@@ -228,6 +228,24 @@ export default function DashboardEjecutivo() {
             <CardContent className="space-y-2">
               <Button variant="outline" size="sm" className="w-full justify-start" onClick={() => navigate("/synapsia/autorizaciones")}>
                 <ShieldCheck className="w-4 h-4 mr-2" /> Centro de autorizaciones
+              </Button>
+              <Button variant="outline" size="sm" className="w-full justify-start" onClick={() => navigate("/synapsia/expenses")}>
+                <Wallet className="w-4 h-4 mr-2" /> Gastos generales
+              </Button>
+              <Button variant="outline" size="sm" className="w-full justify-start" onClick={() => navigate("/synapsia/users")}>
+                <Users className="w-4 h-4 mr-2" /> Usuarios
+              </Button>
+              <Button variant="outline" size="sm" className="w-full justify-start" onClick={() => navigate("/synapsia/plantilla")}>
+                <UserCheck className="w-4 h-4 mr-2" /> Plantilla laboral
+              </Button>
+              <Button variant="outline" size="sm" className="w-full justify-start" onClick={() => navigate("/synapsia/evaluaciones")}>
+                <Scale className="w-4 h-4 mr-2" /> Evaluaciones
+              </Button>
+              <Button variant="outline" size="sm" className="w-full justify-start" onClick={() => navigate("/synapsia/cotizador")}>
+                <Calculator className="w-4 h-4 mr-2" /> Cotizador
+              </Button>
+              <Button variant="outline" size="sm" className="w-full justify-start" onClick={() => navigate("/synapsia/dueno")}>
+                <Crown className="w-4 h-4 mr-2" /> Dashboard dueño
               </Button>
               {units.map(u => (
                 <Button key={u.id} variant="ghost" size="sm" className="w-full justify-start" onClick={() => navigate(`/synapsia/unidades/${u.id}`)}>
