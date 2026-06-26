@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { ArrowLeft, LogOut, ClipboardList, ShoppingCart, FileSpreadsheet, FileText, DollarSign, AlertTriangle, Building2, ShieldCheck, Users, UserCheck, Scale, Calculator, Crown, Wallet } from "lucide-react";
+import { ArrowLeft, LogOut, ClipboardList, ShoppingCart, FileSpreadsheet, FileText, DollarSign, AlertTriangle, Building2, ShieldCheck, Users, UserCheck, Scale, Calculator, Crown, Wallet, CalendarIcon, BarChart3 } from "lucide-react";
 import synapsiaIcon from "@/assets/synapsia-icon.svg";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
@@ -226,6 +226,15 @@ export default function DashboardEjecutivo() {
           <Card>
             <CardHeader className="pb-2"><CardTitle className="text-sm flex items-center gap-2"><Building2 className="w-4 h-4" />Acceso rápido</CardTitle></CardHeader>
             <CardContent className="space-y-2">
+              <Button variant="outline" size="sm" className="w-full justify-start" onClick={() => navigate("/synapsia/calendar")}>
+                <CalendarIcon className="w-4 h-4 mr-2" /> Agenda
+              </Button>
+              <Button variant="outline" size="sm" className="w-full justify-start" onClick={() => navigate("/synapsia/patients")}>
+                <Users className="w-4 h-4 mr-2" /> Pacientes
+              </Button>
+              <Button variant="outline" size="sm" className="w-full justify-start" onClick={() => navigate("/synapsia/metrics")}>
+                <BarChart3 className="w-4 h-4 mr-2" /> Métricas
+              </Button>
               <Button variant="outline" size="sm" className="w-full justify-start" onClick={() => navigate("/synapsia/autorizaciones")}>
                 <ShieldCheck className="w-4 h-4 mr-2" /> Centro de autorizaciones
               </Button>
@@ -233,16 +242,19 @@ export default function DashboardEjecutivo() {
                 <Wallet className="w-4 h-4 mr-2" /> Gastos generales
               </Button>
               <Button variant="outline" size="sm" className="w-full justify-start" onClick={() => navigate("/synapsia/users")}>
-                <Users className="w-4 h-4 mr-2" /> Usuarios
+                <UserCheck className="w-4 h-4 mr-2" /> Usuarios y roles
+              </Button>
+              <Button variant="outline" size="sm" className="w-full justify-start" onClick={() => navigate("/synapsia/admin")}>
+                <DollarSign className="w-4 h-4 mr-2" /> Admin
+              </Button>
+              <Button variant="outline" size="sm" className="w-full justify-start" onClick={() => navigate("/synapsia/cotizador")}>
+                <Calculator className="w-4 h-4 mr-2" /> Cotizador
               </Button>
               <Button variant="outline" size="sm" className="w-full justify-start" onClick={() => navigate("/synapsia/plantilla")}>
                 <UserCheck className="w-4 h-4 mr-2" /> Plantilla laboral
               </Button>
               <Button variant="outline" size="sm" className="w-full justify-start" onClick={() => navigate("/synapsia/evaluaciones")}>
                 <Scale className="w-4 h-4 mr-2" /> Evaluaciones
-              </Button>
-              <Button variant="outline" size="sm" className="w-full justify-start" onClick={() => navigate("/synapsia/cotizador")}>
-                <Calculator className="w-4 h-4 mr-2" /> Cotizador
               </Button>
               <Button variant="outline" size="sm" className="w-full justify-start" onClick={() => navigate("/synapsia/dueno")}>
                 <Crown className="w-4 h-4 mr-2" /> Dashboard dueño
