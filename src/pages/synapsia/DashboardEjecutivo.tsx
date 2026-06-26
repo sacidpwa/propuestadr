@@ -226,12 +226,6 @@ export default function DashboardEjecutivo() {
           <Card>
             <CardHeader className="pb-2"><CardTitle className="text-sm flex items-center gap-2"><Building2 className="w-4 h-4" />Acceso rápido</CardTitle></CardHeader>
             <CardContent className="space-y-2">
-              <Button variant="outline" size="sm" className="w-full justify-start" onClick={() => navigate("/synapsia/calendar")}>
-                <CalendarIcon className="w-4 h-4 mr-2" /> Agenda
-              </Button>
-              <Button variant="outline" size="sm" className="w-full justify-start" onClick={() => navigate("/synapsia/patients")}>
-                <Users className="w-4 h-4 mr-2" /> Pacientes
-              </Button>
               <Button variant="outline" size="sm" className="w-full justify-start" onClick={() => navigate("/synapsia/metrics")}>
                 <BarChart3 className="w-4 h-4 mr-2" /> Métricas
               </Button>
@@ -241,23 +235,11 @@ export default function DashboardEjecutivo() {
               <Button variant="outline" size="sm" className="w-full justify-start" onClick={() => navigate("/synapsia/expenses")}>
                 <Wallet className="w-4 h-4 mr-2" /> Gastos generales
               </Button>
-              <Button variant="outline" size="sm" className="w-full justify-start" onClick={() => navigate("/synapsia/users")}>
-                <UserCheck className="w-4 h-4 mr-2" /> Usuarios y roles
-              </Button>
-              <Button variant="outline" size="sm" className="w-full justify-start" onClick={() => navigate("/synapsia/admin")}>
-                <DollarSign className="w-4 h-4 mr-2" /> Admin
-              </Button>
               <Button variant="outline" size="sm" className="w-full justify-start" onClick={() => navigate("/synapsia/cotizador")}>
                 <Calculator className="w-4 h-4 mr-2" /> Cotizador
               </Button>
               <Button variant="outline" size="sm" className="w-full justify-start" onClick={() => navigate("/synapsia/plantilla")}>
                 <UserCheck className="w-4 h-4 mr-2" /> Plantilla laboral
-              </Button>
-              <Button variant="outline" size="sm" className="w-full justify-start" onClick={() => navigate("/synapsia/evaluaciones")}>
-                <Scale className="w-4 h-4 mr-2" /> Evaluaciones
-              </Button>
-              <Button variant="outline" size="sm" className="w-full justify-start" onClick={() => navigate("/synapsia/dueno")}>
-                <Crown className="w-4 h-4 mr-2" /> Dashboard dueño
               </Button>
               {units.map(u => (
                 <Button key={u.id} variant="ghost" size="sm" className="w-full justify-start" onClick={() => navigate(`/synapsia/unidades/${u.id}`)}>
