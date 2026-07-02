@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ArrowLeft, LogOut, Save, Search, UserPlus, Pencil, Phone, Mail, Cake, MapPin, Users, ShieldAlert, DollarSign, Calendar, ExternalLink, Archive, Trash2, RefreshCw } from "lucide-react";
+import { ArrowLeft, LogOut, Save, Search, UserPlus, Pencil, Phone, Mail, Cake, MapPin, Users, ShieldAlert, DollarSign, Calendar, ExternalLink, Trash2 } from "lucide-react";
 import synapsiaIcon from "@/assets/synapsia-icon.svg";
 import { toast } from "@/hooks/use-toast";
 import { format } from "date-fns";
@@ -18,7 +18,6 @@ import { es } from "date-fns/locale";
 interface Patient {
   id: string; full_name: string; phone: string | null; email: string | null;
   date_of_birth: string | null; notes: string | null; health_unit_id: string | null;
-  is_active: boolean;
 }
 
 export default function RegistroPaciente() {
@@ -31,7 +30,6 @@ export default function RegistroPaciente() {
   const [tab, setTab] = useState("nuevo");
   const [editId, setEditId] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
-  const [showInactive, setShowInactive] = useState(false);
   const canReactivate = hasRole("admin") || hasRole("dueno");
 
   const [form, setForm] = useState({
@@ -53,13 +51,12 @@ export default function RegistroPaciente() {
   async function loadPatients() {
     if (!unitId) return;
     const { data } = await (supabase.from as any)("patients")
-      .select("id, full_name, phone, email, date_of_birth, notes, health_unit_id, is_active")
+      .select("id, full_name, phone, email, date_of_birth, notes, health_unit_id")
       .eq("health_unit_id", unitId).order("full_name");
     setPatients((data as any) || []);
   }
 
   const filtered = patients.filter(p =>
-    (showInactive || p.is_active !== false) &&
     p.full_name.toLowerCase().includes(search.toLowerCase())
   );
 
@@ -144,14 +141,6 @@ export default function RegistroPaciente() {
       loadPatients();
     }
     setSaving(false);
-  }
-
-  async function handleArchive(id: string, active: boolean) {
-    if (active && !confirm("¿Reactivar este paciente?")) return;
-    if (!active && !confirm("¿Archivar este paciente? Dejará de aparecer en listados activos.")) return;
-    await (supabase.from as any)("patients").update({ is_active: active }).eq("id", id);
-    toast({ title: active ? "Paciente reactivado" : "Paciente archivado" });
-    loadPatients();
   }
 
   async function handleDelete(id: string) {
@@ -314,10 +303,6 @@ export default function RegistroPaciente() {
                 <div className="flex items-center gap-3 flex-wrap">
                   <Input placeholder="Buscar por nombre..." value={search} onChange={e => setSearch(e.target.value)}
                     className="max-w-sm" />
-                  <label className="flex items-center gap-2 text-sm cursor-pointer">
-                    <input type="checkbox" checked={showInactive} onChange={e => setShowInactive(e.target.checked)} className="h-4 w-4" />
-                    Mostrar inactivos
-                  </label>
                 </div>
                 {filtered.length === 0 ? (
                   <p className="text-sm text-muted-foreground py-4 text-center">No se encontraron pacientes.</p>
@@ -326,26 +311,13 @@ export default function RegistroPaciente() {
                     {filtered.map(p => (
                       <div key={p.id} className="flex items-center justify-between p-3 rounded-lg border hover:bg-accent/50">
                         <div className="flex-1 cursor-pointer" onClick={() => navigate(`/synapsia/unidades/${unitId}/paciente/${p.id}`)}>
-                          <p className="font-medium">
-                            {p.full_name}
-                            {p.is_active === false && <span className="ml-2 text-xs text-muted-foreground border rounded px-1.5 py-0.5">Inactivo</span>}
-                          </p>
+                          <p className="font-medium">{p.full_name}</p>
                           <p className="text-xs text-muted-foreground">
                             {p.phone && <><Phone className="w-3 h-3 inline mr-1" />{p.phone} </>}
                             {p.date_of_birth && <><Cake className="w-3 h-3 inline mr-1" />{format(new Date(p.date_of_birth), "PP", { locale: es })}</>}
                           </p>
                         </div>
                         <div className="flex items-center gap-1 ml-3">
-                          {p.is_active === false && canReactivate && (
-                            <Button variant="outline" size="sm" onClick={() => handleArchive(p.id, true)} title="Reactivar">
-                              <RefreshCw className="w-3.5 h-3.5" />
-                            </Button>
-                          )}
-                          {p.is_active !== false && (
-                            <Button variant="outline" size="sm" onClick={() => handleArchive(p.id, false)} title="Archivar">
-                              <Archive className="w-3.5 h-3.5" />
-                            </Button>
-                          )}
                           {canReactivate && (
                             <Button variant="outline" size="sm" onClick={() => handleDelete(p.id)} className="text-destructive" title="Eliminar permanentemente">
                               <Trash2 className="w-3.5 h-3.5" />

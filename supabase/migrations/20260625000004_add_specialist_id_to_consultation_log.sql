@@ -1,5 +1,5 @@
 -- Add specialist_id FK to consultation_log
-ALTER TABLE consultation_log ADD COLUMN specialist_id UUID REFERENCES specialists(id) ON DELETE SET NULL;
+ALTER TABLE consultation_log ADD COLUMN IF NOT EXISTS specialist_id UUID REFERENCES specialists(id) ON DELETE SET NULL;
 CREATE INDEX idx_consultation_log_specialist_id ON consultation_log(specialist_id);
 
 -- Create missing specialists
