@@ -51,6 +51,7 @@ export default function GastosUnidad() {
   const [form, setForm] = useState({ entry_type: "gasto", description: "", amount: 0, category: "", notes: "", operation_date: format(new Date(), "yyyy-MM-dd"), file: undefined as File | undefined, patient_id: "", patient_name: "" });
   const [patients, setPatients] = useState<{ id: string; full_name: string }[]>([]);
   const [patientSearch, setPatientSearch] = useState("");
+  const [paymentType, setPaymentType] = useState("");
 
   const isEditing = !!editingId;
 
@@ -142,6 +143,7 @@ export default function GastosUnidad() {
     setEditingId(null);
     setForm(defaultForm());
     setPatientSearch("");
+    setPaymentType("");
     setOpen(true);
   }
 
@@ -159,6 +161,7 @@ export default function GastosUnidad() {
       patient_name: entry.patient_name || "",
     });
     setPatientSearch(entry.patient_name || "");
+    setPaymentType(entry.entry_type === "ingreso" && entry.patient_id ? (entry.category === "Nota de venta" ? "nota_venta" : "mensualidad") : "");
     setOpen(true);
   }
 
@@ -173,7 +176,7 @@ export default function GastosUnidad() {
       entry_type: form.entry_type,
       description: form.description,
       amount: form.amount,
-      category: form.category || null,
+      category: form.entry_type === "ingreso" && form.patient_id && paymentType ? (paymentType === "mensualidad" ? "Mensualidad" : "Nota de venta") : form.category || null,
       notes: form.notes || null,
       operation_date: form.operation_date,
       expense_date: form.operation_date,
@@ -320,6 +323,7 @@ export default function GastosUnidad() {
                     onChange={e => {
                       setPatientSearch(e.target.value);
                       setForm({ ...form, patient_id: "", patient_name: "" });
+                      setPaymentType("");
                     }}
                     list="incomePatients"
                   />
@@ -335,12 +339,24 @@ export default function GastosUnidad() {
                           key={p.id}
                           type="button"
                           className="w-full text-left px-2 py-1 hover:bg-accent"
-                          onClick={() => { setPatientSearch(p.full_name); setForm({ ...form, patient_id: p.id, patient_name: p.full_name }); }}
+                          onClick={() => { setPatientSearch(p.full_name); setForm({ ...form, patient_id: p.id, patient_name: p.full_name }); setPaymentType("mensualidad"); }}
                         >
                           {p.full_name}
                         </button>
                       ))}
                       {!filteredPatients.length && <p className="px-2 py-1 text-muted-foreground">Sin resultados</p>}
+                    </div>
+                  )}
+                  {form.patient_id && (
+                    <div className="mt-2">
+                      <Label>Tipo de abono</Label>
+                      <Select value={paymentType} onValueChange={setPaymentType}>
+                        <SelectTrigger><SelectValue placeholder="Seleccionar..." /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="mensualidad">Abono a mensualidad</SelectItem>
+                          <SelectItem value="nota_venta">Abono a nota de venta</SelectItem>
+                        </SelectContent>
+                      </Select>
                     </div>
                   )}
                 </div>
