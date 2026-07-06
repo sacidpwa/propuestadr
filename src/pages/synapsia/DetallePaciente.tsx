@@ -68,6 +68,7 @@ export default function DetallePaciente() {
   const [pinAction, setPinAction] = useState<"edit" | null>(null);
   const [saving, setSaving] = useState(false);
   const [payments, setPayments] = useState<FeePayment[]>([]);
+  const [incomeEntries, setIncomeEntries] = useState<any[]>([]);
   const [invoices, setInvoices] = useState<PatientInvoice[]>([]);
   const [newInvoiceOpen, setNewInvoiceOpen] = useState(false);
   const [invForm, setInvForm] = useState({ concept: "", amount: 0, invoice_date: format(new Date(), "yyyy-MM-dd"), category: "" });
@@ -109,6 +110,7 @@ export default function DetallePaciente() {
   useEffect(() => {
     if (!patientId || !patient) return;
     loadPayments();
+    loadIncomeEntries();
     loadInvoices();
   }, [patientId, patient, periodStart, periodEnd]);
 
@@ -172,6 +174,18 @@ export default function DetallePaciente() {
     setPayments((pmts as any) || []);
   }
 
+  async function loadIncomeEntries() {
+    if (!patientId) return;
+    const { data } = await (supabase.from as any)("expense_entries")
+      .select("*")
+      .eq("patient_id", patientId)
+      .eq("entry_type", "ingreso")
+      .gte("expense_date", periodStart)
+      .lte("expense_date", periodEnd)
+      .order("expense_date", { ascending: false });
+    setIncomeEntries((data as any) || []);
+  }
+
   async function loadInvoices() {
     const { data } = await (supabase.from as any)("patient_invoices")
       .select("*").eq("patient_id", patientId)
@@ -206,6 +220,15 @@ export default function DetallePaciente() {
         description: `PAGO - ${(p.method || "").toUpperCase()}`,
         charge: 0,
         payment: Number(p.amount),
+      });
+    });
+    incomeEntries.forEach(e => {
+      rows.push({
+        date: format(new Date(e.expense_date), "dd/MM/yyyy"),
+        quantity: 1,
+        description: `INGRESO - ${e.description || e.category || ""}`,
+        charge: 0,
+        payment: Number(e.amount),
       });
     });
     rows.sort((a, b) => a.date.localeCompare(b.date));
@@ -299,7 +322,7 @@ export default function DetallePaciente() {
   );
 
   const totalInvoiced = invoices.reduce((s, i) => s + Number(i.amount), 0);
-  const totalPaid = payments.reduce((s, p) => s + Number(p.amount), 0);
+  const totalPaid = payments.reduce((s, p) => s + Number(p.amount), 0) + incomeEntries.reduce((s, e) => s + Number(e.amount), 0);
   const monthlyFeeNum = parseFloat(patient.monthly_fee) || 0;
 
   return (
@@ -470,7 +493,7 @@ export default function DetallePaciente() {
               </CardHeader>
               <CardContent className="p-0">
                 {payments.length === 0 ? (
-                  <CardContent className="text-center text-muted-foreground py-8">Sin pagos registrados en el año.</CardContent>
+                  <CardContent className="text-center text-muted-foreground py-8">Sin pagos registrados en el período.</CardContent>
                 ) : (
                   <div className="overflow-x-auto">
                     <table className="w-full text-sm">
@@ -489,6 +512,41 @@ export default function DetallePaciente() {
                             <td className="px-4 py-2 capitalize">{p.method || "—"}</td>
                             <td className="px-4 py-2 font-mono text-xs">{p.reference || "—"}</td>
                             <td className="px-4 py-2 text-right font-mono font-medium">${Number(p.amount).toLocaleString()}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-sm flex items-center gap-2">
+                  <Receipt className="w-4 h-4" /> Ingresos asignados
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="p-0">
+                {incomeEntries.length === 0 ? (
+                  <CardContent className="text-center text-muted-foreground py-8">Sin ingresos asignados en el período.</CardContent>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr className="border-b text-muted-foreground text-xs">
+                          <th className="text-left px-4 py-2 font-medium">Fecha</th>
+                          <th className="text-left px-4 py-2 font-medium">Descripción</th>
+                          <th className="text-left px-4 py-2 font-medium">Categoría</th>
+                          <th className="text-right px-4 py-2 font-medium">Monto</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {incomeEntries.map(e => (
+                          <tr key={e.id} className="border-b last:border-0 hover:bg-muted/50">
+                            <td className="px-4 py-2">{format(new Date(e.expense_date), "PP", { locale: es })}</td>
+                            <td className="px-4 py-2 text-xs">{e.description || "—"}</td>
+                            <td className="px-4 py-2 text-xs text-muted-foreground">{e.category || "—"}</td>
+                            <td className="px-4 py-2 text-right font-mono font-medium text-green-700">${Number(e.amount).toLocaleString()}</td>
                           </tr>
                         ))}
                       </tbody>

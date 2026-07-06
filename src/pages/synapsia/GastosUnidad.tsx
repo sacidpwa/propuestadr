@@ -84,7 +84,7 @@ export default function GastosUnidad() {
   useEffect(() => {
     if (!unitId) return;
     (async () => {
-      const { data } = await (supabase.from as any)("patients").select("id, full_name").eq("health_unit_id", unitId).order("full_name");
+      const { data } = await (supabase.from as any)("patients").select("id, full_name").order("full_name");
       setPatients((data as any) || []);
     })();
   }, [unitId]);

@@ -11,7 +11,7 @@ import {
   ArrowLeft, LogOut, Menu, X, Pill, Wallet, FileText, Users, ClipboardList,
   Sparkles, Wrench, HandCoins, Receipt, ShoppingBag, ShoppingCart, Package,
   ClipboardCheck, Building2, UserCheck, TrendingUp, TrendingDown, DollarSign,
-  AlertCircle, ChevronLeft, ChevronRight, BookOpen
+  AlertCircle, ChevronLeft, ChevronRight, BookOpen, PiggyBank
 } from "lucide-react";
 import synapsiaIcon from "@/assets/synapsia-icon.svg";
 import { format } from "date-fns";
@@ -44,6 +44,7 @@ const APPS: AppEntry[] = [
   { key: "confirmar-inventario", label: "Confirmar inventario", desc: "Conteo físico cada 3 días", icon: ClipboardCheck, route: "confirmar-inventario", roles: ["admin", "dueno", "enfermera"] },
   { key: "precios", label: "Precios por servicio", desc: "Catálogo de precios de la unidad", icon: DollarSign, route: "precios", roles: ["admin", "dueno", "administrativo", "asistente_admin", "contador", "enfermera"] },
   { key: "diario", label: "Diario de pacientes", desc: "Registro diario de consultas y pagos", icon: BookOpen, route: "diario", roles: ["admin", "dueno", "administrativo", "asistente_admin", "recepcion"] },
+  { key: "caja-chica", label: "Caja Chica", desc: "Control de efectivo menor por unidad", icon: PiggyBank, route: "caja-chica", roles: ["admin", "dueno", "administrativo", "contador"] },
 ];
 
 interface MonthlyEntry { month: string; ingresos: number; gastos: number; }
