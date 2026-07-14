@@ -9,7 +9,7 @@ const SCOPES = [
   "https://www.googleapis.com/auth/calendar.readonly",
 ].join(" ");
 
-export function getGoogleAuthUrl(state?: string): string {
+export function getAuthUrl(state?: string): string {
   const params = new URLSearchParams({
     client_id: GOOGLE_CLIENT_ID!,
     redirect_uri: REDIRECT_URI,
@@ -102,7 +102,7 @@ export interface GoogleEvent {
   extendedProperties?: { private?: Record<string, string> };
 }
 
-export async function createGoogleEvent(
+export async function createCalendarEvent(
   accessToken: string,
   calendarId: string,
   event: GoogleEvent
@@ -126,7 +126,7 @@ export async function createGoogleEvent(
   return response.json();
 }
 
-export async function updateGoogleEvent(
+export async function updateCalendarEvent(
   accessToken: string,
   calendarId: string,
   eventId: string,
@@ -151,7 +151,7 @@ export async function updateGoogleEvent(
   return true;
 }
 
-export async function deleteGoogleEvent(
+export async function deleteCalendarEvent(
   accessToken: string,
   calendarId: string,
   eventId: string
