@@ -15,7 +15,7 @@ import { format, addDays, startOfWeek, isSameDay, parseISO } from "date-fns";
 import { es } from "date-fns/locale";
 import { ArrowLeft, Brain, CalendarPlus, ChevronLeft, ChevronRight, LogOut, Loader2, Trash2, UserPlus, XCircle, CalendarCheck, Link as LinkIcon, RefreshCw } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { getAuthUrl, buildEventFromAppointment, createCalendarEvent, updateCalendarEvent, deleteCalendarEvent, getValidAccessToken } from "@/lib/googleCalendar";
+import { getAuthUrl, buildEventFromAppointment, createCalendarEvent, updateCalendarEvent, deleteCalendarEvent, getValidAccessToken, listGoogleEvents, type GoogleEvent } from "@/lib/googleCalendar";
 
 interface Specialist { id: string; full_name: string; specialty: string; user_id: string | null; }
 interface Patient { id: string; full_name: string; }
@@ -84,6 +84,7 @@ export default function CalendarPage() {
   const [gcalConnected, setGcalConnected] = useState(false);
   const [gcalConnecting, setGcalConnecting] = useState(false);
   const [mySpecialistId, setMySpecialistId] = useState<string | null>(null);
+  const [gcalEvents, setGcalEvents] = useState<GoogleEvent[]>([]);
 
   useEffect(() => {
     const spec = specialists.find(s => s.user_id === user?.id);
@@ -100,7 +101,22 @@ export default function CalendarPage() {
       .select("google_access_token, google_refresh_token, calendar_sync_enabled")
       .eq("id", specialistId)
       .single();
-    setGcalConnected(!!(data?.google_access_token && data?.calendar_sync_enabled));
+    const connected = !!(data?.google_access_token && data?.calendar_sync_enabled);
+    setGcalConnected(connected);
+    if (connected) fetchGcalEvents(specialistId);
+  };
+
+  const fetchGcalEvents = async (specialistId: string) => {
+    try {
+      const accessToken = await getValidAccessToken(specialistId);
+      if (!accessToken) return;
+      const from = weekStart.toISOString();
+      const to = addDays(weekStart, 7).toISOString();
+      const result = await listGoogleEvents(accessToken, "primary", from, to);
+      setGcalEvents(result.items || []);
+    } catch (err) {
+      console.error("Error fetching GCal events:", err);
+    }
   };
 
   const connectGoogleCalendar = () => {
@@ -111,7 +127,7 @@ export default function CalendarPage() {
   };
 
   useEffect(() => { fetchSpecialists(); fetchPatients(); }, []);
-  useEffect(() => { fetchAppointments(); /* eslint-disable-next-line */ }, [weekStart, specialists]);
+  useEffect(() => { fetchAppointments(); if (gcalConnected && mySpecialistId) fetchGcalEvents(mySpecialistId); /* eslint-disable-next-line */ }, [weekStart, specialists]);
 
   const fetchSpecialists = async () => {
     const { data } = await supabase.from("specialists").select("id, full_name, specialty, user_id").eq("is_active", true).order("full_name");
@@ -396,6 +412,10 @@ export default function CalendarPage() {
                       const ad = parseISO(a.scheduled_at);
                       return isSameDay(ad, d) && ad.getHours() === h;
                     });
+                    const gcalSlot = gcalEvents.filter((ev) => {
+                      const start = new Date(ev.start?.dateTime || ev.start?.date || "");
+                      return isSameDay(start, d) && start.getHours() === h;
+                    });
                     return (
                       <div
                         key={`${d.toISOString()}-${h}`}
@@ -411,6 +431,16 @@ export default function CalendarPage() {
                             <div className="font-semibold truncate">{format(parseISO(a.scheduled_at), "HH:mm")} · {a.appointment_type === "personal" ? (a.reason || "Personal") : (patients.find(p => p.id === a.patient_id)?.full_name || "Paciente")}</div>
                             <div className="truncate opacity-80">{specialists.find(s => s.id === a.specialist_id)?.full_name || ""}</div>
                           </button>
+                        ))}
+                        {gcalSlot.map((ev, i) => (
+                          <div
+                            key={`gcal-${i}`}
+                            className="w-full text-left rounded p-1 text-[11px] mb-1 border bg-blue-50 text-blue-800 border-blue-200 cursor-default"
+                            title={ev.description || "Evento de Google Calendar"}
+                          >
+                            <div className="font-semibold truncate">{format(new Date(ev.start?.dateTime || ev.start?.date || ""), "HH:mm")} · {ev.summary}</div>
+                            <div className="truncate opacity-80">Google Calendar</div>
+                          </div>
                         ))}
                       </div>
                     );
