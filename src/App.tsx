@@ -47,6 +47,7 @@ import CajaChica from "./pages/synapsia/CajaChica";
 import GoogleCallback from "./pages/synapsia/GoogleCallback";
 import PrivacyPolicy from "./pages/synapsia/PrivacyPolicy";
 import TermsOfService from "./pages/synapsia/TermsOfService";
+import LandingPage from "./pages/synapsia/LandingPage";
 import ProtectedRoute from "./components/synapsia/ProtectedRoute";
 import OwnerOnlyRoute from "./components/synapsia/OwnerOnlyRoute";
 import { AuthProvider, useAuth } from "./hooks/useAuth";
@@ -89,7 +90,7 @@ const App = () => (
       <BrowserRouter>
         <AuthProvider>
           <Routes>
-            <Route path="/" element={<SynapsiaLogin />} />
+            <Route path="/" element={<LandingPage />} />
             <Route path="/propuesta" element={<OwnerOnlyRoute><Index /></OwnerOnlyRoute>} />
             <Route path="/contratos" element={<OwnerOnlyRoute><Contratos /></OwnerOnlyRoute>} />
             <Route path="/synapsia/login" element={<SynapsiaLogin />} />
