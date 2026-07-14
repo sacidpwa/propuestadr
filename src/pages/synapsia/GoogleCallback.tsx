@@ -43,7 +43,7 @@ export default function GoogleCallback() {
         const { error } = await supabase.from("specialists").update({
           google_access_token: tokens.access_token,
           google_refresh_token: tokens.refresh_token,
-          google_token_expiry: new Date(tokens.expiry_date).toISOString(),
+          google_token_expiry: new Date(Date.now() + (tokens.expires_in || 3600) * 1000).toISOString(),
           calendar_sync_enabled: true,
           google_calendar_id: "primary",
         }).eq("id", specialistId);

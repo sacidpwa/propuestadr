@@ -43,6 +43,7 @@ import AsistenteAdminHome from "./pages/synapsia/AsistenteAdminHome";
 import RegistroPaciente from "./pages/synapsia/RegistroPaciente";
 import DetallePaciente from "./pages/synapsia/DetallePaciente";
 import DiarioPacientes from "./pages/synapsia/DiarioPacientes";
+import CajaChica from "./pages/synapsia/CajaChica";
 import GoogleCallback from "./pages/synapsia/GoogleCallback";
 import ProtectedRoute from "./components/synapsia/ProtectedRoute";
 import OwnerOnlyRoute from "./components/synapsia/OwnerOnlyRoute";
