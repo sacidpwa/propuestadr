@@ -13,7 +13,7 @@ import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { format, addDays, startOfWeek, isSameDay, parseISO } from "date-fns";
 import { es } from "date-fns/locale";
-import { ArrowLeft, Brain, CalendarPlus, ChevronLeft, ChevronRight, LogOut, Loader2, Trash2, UserPlus, XCircle, CalendarCheck, Link as LinkIcon, RefreshCw } from "lucide-react";
+import { ArrowLeft, Brain, CalendarPlus, ChevronLeft, ChevronRight, LogOut, Loader2, Trash2, UserPlus, XCircle, CalendarCheck, CheckCircle, Link as LinkIcon, RefreshCw } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { getAuthUrl, buildEventFromAppointment, createCalendarEvent, updateCalendarEvent, deleteCalendarEvent, getValidAccessToken, listGoogleEvents, type GoogleEvent, listTaskLists, listTasks, createTask, completeTask, deleteTask, type GoogleTask, type GoogleTaskList } from "@/lib/googleCalendar";
 
@@ -205,6 +205,20 @@ export default function CalendarPage() {
       setGcalTasks(prev => prev.filter(t => t.id !== taskId));
       toast({ title: "Tarea eliminada" });
     }
+  };
+
+  const disconnectGoogleCalendar = async () => {
+    if (!mySpecialistId) return;
+    await supabase.from("specialists").update({
+      google_access_token: null,
+      google_refresh_token: null,
+      google_token_expiry: null,
+      calendar_sync_enabled: false,
+    }).eq("id", mySpecialistId);
+    setGcalConnected(false);
+    setGcalEvents([]);
+    setGcalTasks([]);
+    toast({ title: "Google Calendar desconectado" });
   };
 
   const connectGoogleCalendar = () => {
@@ -468,8 +482,8 @@ export default function CalendarPage() {
           {mySpecialistId && (
             <>
               {gcalConnected ? (
-                <Button variant="outline" size="sm" className="gap-1" disabled={gcalConnecting}>
-                  <CalendarCheck className="w-4 h-4" /> Google Calendar conectado
+                <Button variant="outline" size="sm" className="gap-1" onClick={disconnectGoogleCalendar}>
+                  <CalendarCheck className="w-4 h-4" /> Google Calendar conectado (click para desconectar)
                 </Button>
               ) : (
                 <Button variant="secondary" size="sm" onClick={connectGoogleCalendar} disabled={gcalConnecting}>
