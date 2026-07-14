@@ -132,7 +132,6 @@ export default function CalendarPage() {
           if (localAppt) {
             const gcalStart = new Date(ev.start?.dateTime || ev.start?.date || "");
             const localStart = parseISO(localAppt.scheduled_at);
-            // If times differ significantly (>1 min), GCal was modified externally
             if (Math.abs(gcalStart.getTime() - localStart.getTime()) > 60000) {
               const newEnd = new Date(gcalStart.getTime() + (localAppt.duration_minutes || 60) * 60_000);
               await supabase.from("appointments").update({
@@ -140,6 +139,29 @@ export default function CalendarPage() {
                 duration_minutes: Math.round((newEnd.getTime() - gcalStart.getTime()) / 60000),
               }).eq("id", synapsiaId);
               toast({ title: "Cita actualizada desde Google Calendar" });
+            }
+          }
+        } else if (ev.id && ev.start?.dateTime) {
+          // External GCal event without synapsia link — create as personal appointment
+          const existing = appointments.find(a => a.google_event_id === ev.id);
+          if (!existing) {
+            const gcalStart = new Date(ev.start.dateTime);
+            const gcalEnd = ev.end?.dateTime ? new Date(ev.end.dateTime) : new Date(gcalStart.getTime() + 60 * 60000);
+            const durationMinutes = Math.round((gcalEnd.getTime() - gcalStart.getTime()) / 60000);
+            const { data: newAppt } = await supabase.from("appointments").insert({
+              patient_id: null,
+              specialist_id: mySpecialistId,
+              scheduled_at: gcalStart.toISOString(),
+              duration_minutes: durationMinutes || 60,
+              reason: ev.summary || null,
+              notes: ev.description || null,
+              status: "programada",
+              appointment_type: "personal",
+              google_event_id: ev.id,
+              created_by: user?.id,
+            }).select("id").single();
+            if (newAppt) {
+              toast({ title: `Cita creada desde Google: ${ev.summary}` });
             }
           }
         }
