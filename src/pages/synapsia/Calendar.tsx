@@ -267,14 +267,15 @@ export default function CalendarPage() {
   useEffect(() => { fetchSpecialists(); fetchPatients(); }, []);
   useEffect(() => { fetchAppointments(); if (gcalConnected && mySpecialistId) fetchGcalEvents(mySpecialistId); /* eslint-disable-next-line */ }, [weekStart, specialists]);
 
-  // Auto-refresh every 30 seconds
+  // Auto-refresh: every 15s + on window focus (for GCal changes)
   useEffect(() => {
     if (!gcalConnected || !mySpecialistId) return;
-    const interval = setInterval(() => {
-      fetchAppointments();
-      fetchGcalEvents(mySpecialistId);
-    }, 30000);
-    return () => clearInterval(interval);
+    const refresh = () => { fetchAppointments(); fetchGcalEvents(mySpecialistId); };
+    const interval = setInterval(refresh, 15000);
+    const onFocus = () => { if (document.visibilityState === "visible") refresh(); };
+    document.addEventListener("visibilitychange", onFocus);
+    window.addEventListener("focus", onFocus);
+    return () => { clearInterval(interval); document.removeEventListener("visibilitychange", onFocus); window.removeEventListener("focus", onFocus); };
   }, [gcalConnected, mySpecialistId, weekStart]);
 
   const fetchSpecialists = async () => {
