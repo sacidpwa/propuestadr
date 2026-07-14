@@ -165,6 +165,10 @@ export default function CalendarPage() {
           }
         }
       }
+      // Filter out GCal events that are already linked to Synapsia appointments (avoid duplicates)
+      const { data: refreshedAppts } = await supabase.from("appointments").select("google_event_id").gte("scheduled_at", from2).lt("scheduled_at", to2);
+      const linkedIds = new Set((refreshedAppts || []).filter(a => a.google_event_id).map(a => a.google_event_id));
+      setGcalEvents(events.filter(ev => ev.id && !linkedIds.has(ev.id)));
       fetchAppointments();
       console.log("[GCal] Events received:", events.length);
     } catch (err) {
