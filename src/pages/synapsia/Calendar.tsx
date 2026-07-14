@@ -29,8 +29,6 @@ interface Appointment {
   reason: string | null;
   notes: string | null;
   appointment_type?: string;
-  patients: { full_name: string } | null;
-  specialists: { full_name: string; specialty: string };
   google_event_id?: string;
   google_calendar_id?: string;
 }
@@ -128,7 +126,7 @@ export default function CalendarPage() {
     const to = addDays(weekStart, 7).toISOString();
     const { data, error } = await supabase
       .from("appointments")
-      .select("*, patients(full_name), specialists(full_name, specialty)")
+      .select("*")
       .gte("scheduled_at", from).lt("scheduled_at", to)
       .order("scheduled_at");
     if (error) toast({ variant: "destructive", title: "Error", description: error.message });
@@ -404,8 +402,8 @@ export default function CalendarPage() {
                             onClick={(e) => { e.stopPropagation(); openEdit(a); }}
                             className={`w-full text-left rounded p-1 text-[11px] mb-1 border ${a.appointment_type === "personal" ? "bg-purple-100 text-purple-800 border-purple-200" : STATUS_COLOR[a.status]}`}
                           >
-                            <div className="font-semibold truncate">{format(parseISO(a.scheduled_at), "HH:mm")} · {a.appointment_type === "personal" ? (a.reason || "Personal") : (a.patients?.full_name || "Paciente")}</div>
-                            <div className="truncate opacity-80">{a.specialists.full_name}</div>
+                            <div className="font-semibold truncate">{format(parseISO(a.scheduled_at), "HH:mm")} · {a.appointment_type === "personal" ? (a.reason || "Personal") : (patients.find(p => p.id === a.patient_id)?.full_name || "Paciente")}</div>
+                            <div className="truncate opacity-80">{specialists.find(s => s.id === a.specialist_id)?.full_name || ""}</div>
                           </button>
                         ))}
                       </div>
