@@ -45,6 +45,8 @@ import DetallePaciente from "./pages/synapsia/DetallePaciente";
 import DiarioPacientes from "./pages/synapsia/DiarioPacientes";
 import CajaChica from "./pages/synapsia/CajaChica";
 import GoogleCallback from "./pages/synapsia/GoogleCallback";
+import PrivacyPolicy from "./pages/synapsia/PrivacyPolicy";
+import TermsOfService from "./pages/synapsia/TermsOfService";
 import ProtectedRoute from "./components/synapsia/ProtectedRoute";
 import OwnerOnlyRoute from "./components/synapsia/OwnerOnlyRoute";
 import { AuthProvider, useAuth } from "./hooks/useAuth";
@@ -125,6 +127,8 @@ const App = () => (
             <Route path="/synapsia/asistente-admin" element={<ProtectedRoute requiredRole={["admin", "dueno", "asistente_admin"]}><AsistenteAdminHome /></ProtectedRoute>} />
             <Route path="/synapsia/elegir-perfil" element={<ProtectedRoute><ProfileSelector /></ProtectedRoute>} />
             <Route path="/auth/google/callback" element={<GoogleCallback />} />
+            <Route path="/privacy" element={<PrivacyPolicy />} />
+            <Route path="/terms" element={<TermsOfService />} />
             <Route path="/synapsia/dueno" element={<ProtectedRoute requiredRole={["admin", "dueno"]}><DuenoDashboard /></ProtectedRoute>} />
             <Route path="/synapsia/unidades/:id/dashboard" element={<ProtectedRoute requiredRole={["admin", "dueno"]}><DuenoUnidadDashboard /></ProtectedRoute>} />
             <Route path="*" element={<NotFound />} />
