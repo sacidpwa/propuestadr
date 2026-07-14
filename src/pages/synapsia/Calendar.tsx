@@ -256,6 +256,16 @@ export default function CalendarPage() {
   useEffect(() => { fetchSpecialists(); fetchPatients(); }, []);
   useEffect(() => { fetchAppointments(); if (gcalConnected && mySpecialistId) fetchGcalEvents(mySpecialistId); /* eslint-disable-next-line */ }, [weekStart, specialists]);
 
+  // Auto-refresh every 30 seconds
+  useEffect(() => {
+    if (!gcalConnected || !mySpecialistId) return;
+    const interval = setInterval(() => {
+      fetchAppointments();
+      fetchGcalEvents(mySpecialistId);
+    }, 30000);
+    return () => clearInterval(interval);
+  }, [gcalConnected, mySpecialistId, weekStart]);
+
   const fetchSpecialists = async () => {
     const { data } = await supabase.from("specialists").select("id, full_name, specialty, user_id").eq("is_active", true).order("full_name");
     setSpecialists((data as any) || []);
@@ -347,38 +357,37 @@ export default function CalendarPage() {
     else {
       toast({ title: editing ? "Cita actualizada" : "Cita agendada" });
       setOpen(false);
-      await fetchAppointments();
       // Sync with Google Calendar
       if (resolvedSpecialistId) {
         const isPersonal = form.appointment_type === "personal";
         const patientName = isPersonal ? "Personal" : (patients.find(p => p.id === form.patient_id)?.full_name || "Paciente");
         const specName = specialists.find(s => s.id === resolvedSpecialistId)?.full_name || "Especialista";
-        // Find the latest appointment that matches
-        const latestAppt = appointments.find(a => 
-          !editing && a.specialist_id === resolvedSpecialistId && 
-          a.scheduled_at === new Date(`${form.date}T${form.time}:00`).toISOString() &&
-          !a.google_event_id
-        );
-        const syncAppt = editing || latestAppt;
-        if (syncAppt) {
-          const appt = { ...payload, id: syncAppt.id, patients: isPersonal ? null : { full_name: patientName }, specialists: { full_name: specName } };
+        if (editing && (editing as any).google_event_id) {
           const accessToken = await getValidAccessToken(resolvedSpecialistId);
           if (accessToken) {
+            const appt = { ...payload, id: editing.id };
             const event = buildEventFromAppointment(appt, patientName, specName);
-            if (isPersonal) {
-              event.summary = form.reason || "Cita personal";
-            }
-            if (editing && (editing as any).google_event_id) {
-              await updateCalendarEvent(accessToken, "primary", (editing as any).google_event_id, event);
-            } else {
+            if (isPersonal) event.summary = form.reason || "Cita personal";
+            await updateCalendarEvent(accessToken, "primary", (editing as any).google_event_id, event);
+          }
+        } else if (!editing) {
+          // New appointment — find it from DB after insert
+          const accessToken = await getValidAccessToken(resolvedSpecialistId);
+          if (accessToken) {
+            const { data: freshAppt } = await supabase.from("appointments").select("id").eq("scheduled_at", scheduled_at).eq("specialist_id", resolvedSpecialistId).order("created_at", { ascending: false }).limit(1).single();
+            if (freshAppt) {
+              const appt = { ...payload, id: freshAppt.id };
+              const event = buildEventFromAppointment(appt, patientName, specName);
+              if (isPersonal) event.summary = form.reason || "Cita personal";
               const created = await createCalendarEvent(accessToken, "primary", event);
               if (created) {
-                await supabase.from("appointments").update({ google_event_id: created.id }).eq("id", syncAppt.id);
+                await supabase.from("appointments").update({ google_event_id: created.id }).eq("id", freshAppt.id);
               }
             }
           }
         }
       }
+      await fetchAppointments();
     }
     setLoading(false);
   };
