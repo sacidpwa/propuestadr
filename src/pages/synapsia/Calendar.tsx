@@ -124,45 +124,44 @@ export default function CalendarPage() {
       const events = result.items || [];
       setGcalEvents(events);
 
-      // Bidirectional sync: update Synapsia appointments from GCal changes
+      // Bidirectional sync: query DB directly to avoid stale state
+      const from2 = weekStart.toISOString();
+      const to2 = addDays(weekStart, 7).toISOString();
+      const { data: currentAppts } = await supabase.from("appointments").select("id, scheduled_at, duration_minutes, google_event_id").gte("scheduled_at", from2).lt("scheduled_at", to2);
+      const currentList = (currentAppts as any[]) || [];
+
       for (const ev of events) {
         const synapsiaId = ev.extendedProperties?.private?.synapsia_appointment_id;
-        if (synapsiaId) {
-          const localAppt = appointments.find(a => a.id === synapsiaId);
-          if (localAppt) {
-            const gcalStart = new Date(ev.start?.dateTime || ev.start?.date || "");
-            const localStart = parseISO(localAppt.scheduled_at);
-            if (Math.abs(gcalStart.getTime() - localStart.getTime()) > 60000) {
-              const newEnd = new Date(gcalStart.getTime() + (localAppt.duration_minutes || 60) * 60_000);
-              await supabase.from("appointments").update({
-                scheduled_at: gcalStart.toISOString(),
-                duration_minutes: Math.round((newEnd.getTime() - gcalStart.getTime()) / 60000),
-              }).eq("id", synapsiaId);
-              toast({ title: "Cita actualizada desde Google Calendar" });
-            }
+        const matchedAppt = synapsiaId
+          ? currentList.find(a => a.id === synapsiaId)
+          : currentList.find(a => a.google_event_id === ev.id);
+
+        if (matchedAppt) {
+          const gcalStart = new Date(ev.start?.dateTime || ev.start?.date || "");
+          const localStart = parseISO(matchedAppt.scheduled_at);
+          if (Math.abs(gcalStart.getTime() - localStart.getTime()) > 60000) {
+            const gcalEnd = ev.end?.dateTime ? new Date(ev.end.dateTime) : new Date(gcalStart.getTime() + 60 * 60000);
+            const dur = Math.round((gcalEnd.getTime() - gcalStart.getTime()) / 60000);
+            await supabase.from("appointments").update({ scheduled_at: gcalStart.toISOString(), duration_minutes: dur || 60 }).eq("id", matchedAppt.id);
           }
         } else if (ev.id && ev.start?.dateTime) {
-          // External GCal event without synapsia link — create as personal appointment
-          const existing = appointments.find(a => a.google_event_id === ev.id);
-          if (!existing) {
-            const gcalStart = new Date(ev.start.dateTime);
-            const gcalEnd = ev.end?.dateTime ? new Date(ev.end.dateTime) : new Date(gcalStart.getTime() + 60 * 60000);
-            const durationMinutes = Math.round((gcalEnd.getTime() - gcalStart.getTime()) / 60000);
-            const { data: newAppt } = await supabase.from("appointments").insert({
-              patient_id: null,
-              specialist_id: mySpecialistId,
-              scheduled_at: gcalStart.toISOString(),
-              duration_minutes: durationMinutes || 60,
-              reason: ev.summary || null,
-              notes: ev.description || null,
-              status: "programada",
-              appointment_type: "personal",
-              google_event_id: ev.id,
-              created_by: user?.id,
-            }).select("id").single();
-            if (newAppt) {
-              toast({ title: `Cita creada desde Google: ${ev.summary}` });
-            }
+          const gcalStart = new Date(ev.start.dateTime);
+          const gcalEnd = ev.end?.dateTime ? new Date(ev.end.dateTime) : new Date(gcalStart.getTime() + 60 * 60000);
+          const dur = Math.round((gcalEnd.getTime() - gcalStart.getTime()) / 60000);
+          const { error: insErr } = await supabase.from("appointments").insert({
+            patient_id: null,
+            specialist_id: mySpecialistId,
+            scheduled_at: gcalStart.toISOString(),
+            duration_minutes: dur || 60,
+            reason: ev.summary || null,
+            notes: ev.description || null,
+            status: "programada",
+            appointment_type: "personal",
+            google_event_id: ev.id,
+            created_by: user?.id,
+          });
+          if (!insErr) {
+            toast({ title: `Cita creada desde Google: ${ev.summary}` });
           }
         }
       }
