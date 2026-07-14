@@ -13,8 +13,9 @@ import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { format, addDays, startOfWeek, isSameDay, parseISO } from "date-fns";
 import { es } from "date-fns/locale";
-import { ArrowLeft, Brain, CalendarPlus, ChevronLeft, ChevronRight, LogOut, Loader2, Trash2, UserPlus, XCircle } from "lucide-react";
+import { ArrowLeft, Brain, CalendarPlus, ChevronLeft, ChevronRight, LogOut, Loader2, Trash2, UserPlus, XCircle, CalendarCheck, Link as LinkIcon, RefreshCw } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { getAuthUrl, buildEventFromAppointment, createCalendarEvent, updateCalendarEvent, deleteCalendarEvent, getValidAccessToken } from "@/lib/googleCalendar";
 
 interface Specialist { id: string; full_name: string; specialty: string; user_id: string | null; }
 interface Patient { id: string; full_name: string; }
@@ -29,6 +30,8 @@ interface Appointment {
   notes: string | null;
   patients: { full_name: string };
   specialists: { full_name: string; specialty: string };
+  google_event_id?: string;
+  google_calendar_id?: string;
 }
 
 const STATUS_LABEL: Record<string, string> = {
@@ -76,6 +79,36 @@ export default function CalendarPage() {
   });
 
   const isClinical = hasRole("admin") || hasRole("recepcion");
+
+  // Google Calendar sync state
+  const [gcalConnected, setGcalConnected] = useState(false);
+  const [gcalConnecting, setGcalConnecting] = useState(false);
+  const [mySpecialistId, setMySpecialistId] = useState<string | null>(null);
+
+  useEffect(() => {
+    const spec = specialists.find(s => s.user_id === user?.id);
+    if (spec) {
+      setMySpecialistId(spec.id);
+      // Check if already connected
+      checkGcalConnection(spec.id);
+    }
+  }, [specialists, user?.id]);
+
+  const checkGcalConnection = async (specialistId: string) => {
+    const { data } = await supabase
+      .from("specialists")
+      .select("google_access_token, google_refresh_token, calendar_sync_enabled")
+      .eq("id", specialistId)
+      .single();
+    setGcalConnected(!!(data?.google_access_token && data?.calendar_sync_enabled));
+  };
+
+  const connectGoogleCalendar = () => {
+    if (!mySpecialistId) return;
+    setGcalConnecting(true);
+    const state = mySpecialistId;
+    window.location.href = getAuthUrl(state);
+  };
 
   useEffect(() => { fetchSpecialists(); fetchPatients(); }, []);
   useEffect(() => { fetchAppointments(); /* eslint-disable-next-line */ }, [weekStart]);
@@ -148,14 +181,37 @@ export default function CalendarPage() {
       status: form.status,
     };
     let error;
+    let appointmentId = editing?.id;
     if (editing) {
       ({ error } = await supabase.from("appointments").update(payload).eq("id", editing.id));
     } else {
       payload.created_by = user?.id;
-      ({ error } = await supabase.from("appointments").insert(payload));
+      const { data, error: insError } = await supabase.from("appointments").insert(payload).select("id").single();
+      error = insError;
+      appointmentId = data?.id;
     }
     if (error) toast({ variant: "destructive", title: "Error", description: error.message });
-    else { toast({ title: editing ? "Cita actualizada" : "Cita agendada" }); setOpen(false); fetchAppointments(); }
+    else {
+      toast({ title: editing ? "Cita actualizada" : "Cita agendada" });
+      setOpen(false);
+      fetchAppointments();
+      // Sync with Google Calendar
+      if (appointmentId && mySpecialistId) {
+        const appt = { ...payload, id: appointmentId, patients: { full_name: form.patient_id ? patients.find(p => p.id === form.patient_id)?.full_name || "Paciente" : "Paciente" }, specialists: { full_name: specialists.find(s => s.id === form.specialist_id)?.full_name || "Especialista" } };
+        const accessToken = await getValidAccessToken(mySpecialistId);
+        if (accessToken) {
+          const event = buildEventFromAppointment(appt, appt.patients?.full_name, appt.specialists?.full_name);
+          if (editing && (editing as any).google_event_id) {
+            await updateCalendarEvent(accessToken, "primary", (editing as any).google_event_id, event);
+          } else {
+            const created = await createCalendarEvent(accessToken, "primary", event);
+            if (created) {
+              await supabase.from("appointments").update({ google_event_id: created.id }).eq("id", appointmentId);
+            }
+          }
+        }
+      }
+    }
     setLoading(false);
   };
 
@@ -163,9 +219,19 @@ export default function CalendarPage() {
     if (!editing) return;
     if (!confirm("¿Eliminar esta cita? Esta acción no se puede deshacer.")) return;
     setLoading(true);
+    const googleEventId = (editing as any).google_event_id;
     const { error } = await supabase.from("appointments").delete().eq("id", editing.id);
     if (error) toast({ variant: "destructive", title: "Error", description: error.message });
-    else { toast({ title: "Cita eliminada" }); setOpen(false); fetchAppointments(); }
+    else {
+      toast({ title: "Cita eliminada" });
+      setOpen(false);
+      fetchAppointments();
+      // Sync with Google Calendar
+      if (googleEventId && mySpecialistId) {
+        const accessToken = await getValidAccessToken(mySpecialistId);
+        if (accessToken) await deleteCalendarEvent(accessToken, "primary", googleEventId);
+      }
+    }
     setLoading(false);
   };
 
@@ -174,7 +240,19 @@ export default function CalendarPage() {
     setLoading(true);
     const { error } = await supabase.from("appointments").update({ status: "cancelada" }).eq("id", editing.id);
     if (error) toast({ variant: "destructive", title: "Error", description: error.message });
-    else { toast({ title: "Cita cancelada" }); setOpen(false); fetchAppointments(); }
+    else {
+      toast({ title: "Cita cancelada" });
+      setOpen(false);
+      fetchAppointments();
+      // Sync with Google Calendar - update event to show cancelled
+      const googleEventId = (editing as any).google_event_id;
+      if (googleEventId && mySpecialistId) {
+        const accessToken = await getValidAccessToken(mySpecialistId);
+        if (accessToken) {
+          await updateCalendarEvent(accessToken, "primary", googleEventId, { summary: `[CANCELADA] ${(editing as any).summary || "Cita"}`, colorId: "11" });
+        }
+      }
+    }
     setLoading(false);
   };
 
@@ -255,8 +333,24 @@ export default function CalendarPage() {
             </h2>
             <Button variant="outline" size="sm" onClick={() => setWeekStart(addDays(weekStart, 7))}><ChevronRight className="w-4 h-4" /></Button>
             <Button variant="ghost" size="sm" onClick={() => setWeekStart(startOfWeek(new Date(), { weekStartsOn: 1 }))}>Hoy</Button>
-          </div>
+</div>
+        <div className="flex items-center gap-2">
           <Button size="sm" onClick={() => openNew()}><CalendarPlus className="w-4 h-4 mr-1" /> Nueva cita</Button>
+          {mySpecialistId && (
+            <>
+              {gcalConnected ? (
+                <Button variant="outline" size="sm" className="gap-1" disabled={gcalConnecting}>
+                  <CalendarCheck className="w-4 h-4" /> Google Calendar conectado
+                </Button>
+              ) : (
+                <Button variant="secondary" size="sm" onClick={connectGoogleCalendar} disabled={gcalConnecting}>
+                  {gcalConnecting ? <Loader2 className="w-4 h-4 animate-spin" /> : <LinkIcon className="w-4 h-4" />}
+                  Conectar Google Calendar
+                </Button>
+              )}
+            </>
+          )}
+        </div>
         </div>
 
         <Card>

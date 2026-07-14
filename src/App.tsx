@@ -43,7 +43,7 @@ import AsistenteAdminHome from "./pages/synapsia/AsistenteAdminHome";
 import RegistroPaciente from "./pages/synapsia/RegistroPaciente";
 import DetallePaciente from "./pages/synapsia/DetallePaciente";
 import DiarioPacientes from "./pages/synapsia/DiarioPacientes";
-import CajaChica from "./pages/synapsia/CajaChica";
+import GoogleCallback from "./pages/synapsia/GoogleCallback";
 import ProtectedRoute from "./components/synapsia/ProtectedRoute";
 import OwnerOnlyRoute from "./components/synapsia/OwnerOnlyRoute";
 import { AuthProvider, useAuth } from "./hooks/useAuth";
@@ -123,6 +123,7 @@ const App = () => (
             <Route path="/synapsia/log-movimientos" element={<ProtectedRoute requiredRole={["admin", "dueno", "administrativo"]}><LogMovimientos /></ProtectedRoute>} />
             <Route path="/synapsia/asistente-admin" element={<ProtectedRoute requiredRole={["admin", "dueno", "asistente_admin"]}><AsistenteAdminHome /></ProtectedRoute>} />
             <Route path="/synapsia/elegir-perfil" element={<ProtectedRoute><ProfileSelector /></ProtectedRoute>} />
+            <Route path="/auth/google/callback" element={<GoogleCallback />} />
             <Route path="/synapsia/dueno" element={<ProtectedRoute requiredRole={["admin", "dueno"]}><DuenoDashboard /></ProtectedRoute>} />
             <Route path="/synapsia/unidades/:id/dashboard" element={<ProtectedRoute requiredRole={["admin", "dueno"]}><DuenoUnidadDashboard /></ProtectedRoute>} />
             <Route path="*" element={<NotFound />} />
