@@ -96,12 +96,14 @@ export default function CalendarPage() {
   }, [specialists, user?.id]);
 
   const checkGcalConnection = async (specialistId: string) => {
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from("specialists")
       .select("google_access_token, google_refresh_token, calendar_sync_enabled")
       .eq("id", specialistId)
       .single();
+    console.log("[GCal] checkGcalConnection:", { data, error, specialistId });
     const connected = !!(data?.google_access_token && data?.calendar_sync_enabled);
+    console.log("[GCal] connected:", connected);
     setGcalConnected(connected);
     if (connected) fetchGcalEvents(specialistId);
   };
@@ -109,13 +111,15 @@ export default function CalendarPage() {
   const fetchGcalEvents = async (specialistId: string) => {
     try {
       const accessToken = await getValidAccessToken(specialistId);
-      if (!accessToken) return;
+      if (!accessToken) { console.log("[GCal] No access token"); return; }
       const from = weekStart.toISOString();
       const to = addDays(weekStart, 7).toISOString();
+      console.log("[GCal] Fetching events from", from, "to", to);
       const result = await listGoogleEvents(accessToken, "primary", from, to);
+      console.log("[GCal] Events received:", result.items?.length, result.items);
       setGcalEvents(result.items || []);
     } catch (err) {
-      console.error("Error fetching GCal events:", err);
+      console.error("[GCal] Error fetching events:", err);
     }
   };
 
