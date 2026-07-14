@@ -39,14 +39,13 @@ export default function GoogleCallback() {
         const specialistId = state;
         if (!specialistId) throw new Error("Estado inválido");
 
-        // Save tokens to specialist record
-        const { error } = await supabase.from("specialists").update({
-          google_access_token: tokens.access_token,
-          google_refresh_token: tokens.refresh_token,
-          google_token_expiry: new Date(Date.now() + (tokens.expires_in || 3600) * 1000).toISOString(),
-          calendar_sync_enabled: true,
-          google_calendar_id: "primary",
-        }).eq("id", specialistId);
+        // Save tokens to specialist record via RPC (bypasses RLS)
+        const { error } = await supabase.rpc("save_google_tokens", {
+          p_specialist_id: specialistId,
+          p_access_token: tokens.access_token,
+          p_refresh_token: tokens.refresh_token,
+          p_expiry: new Date(Date.now() + (tokens.expires_in || 3600) * 1000).toISOString(),
+        });
 
         if (error) throw error;
 

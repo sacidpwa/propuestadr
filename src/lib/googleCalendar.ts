@@ -76,13 +76,12 @@ export async function getValidAccessToken(specialistId: string): Promise<string 
     const tokens = await refreshAccessToken(spec.google_refresh_token);
     const newExpiry = new Date(Date.now() + (tokens.expires_in || 3600) * 1000).toISOString();
 
-    await supabase
-      .from("specialists")
-      .update({
-        google_access_token: tokens.access_token,
-        google_token_expiry: newExpiry,
-      })
-      .eq("id", specialistId);
+    await supabase.rpc("save_google_tokens", {
+      p_specialist_id: specialistId,
+      p_access_token: tokens.access_token,
+      p_refresh_token: spec.google_refresh_token,
+      p_expiry: newExpiry,
+    });
 
     return tokens.access_token;
   } catch {
