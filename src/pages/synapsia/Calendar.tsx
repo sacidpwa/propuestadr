@@ -166,8 +166,19 @@ export default function CalendarPage() {
         }
       }
       // Filter out GCal events that are already linked to Synapsia appointments (avoid duplicates)
-      const { data: refreshedAppts } = await supabase.from("appointments").select("google_event_id").gte("scheduled_at", from2).lt("scheduled_at", to2);
-      const linkedIds = new Set((refreshedAppts || []).filter(a => a.google_event_id).map(a => a.google_event_id));
+      const { data: refreshedAppts } = await supabase.from("appointments").select("id, google_event_id").gte("scheduled_at", from2).lt("scheduled_at", to2).not("google_event_id", "is", null);
+      const linked = (refreshedAppts || []) as any[];
+      const gcalEventIds = new Set(events.map(ev => ev.id).filter(Boolean));
+
+      // Delete Synapsia appointments whose GCal event was deleted externally
+      for (const appt of linked) {
+        if (appt.google_event_id && !gcalEventIds.has(appt.google_event_id)) {
+          await supabase.from("appointments").delete().eq("id", appt.id);
+          toast({ title: "Cita eliminada (borrada en Google Calendar)" });
+        }
+      }
+
+      const linkedIds = new Set(linked.filter(a => gcalEventIds.has(a.google_event_id)).map(a => a.google_event_id));
       setGcalEvents(events.filter(ev => ev.id && !linkedIds.has(ev.id)));
       fetchAppointments();
       console.log("[GCal] Events received:", events.length);
