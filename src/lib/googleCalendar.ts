@@ -7,6 +7,7 @@ const REDIRECT_URI = `${window.location.origin}/auth/google/callback`;
 const SCOPES = [
   "https://www.googleapis.com/auth/calendar.events",
   "https://www.googleapis.com/auth/calendar.readonly",
+  "https://www.googleapis.com/auth/tasks",
 ].join(" ");
 
 export function getAuthUrl(state?: string): string {
@@ -206,4 +207,96 @@ export function buildEventFromAppointment(appt: any, patientName: string, specia
     extendedProperties: { private: { synapsia_appointment_id: appt.id } },
     reminders: { useDefault: false, overrides: [{ method: "popup", minutes: 30 }, { method: "email", minutes: 60 }] },
   };
+}
+
+export async function updateSynapsiaFromGcal(
+  accessToken: string,
+  calendarId: string,
+  timeMin: string,
+  timeMax: string
+): Promise<Array<{ synapsiaId: string; gcalEvent: GoogleEvent; needsUpdate: boolean }>> {
+  const result = await listGoogleEvents(accessToken, calendarId, timeMin, timeMax);
+  const changes: Array<{ synapsiaId: string; gcalEvent: GoogleEvent; needsUpdate: boolean }> = [];
+
+  for (const event of result.items || []) {
+    const synapsiaId = event.extendedProperties?.private?.synapsia_appointment_id;
+    if (synapsiaId) {
+      changes.push({ synapsiaId, gcalEvent: event, needsUpdate: true });
+    }
+  }
+  return changes;
+}
+
+export interface GoogleTask {
+  id?: string;
+  title: string;
+  notes?: string;
+  due?: string;
+  status?: string;
+  completed?: string;
+  updated?: string;
+}
+
+export interface GoogleTaskList {
+  id: string;
+  title: string;
+}
+
+export async function listTaskLists(accessToken: string): Promise<GoogleTaskList[]> {
+  const response = await fetch("https://www.googleapis.com/tasks/v1/users/@me/lists", {
+    headers: { Authorization: `Bearer ${accessToken}` },
+  });
+  if (!response.ok) throw new Error("Failed to list task lists");
+  const data = await response.json();
+  return data.items || [];
+}
+
+export async function listTasks(accessToken: string, taskListId: string, dueMin?: string, dueMax?: string): Promise<GoogleTask[]> {
+  const params = new URLSearchParams({ showCompleted: "false", maxResults: "100" });
+  if (dueMin) params.set("dueMin", dueMin);
+  if (dueMax) params.set("dueMax", dueMax);
+  const response = await fetch(
+    `https://www.googleapis.com/tasks/v1/lists/${encodeURIComponent(taskListId)}/tasks?${params}`,
+    { headers: { Authorization: `Bearer ${accessToken}` } }
+  );
+  if (!response.ok) throw new Error("Failed to list tasks");
+  const data = await response.json();
+  return data.items || [];
+}
+
+export async function createTask(accessToken: string, taskListId: string, task: GoogleTask): Promise<GoogleTask | null> {
+  const response = await fetch(
+    `https://www.googleapis.com/tasks/v1/lists/${encodeURIComponent(taskListId)}/tasks`,
+    {
+      method: "POST",
+      headers: { Authorization: `Bearer ${accessToken}`, "Content-Type": "application/json" },
+      body: JSON.stringify(task),
+    }
+  );
+  if (!response.ok) { console.error("Create task error:", await response.json()); return null; }
+  return response.json();
+}
+
+export async function updateTask(accessToken: string, taskListId: string, taskId: string, task: Partial<GoogleTask>): Promise<boolean> {
+  const response = await fetch(
+    `https://www.googleapis.com/tasks/v1/lists/${encodeURIComponent(taskListId)}/tasks/${taskId}`,
+    {
+      method: "PATCH",
+      headers: { Authorization: `Bearer ${accessToken}`, "Content-Type": "application/json" },
+      body: JSON.stringify(task),
+    }
+  );
+  return response.ok;
+}
+
+export async function completeTask(accessToken: string, taskListId: string, taskId: string): Promise<boolean> {
+  return updateTask(accessToken, taskListId, taskId, { status: "completed" });
+}
+
+export async function deleteTask(accessToken: string, taskListId: string, taskId: string): Promise<boolean> {
+  const response = await fetch(
+    `https://www.googleapis.com/tasks/v1/lists/${encodeURIComponent(taskListId)}/tasks/${taskId}`,
+    { method: "DELETE", headers: { Authorization: `Bearer ${accessToken}` } }
+  );
+  return response.ok || response.status === 404;
 }

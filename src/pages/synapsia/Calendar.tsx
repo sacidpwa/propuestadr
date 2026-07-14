@@ -15,7 +15,7 @@ import { format, addDays, startOfWeek, isSameDay, parseISO } from "date-fns";
 import { es } from "date-fns/locale";
 import { ArrowLeft, Brain, CalendarPlus, ChevronLeft, ChevronRight, LogOut, Loader2, Trash2, UserPlus, XCircle, CalendarCheck, Link as LinkIcon, RefreshCw } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { getAuthUrl, buildEventFromAppointment, createCalendarEvent, updateCalendarEvent, deleteCalendarEvent, getValidAccessToken, listGoogleEvents, type GoogleEvent } from "@/lib/googleCalendar";
+import { getAuthUrl, buildEventFromAppointment, createCalendarEvent, updateCalendarEvent, deleteCalendarEvent, getValidAccessToken, listGoogleEvents, type GoogleEvent, listTaskLists, listTasks, createTask, completeTask, deleteTask, type GoogleTask, type GoogleTaskList } from "@/lib/googleCalendar";
 
 interface Specialist { id: string; full_name: string; specialty: string; user_id: string | null; }
 interface Patient { id: string; full_name: string; }
@@ -85,6 +85,12 @@ export default function CalendarPage() {
   const [gcalConnecting, setGcalConnecting] = useState(false);
   const [mySpecialistId, setMySpecialistId] = useState<string | null>(null);
   const [gcalEvents, setGcalEvents] = useState<GoogleEvent[]>([]);
+  const [gcalTaskLists, setGcalTaskLists] = useState<GoogleTaskList[]>([]);
+  const [gcalTasks, setGcalTasks] = useState<GoogleTask[]>([]);
+  const [showTasks, setShowTasks] = useState(false);
+  const [newTaskTitle, setNewTaskTitle] = useState("");
+  const [newTaskDue, setNewTaskDue] = useState("");
+  const [loadingTasks, setLoadingTasks] = useState(false);
 
   useEffect(() => {
     const spec = specialists.find(s => s.user_id === user?.id);
@@ -114,12 +120,90 @@ export default function CalendarPage() {
       if (!accessToken) { console.log("[GCal] No access token"); return; }
       const from = weekStart.toISOString();
       const to = addDays(weekStart, 7).toISOString();
-      console.log("[GCal] Fetching events from", from, "to", to);
       const result = await listGoogleEvents(accessToken, "primary", from, to);
-      console.log("[GCal] Events received:", result.items?.length, result.items);
-      setGcalEvents(result.items || []);
+      const events = result.items || [];
+      setGcalEvents(events);
+
+      // Bidirectional sync: update Synapsia appointments from GCal changes
+      for (const ev of events) {
+        const synapsiaId = ev.extendedProperties?.private?.synapsia_appointment_id;
+        if (synapsiaId) {
+          const localAppt = appointments.find(a => a.id === synapsiaId);
+          if (localAppt) {
+            const gcalStart = new Date(ev.start?.dateTime || ev.start?.date || "");
+            const localStart = parseISO(localAppt.scheduled_at);
+            // If times differ significantly (>1 min), GCal was modified externally
+            if (Math.abs(gcalStart.getTime() - localStart.getTime()) > 60000) {
+              const newEnd = new Date(gcalStart.getTime() + (localAppt.duration_minutes || 60) * 60_000);
+              await supabase.from("appointments").update({
+                scheduled_at: gcalStart.toISOString(),
+                duration_minutes: Math.round((newEnd.getTime() - gcalStart.getTime()) / 60000),
+              }).eq("id", synapsiaId);
+              toast({ title: "Cita actualizada desde Google Calendar" });
+            }
+          }
+        }
+      }
+      fetchAppointments();
+      console.log("[GCal] Events received:", events.length);
     } catch (err) {
       console.error("[GCal] Error fetching events:", err);
+    }
+  };
+
+  const fetchTasks = async () => {
+    if (!mySpecialistId) return;
+    setLoadingTasks(true);
+    try {
+      const accessToken = await getValidAccessToken(mySpecialistId);
+      if (!accessToken) return;
+      const lists = await listTaskLists(accessToken);
+      setGcalTaskLists(lists);
+      if (lists.length > 0) {
+        const tasks = await listTasks(accessToken, lists[0].id);
+        setGcalTasks(tasks);
+      }
+    } catch (err) {
+      console.error("[GCal Tasks] Error:", err);
+    }
+    setLoadingTasks(false);
+  };
+
+  const handleCreateTask = async () => {
+    if (!mySpecialistId || !newTaskTitle.trim() || gcalTaskLists.length === 0) return;
+    const accessToken = await getValidAccessToken(mySpecialistId);
+    if (!accessToken) return;
+    const task = await createTask(accessToken, gcalTaskLists[0].id, {
+      title: newTaskTitle.trim(),
+      due: newTaskDue ? new Date(newTaskDue).toISOString() : undefined,
+    });
+    if (task) {
+      setGcalTasks(prev => [...prev, task]);
+      setNewTaskTitle("");
+      setNewTaskDue("");
+      toast({ title: "Tarea creada en Google Tasks" });
+    }
+  };
+
+  const handleCompleteTask = async (taskId: string) => {
+    if (!mySpecialistId || gcalTaskLists.length === 0) return;
+    const accessToken = await getValidAccessToken(mySpecialistId);
+    if (!accessToken) return;
+    const ok = await completeTask(accessToken, gcalTaskLists[0].id, taskId);
+    if (ok) {
+      setGcalTasks(prev => prev.map(t => t.id === taskId ? { ...t, status: "completed" } : t));
+      toast({ title: "Tarea completada" });
+    }
+  };
+
+  const handleDeleteTask = async (taskId: string) => {
+    if (!mySpecialistId || gcalTaskLists.length === 0) return;
+    const accessToken = await getValidAccessToken(mySpecialistId);
+    if (!accessToken) return;
+    const ok = await deleteTask(accessToken, gcalTaskLists[0].id, taskId);
+    if (ok) {
+      setGcalTasks(prev => prev.filter(t => t.id !== taskId));
+      toast({ title: "Tarea eliminada" });
     }
   };
 
@@ -454,6 +538,52 @@ export default function CalendarPage() {
             </div>
           </CardContent>
         </Card>
+
+        {gcalConnected && (
+          <Card>
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="text-sm font-semibold flex items-center gap-2">
+                  <CheckCircle className="w-4 h-4 text-green-500" /> Google Tasks
+                </h3>
+                <Button variant="ghost" size="sm" onClick={() => { setShowTasks(!showTasks); if (!showTasks && gcalTasks.length === 0) fetchTasks(); }}>
+                  {showTasks ? "Ocultar" : "Ver tareas"}
+                </Button>
+              </div>
+              {showTasks && (
+                <div className="space-y-3">
+                  <div className="flex gap-2">
+                    <Input placeholder="Nueva tarea..." value={newTaskTitle} onChange={e => setNewTaskTitle(e.target.value)} className="flex-1" onKeyDown={e => e.key === "Enter" && handleCreateTask()} />
+                    <Input type="date" value={newTaskDue} onChange={e => setNewTaskDue(e.target.value)} className="w-36" />
+                    <Button size="sm" onClick={handleCreateTask} disabled={!newTaskTitle.trim() || loadingTasks}>
+                      <CalendarPlus className="w-4 h-4" />
+                    </Button>
+                  </div>
+                  {loadingTasks ? (
+                    <div className="flex items-center justify-center py-4"><Loader2 className="w-5 h-5 animate-spin text-muted-foreground" /></div>
+                  ) : gcalTasks.length === 0 ? (
+                    <p className="text-xs text-muted-foreground text-center py-2">Sin tareas pendientes</p>
+                  ) : (
+                    <div className="space-y-1">
+                      {gcalTasks.map(task => (
+                        <div key={task.id} className={`flex items-center gap-2 p-2 rounded text-sm ${task.status === "completed" ? "opacity-50" : ""}`}>
+                          <button onClick={() => task.id && task.status !== "completed" && handleCompleteTask(task.id)} className="shrink-0">
+                            {task.status === "completed" ? <CheckCircle className="w-4 h-4 text-green-500" /> : <div className="w-4 h-4 rounded-full border-2 border-muted-foreground/30" />}
+                          </button>
+                          <span className={`flex-1 ${task.status === "completed" ? "line-through text-muted-foreground" : ""}`}>{task.title}</span>
+                          {task.due && <span className="text-xs text-muted-foreground">{format(new Date(task.due), "dd/MM")}</span>}
+                          <button onClick={() => task.id && handleDeleteTask(task.id)} className="shrink-0 text-destructive/60 hover:text-destructive">
+                            <XCircle className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        )}
       </main>
 
       <Dialog open={open} onOpenChange={setOpen}>
