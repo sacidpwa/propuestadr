@@ -21,14 +21,15 @@ interface Specialist { id: string; full_name: string; specialty: string; user_id
 interface Patient { id: string; full_name: string; }
 interface Appointment {
   id: string;
-  patient_id: string;
+  patient_id: string | null;
   specialist_id: string;
   scheduled_at: string;
   duration_minutes: number;
   status: string;
   reason: string | null;
   notes: string | null;
-  patients: { full_name: string };
+  appointment_type?: string;
+  patients: { full_name: string } | null;
   specialists: { full_name: string; specialty: string };
   google_event_id?: string;
   google_calendar_id?: string;
@@ -68,6 +69,7 @@ export default function CalendarPage() {
   const [newPatient, setNewPatient] = useState({ full_name: "", phone: "", email: "" });
   const [savingPatient, setSavingPatient] = useState(false);
   const [form, setForm] = useState({
+    appointment_type: "cita",
     patient_id: "",
     specialist_id: "",
     date: format(new Date(), "yyyy-MM-dd"),
@@ -139,6 +141,7 @@ export default function CalendarPage() {
   const openNew = (date?: Date, hour?: number) => {
     setEditing(null);
     setForm({
+      appointment_type: "cita",
       patient_id: "",
       specialist_id: isClinical ? "" : (specialists.find(s => s.user_id === user?.id)?.id || ""),
       date: format(date ?? new Date(), "yyyy-MM-dd"),
@@ -155,7 +158,8 @@ export default function CalendarPage() {
     setEditing(a);
     const d = parseISO(a.scheduled_at);
     setForm({
-      patient_id: a.patient_id,
+      appointment_type: a.appointment_type || "cita",
+      patient_id: a.patient_id || "",
       specialist_id: a.specialist_id,
       date: format(d, "yyyy-MM-dd"),
       time: format(d, "HH:mm"),
@@ -171,14 +175,17 @@ export default function CalendarPage() {
     e.preventDefault();
     setLoading(true);
     const scheduled_at = new Date(`${form.date}T${form.time}:00`).toISOString();
+    const isPersonal = form.appointment_type === "personal";
+    const resolvedSpecialistId = form.specialist_id || mySpecialistId || "";
     const payload: any = {
-      patient_id: form.patient_id,
-      specialist_id: form.specialist_id,
+      patient_id: isPersonal ? null : form.patient_id || null,
+      specialist_id: resolvedSpecialistId,
       scheduled_at,
       duration_minutes: parseInt(form.duration_minutes),
       reason: form.reason || null,
       notes: form.notes || null,
       status: form.status,
+      appointment_type: form.appointment_type,
     };
     let error;
     let appointmentId = editing?.id;
@@ -196,11 +203,17 @@ export default function CalendarPage() {
       setOpen(false);
       fetchAppointments();
       // Sync with Google Calendar
-      if (appointmentId && mySpecialistId) {
-        const appt = { ...payload, id: appointmentId, patients: { full_name: form.patient_id ? patients.find(p => p.id === form.patient_id)?.full_name || "Paciente" : "Paciente" }, specialists: { full_name: specialists.find(s => s.id === form.specialist_id)?.full_name || "Especialista" } };
-        const accessToken = await getValidAccessToken(mySpecialistId);
+      if (appointmentId && resolvedSpecialistId) {
+        const isPersonal = form.appointment_type === "personal";
+        const patientName = isPersonal ? "Personal" : (patients.find(p => p.id === form.patient_id)?.full_name || "Paciente");
+        const specName = specialists.find(s => s.id === resolvedSpecialistId)?.full_name || "Especialista";
+        const appt = { ...payload, id: appointmentId, patients: isPersonal ? null : { full_name: patientName }, specialists: { full_name: specName } };
+        const accessToken = await getValidAccessToken(resolvedSpecialistId);
         if (accessToken) {
-          const event = buildEventFromAppointment(appt, appt.patients?.full_name, appt.specialists?.full_name);
+          const event = buildEventFromAppointment(appt, patientName, specName);
+          if (isPersonal) {
+            event.summary = form.reason || "Cita personal";
+          }
           if (editing && (editing as any).google_event_id) {
             await updateCalendarEvent(accessToken, "primary", (editing as any).google_event_id, event);
           } else {
@@ -381,9 +394,9 @@ export default function CalendarPage() {
                           <button
                             key={a.id}
                             onClick={(e) => { e.stopPropagation(); openEdit(a); }}
-                            className={`w-full text-left rounded p-1 text-[11px] mb-1 border ${STATUS_COLOR[a.status]}`}
+                            className={`w-full text-left rounded p-1 text-[11px] mb-1 border ${a.appointment_type === "personal" ? "bg-purple-100 text-purple-800 border-purple-200" : STATUS_COLOR[a.status]}`}
                           >
-                            <div className="font-semibold truncate">{format(parseISO(a.scheduled_at), "HH:mm")} · {a.patients.full_name}</div>
+                            <div className="font-semibold truncate">{format(parseISO(a.scheduled_at), "HH:mm")} · {a.appointment_type === "personal" ? (a.reason || "Personal") : (a.patients?.full_name || "Paciente")}</div>
                             <div className="truncate opacity-80">{a.specialists.full_name}</div>
                           </button>
                         ))}
@@ -405,6 +418,13 @@ export default function CalendarPage() {
           <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-4 min-h-0">
             <form id="appt-form" onSubmit={handleSubmit} className="space-y-3">
               <div className="space-y-2">
+                <Label>Tipo de cita *</Label>
+                <div className="flex gap-2">
+                  <Button type="button" size="sm" variant={form.appointment_type === "cita" ? "default" : "outline"} onClick={() => setForm({ ...form, appointment_type: "cita", patient_id: "" })}>Cita</Button>
+                  <Button type="button" size="sm" variant={form.appointment_type === "personal" ? "default" : "outline"} onClick={() => setForm({ ...form, appointment_type: "personal", patient_id: "" })}>Personal</Button>
+                </div>
+              </div>
+              <div className="space-y-2">
                 <Label>Especialista *</Label>
                 <Select value={form.specialist_id} onValueChange={(v) => setForm({ ...form, specialist_id: v, patient_id: "" })} disabled={!isClinical}>
                   <SelectTrigger><SelectValue placeholder="Seleccionar especialista" /></SelectTrigger>
@@ -415,6 +435,7 @@ export default function CalendarPage() {
                   </SelectContent>
                 </Select>
               </div>
+              {form.appointment_type === "cita" && (
               <div className="space-y-2">
                 <div className="flex items-center justify-between flex-wrap gap-2">
                   <Label>Paciente *</Label>
@@ -452,6 +473,7 @@ export default function CalendarPage() {
                   </SelectContent>
                 </Select>
               </div>
+              )}
               <div className="grid grid-cols-3 gap-2">
                 <div className="space-y-2 col-span-1"><Label>Fecha *</Label><Input type="date" required value={form.date} onChange={e => setForm({ ...form, date: e.target.value })} /></div>
                 <div className="space-y-2 col-span-1"><Label>Hora *</Label><Input type="time" required value={form.time} onChange={e => setForm({ ...form, time: e.target.value })} /></div>
@@ -471,7 +493,7 @@ export default function CalendarPage() {
             </form>
           </div>
           <div className="border-t p-4 space-y-2 shrink-0">
-            <Button type="submit" form="appt-form" className="w-full" disabled={loading || !form.patient_id || !form.specialist_id}>
+            <Button type="submit" form="appt-form" className="w-full" disabled={loading || (form.appointment_type === "cita" && !form.patient_id) || !form.specialist_id}>
               {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : editing ? "Guardar cambios" : "Agendar"}
             </Button>
             {editing && (
