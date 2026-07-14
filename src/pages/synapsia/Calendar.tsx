@@ -78,7 +78,7 @@ export default function CalendarPage() {
     status: "programada",
   });
 
-  const isClinical = hasRole("admin") || hasRole("recepcion");
+  const isClinical = hasRole("admin") || hasRole("recepcion") || hasRole("dueno") || hasRole("administrativo");
 
   // Google Calendar sync state
   const [gcalConnected, setGcalConnected] = useState(false);
@@ -111,7 +111,7 @@ export default function CalendarPage() {
   };
 
   useEffect(() => { fetchSpecialists(); fetchPatients(); }, []);
-  useEffect(() => { fetchAppointments(); /* eslint-disable-next-line */ }, [weekStart]);
+  useEffect(() => { fetchAppointments(); /* eslint-disable-next-line */ }, [weekStart, specialists]);
 
   const fetchSpecialists = async () => {
     const { data } = await supabase.from("specialists").select("id, full_name, specialty, user_id").eq("is_active", true).order("full_name");
@@ -130,7 +130,13 @@ export default function CalendarPage() {
       .gte("scheduled_at", from).lt("scheduled_at", to)
       .order("scheduled_at");
     if (error) toast({ variant: "destructive", title: "Error", description: error.message });
-    setAppointments((data as any) || []);
+    const all = (data as any) || [];
+    if (isClinical) {
+      setAppointments(all);
+    } else {
+      const specId = specialists.find(s => s.user_id === user?.id)?.id;
+      setAppointments(all.filter((a: any) => a.specialist_id === specId));
+    }
   };
 
   const days = useMemo(() => Array.from({ length: 7 }, (_, i) => addDays(weekStart, i)), [weekStart]);
