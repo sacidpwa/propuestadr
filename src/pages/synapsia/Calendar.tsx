@@ -193,33 +193,41 @@ export default function CalendarPage() {
       ({ error } = await supabase.from("appointments").update(payload).eq("id", editing.id));
     } else {
       payload.created_by = user?.id;
-      const { data, error: insError } = await supabase.from("appointments").insert(payload).select("id").single();
+      const { error: insError } = await supabase.from("appointments").insert(payload);
       error = insError;
-      appointmentId = data?.id;
     }
     if (error) toast({ variant: "destructive", title: "Error", description: error.message });
     else {
       toast({ title: editing ? "Cita actualizada" : "Cita agendada" });
       setOpen(false);
-      fetchAppointments();
+      await fetchAppointments();
       // Sync with Google Calendar
-      if (appointmentId && resolvedSpecialistId) {
+      if (resolvedSpecialistId) {
         const isPersonal = form.appointment_type === "personal";
         const patientName = isPersonal ? "Personal" : (patients.find(p => p.id === form.patient_id)?.full_name || "Paciente");
         const specName = specialists.find(s => s.id === resolvedSpecialistId)?.full_name || "Especialista";
-        const appt = { ...payload, id: appointmentId, patients: isPersonal ? null : { full_name: patientName }, specialists: { full_name: specName } };
-        const accessToken = await getValidAccessToken(resolvedSpecialistId);
-        if (accessToken) {
-          const event = buildEventFromAppointment(appt, patientName, specName);
-          if (isPersonal) {
-            event.summary = form.reason || "Cita personal";
-          }
-          if (editing && (editing as any).google_event_id) {
-            await updateCalendarEvent(accessToken, "primary", (editing as any).google_event_id, event);
-          } else {
-            const created = await createCalendarEvent(accessToken, "primary", event);
-            if (created) {
-              await supabase.from("appointments").update({ google_event_id: created.id }).eq("id", appointmentId);
+        // Find the latest appointment that matches
+        const latestAppt = appointments.find(a => 
+          !editing && a.specialist_id === resolvedSpecialistId && 
+          a.scheduled_at === new Date(`${form.date}T${form.time}:00`).toISOString() &&
+          !a.google_event_id
+        );
+        const syncAppt = editing || latestAppt;
+        if (syncAppt) {
+          const appt = { ...payload, id: syncAppt.id, patients: isPersonal ? null : { full_name: patientName }, specialists: { full_name: specName } };
+          const accessToken = await getValidAccessToken(resolvedSpecialistId);
+          if (accessToken) {
+            const event = buildEventFromAppointment(appt, patientName, specName);
+            if (isPersonal) {
+              event.summary = form.reason || "Cita personal";
+            }
+            if (editing && (editing as any).google_event_id) {
+              await updateCalendarEvent(accessToken, "primary", (editing as any).google_event_id, event);
+            } else {
+              const created = await createCalendarEvent(accessToken, "primary", event);
+              if (created) {
+                await supabase.from("appointments").update({ google_event_id: created.id }).eq("id", syncAppt.id);
+              }
             }
           }
         }
