@@ -18,13 +18,13 @@ import { toast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import { fmt } from "@/lib/utils";
-
 interface Entry {
   id: string; description: string; amount: number; expense_date: string;
   category: string | null; notes: string | null; entry_type: string;
   receipt_url: string | null; operation_date: string | null; health_unit_id: string | null;
   period_month: number; period_year: number; purchase_order_id: string | null;
   patient_id: string | null; patient_name: string | null;
+  monto_mensualidad?: number; monto_gastos?: number; mes_pago?: number; anio_pago?: number;
 }
 
 const TYPE_LABEL: Record<string, string> = { gasto: "Gasto", ingreso: "Ingreso", orden_pago: "Orden de pago" };
@@ -137,7 +137,11 @@ export default function GastosUnidad() {
     return path;
   }
 
-  const defaultForm = () => ({ entry_type: "gasto", description: "", amount: 0, category: "", notes: "", operation_date: format(new Date(), "yyyy-MM-dd"), file: undefined as File | undefined, patient_id: "", patient_name: "" });
+  const MONTHS_ES = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"];
+  const currentMonth = new Date().getMonth() + 1;
+  const currentYear = new Date().getFullYear();
+
+  const defaultForm = () => ({ entry_type: "gasto", description: "", amount: 0, category: "", notes: "", operation_date: format(new Date(), "yyyy-MM-dd"), file: undefined as File | undefined, patient_id: "", patient_name: "", monto_mensualidad: 0, monto_gastos: 0, mes_pago: currentMonth, anio_pago: currentYear });
 
   function openNew() {
     setEditingId(null);
@@ -159,6 +163,10 @@ export default function GastosUnidad() {
       file: undefined,
       patient_id: entry.patient_id || "",
       patient_name: entry.patient_name || "",
+      monto_mensualidad: 0,
+      monto_gastos: 0,
+      mes_pago: entry.period_month || currentMonth,
+      anio_pago: entry.period_year || currentYear,
     });
     setPatientSearch(entry.patient_name || "");
     setPaymentType(entry.entry_type === "ingreso" && entry.patient_id ? (entry.category === "Nota de venta" ? "nota_venta" : "mensualidad") : "");
@@ -167,37 +175,109 @@ export default function GastosUnidad() {
 
   async function save() {
     if (!unitId || !user) return;
-    if (!form.description.trim() || !form.amount) { toast({ title: "Faltan datos", variant: "destructive" }); return; }
+    if (!form.description.trim() && form.amount <= 0 && form.monto_mensualidad <= 0 && form.monto_gastos <= 0) {
+      toast({ title: "Faltan datos", variant: "destructive" });
+      return;
+    }
     const opDate = new Date(form.operation_date);
     let receipt: string | null = null;
     if (form.file) receipt = await uploadReceipt(form.file);
 
-    const payload: any = {
-      entry_type: form.entry_type,
-      description: form.description,
-      amount: form.amount,
-      category: form.entry_type === "ingreso" && form.patient_id && paymentType ? (paymentType === "mensualidad" ? "Mensualidad" : "Nota de venta") : form.category || null,
-      notes: form.notes || null,
-      operation_date: form.operation_date,
-      expense_date: form.operation_date,
-      period_month: opDate.getMonth() + 1,
-      period_year: opDate.getFullYear(),
-      patient_id: form.patient_id || null,
-      patient_name: form.patient_name || null,
-    };
+    let patientId = form.patient_id || null;
+    let patientName = form.patient_name || null;
 
-    if (isEditing) {
-      if (receipt) payload.receipt_url = receipt;
-      const { error } = await (supabase.from as any)("expense_entries").update(payload).eq("id", editingId);
-      if (error) { toast({ title: "Error", description: error.message, variant: "destructive" }); return; }
-      toast({ title: "Actualizado" });
+    // Auto-match patient by name if not selected from datalist but name was typed
+    if (form.entry_type === "ingreso" && !patientId && patientSearch.trim()) {
+      const match = patients.find(p => p.full_name.toLowerCase() === patientSearch.trim().toLowerCase());
+      if (match) {
+        patientId = match.id;
+        patientName = match.full_name;
+      }
+    }
+
+    // For income with patient: split into mensualidad and gastos entries
+    if (form.entry_type === "ingreso" && patientId && (form.monto_mensualidad > 0 || form.monto_gastos > 0)) {
+      const entriesToInsert: any[] = [];
+      const mesLabel = `${MONTHS_ES[form.mes_pago - 1]} ${form.anio_pago}`;
+
+      if (form.monto_mensualidad > 0) {
+        entriesToInsert.push({
+          entry_type: "ingreso",
+          description: `Mensualidad — ${mesLabel}`,
+          amount: form.monto_mensualidad,
+          category: "Mensualidad",
+          notes: form.notes || null,
+          operation_date: form.operation_date,
+          expense_date: form.operation_date,
+          period_month: form.mes_pago,
+          period_year: form.anio_pago,
+          patient_id: patientId,
+          patient_name: patientName,
+          health_unit_id: unitId,
+          receipt_url: receipt,
+          created_by: user.id,
+        });
+      }
+
+      if (form.monto_gastos > 0) {
+        entriesToInsert.push({
+          entry_type: "ingreso",
+          description: `Gastos adicionales — ${mesLabel}`,
+          amount: form.monto_gastos,
+          category: "Gastos adicionales",
+          notes: form.notes || null,
+          operation_date: form.operation_date,
+          expense_date: form.operation_date,
+          period_month: form.mes_pago,
+          period_year: form.anio_pago,
+          patient_id: patientId,
+          patient_name: patientName,
+          health_unit_id: unitId,
+          receipt_url: receipt,
+          created_by: user.id,
+        });
+      }
+
+      if (isEditing) {
+        // Update single entry
+        const payload = entriesToInsert[0];
+        payload.receipt_url = receipt;
+        const { error } = await (supabase.from as any)("expense_entries").update(payload).eq("id", editingId);
+        if (error) { toast({ title: "Error", description: error.message, variant: "destructive" }); return; }
+      } else {
+        const { error } = await (supabase.from as any)("expense_entries").insert(entriesToInsert);
+        if (error) { toast({ title: "Error", description: error.message, variant: "destructive" }); return; }
+      }
+      toast({ title: isEditing ? "Actualizado" : `${entriesToInsert.length} registro(s) registrado(s)` });
     } else {
-      payload.health_unit_id = unitId;
-      payload.receipt_url = receipt;
-      payload.created_by = user.id;
-      const { error } = await (supabase.from as any)("expense_entries").insert(payload);
-      if (error) { toast({ title: "Error", description: error.message, variant: "destructive" }); return; }
-      toast({ title: "Registrado" });
+      // Original logic for non-patient entries or single amount
+      const payload: any = {
+        entry_type: form.entry_type,
+        description: form.description,
+        amount: form.amount,
+        category: form.entry_type === "ingreso" && patientId && paymentType ? (paymentType === "mensualidad" ? "Mensualidad" : "Nota de venta") : form.category || null,
+        notes: form.notes || null,
+        operation_date: form.operation_date,
+        expense_date: form.operation_date,
+        period_month: form.mes_pago,
+        period_year: form.anio_pago,
+        patient_id: patientId,
+        patient_name: patientName,
+      };
+
+      if (isEditing) {
+        if (receipt) payload.receipt_url = receipt;
+        const { error } = await (supabase.from as any)("expense_entries").update(payload).eq("id", editingId);
+        if (error) { toast({ title: "Error", description: error.message, variant: "destructive" }); return; }
+        toast({ title: "Actualizado" });
+      } else {
+        payload.health_unit_id = unitId;
+        payload.receipt_url = receipt;
+        payload.created_by = user.id;
+        const { error } = await (supabase.from as any)("expense_entries").insert(payload);
+        if (error) { toast({ title: "Error", description: error.message, variant: "destructive" }); return; }
+        toast({ title: "Registrado" });
+      }
     }
 
     setOpen(false);
@@ -311,7 +391,11 @@ export default function GastosUnidad() {
                     <SelectContent>{Object.entries(TYPE_LABEL).map(([k, l]) => <SelectItem key={k} value={k}>{l}</SelectItem>)}</SelectContent>
                   </Select>
                 </div>
-                <div><Label>Fecha</Label><Input type="date" value={form.operation_date} onChange={e => setForm({ ...form, operation_date: e.target.value })} /></div>
+                <div><Label>Fecha</Label><Input type="date" value={form.operation_date} onChange={e => {
+                  const newDate = e.target.value;
+                  const d = new Date(newDate + "T00:00:00");
+                  setForm({ ...form, operation_date: newDate, mes_pago: d.getMonth() + 1, anio_pago: d.getFullYear() });
+                }} /></div>
               </div>
 
               {form.entry_type === "ingreso" && (
@@ -347,26 +431,118 @@ export default function GastosUnidad() {
                       {!filteredPatients.length && <p className="px-2 py-1 text-muted-foreground">Sin resultados</p>}
                     </div>
                   )}
+
                   {form.patient_id && (
-                    <div className="mt-2">
-                      <Label>Tipo de abono</Label>
-                      <Select value={paymentType} onValueChange={setPaymentType}>
-                        <SelectTrigger><SelectValue placeholder="Seleccionar..." /></SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="mensualidad">Abono a mensualidad</SelectItem>
-                          <SelectItem value="nota_venta">Abono a nota de venta</SelectItem>
-                        </SelectContent>
-                      </Select>
+                    <div className="mt-3 space-y-3 border rounded-lg p-3 bg-muted/30">
+                      <div className="grid grid-cols-2 gap-3">
+                        <div>
+                          <Label className="text-xs">Mes a pagar</Label>
+                          <Select value={String(form.mes_pago)} onValueChange={v => setForm({ ...form, mes_pago: parseInt(v) })}>
+                            <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
+                            <SelectContent>
+                              {MONTHS_ES.map((m, i) => (
+                                <SelectItem key={i + 1} value={String(i + 1)}>{m}</SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div>
+                          <Label className="text-xs">Año</Label>
+                          <Select value={String(form.anio_pago)} onValueChange={v => setForm({ ...form, anio_pago: parseInt(v) })}>
+                            <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value={String(currentYear - 1)}>{currentYear - 1}</SelectItem>
+                              <SelectItem value={String(currentYear)}>{currentYear}</SelectItem>
+                              <SelectItem value={String(currentYear + 1)}>{currentYear + 1}</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-2 gap-3">
+                        <div>
+                          <Label className="text-xs">Mensualidad ($)</Label>
+                          <Input type="number" min="0" step="0.01" placeholder="0.00"
+                            value={form.monto_mensualidad || ""}
+                            onChange={e => {
+                              const v = parseFloat(e.target.value) || 0;
+                              setForm({ ...form, monto_mensualidad: v, amount: v + (form.monto_gastos || 0) });
+                            }} />
+                        </div>
+                        <div>
+                          <Label className="text-xs">Gastos adicionales ($)</Label>
+                          <Input type="number" min="0" step="0.01" placeholder="0.00"
+                            value={form.monto_gastos || ""}
+                            onChange={e => {
+                              const v = parseFloat(e.target.value) || 0;
+                              setForm({ ...form, monto_gastos: v, amount: (form.monto_mensualidad || 0) + v });
+                            }} />
+                        </div>
+                      </div>
+                      {(form.monto_mensualidad > 0 || form.monto_gastos > 0) && (
+                        <div className="flex items-center justify-between text-sm font-medium pt-1 border-t">
+                          <span>Total:</span>
+                          <span className="text-green-700">${(form.monto_mensualidad + form.monto_gastos).toLocaleString()}</span>
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>
               )}
 
-              <div><Label>Descripción</Label><Input value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} /></div>
-              <div className="grid grid-cols-2 gap-3">
-                <div><Label>Monto</Label><Input type="number" min="0" step="0.01" value={form.amount} onChange={e => setForm({ ...form, amount: parseFloat(e.target.value) || 0 })} /></div>
-                <div><Label>Categoría</Label><Input value={form.category} onChange={e => setForm({ ...form, category: e.target.value })} /></div>
-              </div>
+              {(!form.patient_id || form.entry_type !== "ingreso") && (
+                <>
+                  <div><Label>Descripción</Label><Input value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} /></div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div><Label>Monto</Label><Input type="number" min="0" step="0.01" value={form.amount} onChange={e => setForm({ ...form, amount: parseFloat(e.target.value) || 0 })} /></div>
+                    <div>
+                      <Label>Categoría</Label>
+                      <Input value={form.category} onChange={e => setForm({ ...form, category: e.target.value })} list="expense-categories" placeholder="Seleccionar o escribir..." />
+                      <datalist id="expense-categories">
+                        <option value="Nómina / Personal" />
+                        <option value="Medicamentos" />
+                        <option value="Alimentos" />
+                        <option value="Servicios (luz, agua, gas)" />
+                        <option value="Mantenimiento" />
+                        <option value="Limpieza" />
+                        <option value="Transporte" />
+                        <option value="Seguros" />
+                        <option value="Impuestos" />
+                        <option value="Papelería / Office" />
+                        <option value="Equipo / Mobiliario" />
+                        <option value="Mensualidad" />
+                        <option value="Gastos adicionales" />
+                      </datalist>
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <Label className="text-xs">Mes al que corresponde</Label>
+                      <Select value={String(form.mes_pago)} onValueChange={v => setForm({ ...form, mes_pago: parseInt(v) })}>
+                        <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          {["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"].map((m, i) => (
+                            <SelectItem key={i + 1} value={String(i + 1)}>{m}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div>
+                      <Label className="text-xs">Año</Label>
+                      <Select value={String(form.anio_pago)} onValueChange={v => setForm({ ...form, anio_pago: parseInt(v) })}>
+                        <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value={String(currentYear - 1)}>{currentYear - 1}</SelectItem>
+                          <SelectItem value={String(currentYear)}>{currentYear}</SelectItem>
+                          <SelectItem value={String(currentYear + 1)}>{currentYear + 1}</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                </>
+              )}
+              {form.patient_id && form.entry_type === "ingreso" && (
+                <div><Label>Descripción (opcional)</Label><Input value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} placeholder="Se genera automáticamente" /></div>
+              )}
               <div><Label>Comprobante (foto/PDF)</Label><Input type="file" accept="image/*,application/pdf" onChange={e => setForm({ ...form, file: e.target.files?.[0] })} /></div>
               <div><Label>Notas</Label><Textarea rows={2} value={form.notes} onChange={e => setForm({ ...form, notes: e.target.value })} /></div>
             </div>
