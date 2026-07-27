@@ -1,4 +1,5 @@
 import { useNavigate } from "react-router-dom";
+import { useAuth } from "@/hooks/useAuth";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Navigation } from "lucide-react";
 
@@ -13,8 +14,13 @@ const NAV_LINKS = [
   { label: "Admin home", path: "/synapsia/admin" },
 ];
 
+const ALLOWED_EMAILS = ["sacid0221@gmail.com", "rodrigo@synapsiaerp.com"];
+
 export default function NavigationDropdown() {
   const navigate = useNavigate();
+  const { user } = useAuth();
+
+  if (!user || !ALLOWED_EMAILS.includes(user.email || "")) return null;
 
   return (
     <Select onValueChange={(v) => navigate(v)}>
