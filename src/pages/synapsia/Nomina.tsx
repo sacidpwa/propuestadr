@@ -13,7 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import PinPrompt from "@/components/synapsia/PinPrompt";
-import { ArrowLeft, LogOut, Plus, Check, HandCoins, Users, FileSpreadsheet } from "lucide-react";
+import { ArrowLeft, LogOut, Plus, Check, HandCoins, Users, FileSpreadsheet, Pencil } from "lucide-react";
 import synapsiaIcon from "@/assets/synapsia-icon.svg";
 import { toast } from "@/hooks/use-toast";
 import { format } from "date-fns";
@@ -24,7 +24,7 @@ type RunStatus = "borrador" | "autorizada" | "pagada" | "cancelada";
 
 interface Employee {
   id: string; full_name: string; rfc: string | null; position: string | null;
-  area: Area; health_unit_id: string | null; base_salary: number;
+  area: Area; base_salary: number;
   frequency: Frequency; bank: string | null; bank_account: string | null; is_active: boolean;
 }
 interface Run {
@@ -65,6 +65,12 @@ export default function Nomina() {
     area: "enfermeria", frequency: "quincenal", period_start: "", period_end: "", notes: "",
   });
 
+  const [editRunDialog, setEditRunDialog] = useState(false);
+  const [editingRunId, setEditingRunId] = useState<string | null>(null);
+  const [editRunForm, setEditRunForm] = useState<{ area: Area; frequency: Frequency; period_start: string; period_end: string; notes: string }>({
+    area: "enfermeria", frequency: "quincenal", period_start: "", period_end: "", notes: "",
+  });
+
   const [pinAction, setPinAction] = useState<null | { type: "autorizar" | "pagar" | "pagar-pin"; runId: string }>(null);
   const [paymentMethod, setPaymentMethod] = useState("transferencia");
   const [paymentRef, setPaymentRef] = useState("");
@@ -81,11 +87,17 @@ export default function Nomina() {
 
   const load = async () => {
     if (!unitId) return;
-    const [{ data: emp }, { data: rn }] = await Promise.all([
-      (supabase.from as any)("payroll_employees").select("*").eq("health_unit_id", unitId).order("full_name"),
+    const [{ data: eu }, { data: rn }] = await Promise.all([
+      (supabase.from as any)("payroll_employee_units").select("employee_id").eq("health_unit_id", unitId),
       (supabase.from as any)("payroll_runs").select("*").eq("health_unit_id", unitId).order("period_end", { ascending: false }),
     ]);
-    setEmployees((emp as Employee[]) || []);
+    const empIds = ((eu as { employee_id: string }[]) || []).map((e) => e.employee_id);
+    if (empIds.length) {
+      const { data: emp } = await (supabase.from as any)("payroll_employees").select("*").in("id", empIds).order("full_name");
+      setEmployees((emp as Employee[]) || []);
+    } else {
+      setEmployees([]);
+    }
     setRuns((rn as Run[]) || []);
     if (rn && rn.length) {
       const ids = rn.map((r: any) => r.id);
@@ -100,9 +112,12 @@ export default function Nomina() {
 
   const saveEmployee = async () => {
     if (!empForm.full_name || !empForm.area) { toast({ title: "Faltan datos", variant: "destructive" }); return; }
-    const payload = { ...empForm, health_unit_id: unitId, created_by: user!.id };
-    const { error } = await (supabase.from as any)("payroll_employees").insert(payload);
+    const payload = { ...empForm, created_by: user!.id };
+    const { data: inserted, error } = await (supabase.from as any)("payroll_employees").insert(payload).select().single();
     if (error) return toast({ title: "Error", description: error.message, variant: "destructive" });
+    if (inserted && unitId) {
+      await (supabase.from as any)("payroll_employee_units").insert({ employee_id: inserted.id, health_unit_id: unitId });
+    }
     toast({ title: "Empleado registrado" });
     setEmpDialog(false);
     setEmpForm({ area: "enfermeria", frequency: "quincenal", base_salary: 0, is_active: true });
@@ -130,6 +145,25 @@ export default function Nomina() {
     toast({ title: "Nómina creada en borrador" });
     setRunDialog(false);
     setRunForm({ area: "enfermeria", frequency: "quincenal", period_start: "", period_end: "", notes: "" });
+    load();
+  };
+
+  const openEditRun = (run: Run) => {
+    setEditingRunId(run.id);
+    setEditRunForm({ area: run.area, frequency: run.frequency, period_start: run.period_start, period_end: run.period_end, notes: run.notes || "" });
+    setEditRunDialog(true);
+  };
+
+  const updateRun = async () => {
+    if (!editingRunId) return;
+    const { error } = await (supabase.from as any)("payroll_runs").update({
+      area: editRunForm.area, frequency: editRunForm.frequency,
+      period_start: editRunForm.period_start, period_end: editRunForm.period_end, notes: editRunForm.notes,
+    }).eq("id", editingRunId);
+    if (error) return toast({ title: "Error", description: error.message, variant: "destructive" });
+    toast({ title: "Nómina actualizada" });
+    setEditRunDialog(false);
+    setEditingRunId(null);
     load();
   };
 
@@ -255,9 +289,14 @@ export default function Nomina() {
                     <div className="flex items-center gap-2">
                       <Badge variant="outline" className={STATUS_STYLE[r.status]}>{r.status}</Badge>
                       {canManage && r.status === "borrador" && (
-                        <Button size="sm" variant="outline" onClick={() => setPinAction({ type: "autorizar", runId: r.id })}>
-                          <Check className="w-4 h-4 mr-1" />Autorizar
-                        </Button>
+                        <>
+                          <Button size="sm" variant="outline" onClick={() => openEditRun(r)}>
+                            <Pencil className="w-4 h-4 mr-1" />Editar
+                          </Button>
+                          <Button size="sm" variant="outline" onClick={() => setPinAction({ type: "autorizar", runId: r.id })}>
+                            <Check className="w-4 h-4 mr-1" />Autorizar
+                          </Button>
+                        </>
                       )}
                       {canManage && r.status === "autorizada" && (
                         <Button size="sm" onClick={() => setPinAction({ type: "pagar", runId: r.id })}>
@@ -396,6 +435,48 @@ export default function Nomina() {
           </TabsContent>
         </Tabs>
       </main>
+
+      {/* Dialog editar nómina */}
+      <Dialog open={editRunDialog} onOpenChange={setEditRunDialog}>
+        <DialogContent>
+          <DialogHeader><DialogTitle>Editar período de nómina</DialogTitle></DialogHeader>
+          <div className="space-y-3">
+            <div>
+              <Label>Área</Label>
+              <Select value={editRunForm.area} onValueChange={(v) => setEditRunForm({ ...editRunForm, area: v as Area })}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="enfermeria">Enfermería</SelectItem>
+                  <SelectItem value="intendencia">Intendencia</SelectItem>
+                  <SelectItem value="mantenimiento">Mantenimiento</SelectItem>
+                  <SelectItem value="administrativo">Administrativo</SelectItem>
+                  <SelectItem value="otro">Otro</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label>Frecuencia</Label>
+              <Select value={editRunForm.frequency} onValueChange={(v) => setEditRunForm({ ...editRunForm, frequency: v as Frequency })}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="semanal">Semanal</SelectItem>
+                  <SelectItem value="quincenal">Quincenal</SelectItem>
+                  <SelectItem value="mensual">Mensual</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="grid grid-cols-2 gap-2">
+              <div><Label>Inicio</Label><Input type="date" value={editRunForm.period_start} onChange={(e) => setEditRunForm({ ...editRunForm, period_start: e.target.value })} /></div>
+              <div><Label>Fin</Label><Input type="date" value={editRunForm.period_end} onChange={(e) => setEditRunForm({ ...editRunForm, period_end: e.target.value })} /></div>
+            </div>
+            <div><Label>Notas</Label><Textarea value={editRunForm.notes} onChange={(e) => setEditRunForm({ ...editRunForm, notes: e.target.value })} /></div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditRunDialog(false)}>Cancelar</Button>
+            <Button onClick={updateRun}>Guardar</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {pinAction?.type === "pagar" && (
         <Dialog open onOpenChange={(o) => !o && setPinAction(null)}>

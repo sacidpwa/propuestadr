@@ -3,7 +3,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Calculator, LogOut, Wallet, Users, BarChart3, ShieldCheck, Building2, ClipboardList, LayoutDashboard, CheckCircle, DollarSign } from "lucide-react";
+import { Calculator, LogOut, Wallet, Users, BarChart3, ShieldCheck, Building2, ClipboardList, LayoutDashboard, CheckCircle, DollarSign, ListTodo } from "lucide-react";
 import synapsiaIcon from "@/assets/synapsia-icon.svg";
 import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -189,6 +189,9 @@ export default function AdminHome() {
           )}
           {(hasRole("admin") || hasRole("dueno")) && (
             <Tool to="/synapsia/evaluaciones" icon={<ClipboardList className="w-6 h-6 text-primary" />} title="Evaluación de personal" desc="Entrevistas al brazo administrativo: qué reciben, procesan y generan." />
+          )}
+          {hasRole("admin") && (
+            <Tool to="/synapsia/admin-panel" icon={<ListTodo className="w-6 h-6 text-primary" />} title="Panel de administración" desc="Asignar tareas, metas, historial de accesos y mensajería interna." />
           )}
         </div>
       </main>

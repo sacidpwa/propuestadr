@@ -13,7 +13,7 @@ import synapsiaLogo from "@/assets/synapsia-logo.svg";
 import WelcomeOverlay from "@/components/synapsia/WelcomeOverlay";
 
 const routeForRoles = (roles: string[]): string => {
-  if (roles.includes("admin")) return "/synapsia";
+  if (roles.includes("admin")) return "/synapsia/admin-panel";
   if (roles.includes("recepcion") || roles.includes("especialista")) return "/synapsia";
   if (roles.includes("administrativo")) return "/synapsia/admin";
   if (roles.includes("promotor")) return "/synapsia/cotizador";

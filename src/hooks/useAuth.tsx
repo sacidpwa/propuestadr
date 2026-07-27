@@ -15,6 +15,17 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+const logAccess = async (userId: string, action: string, page?: string) => {
+  try {
+    await supabase.from("access_logs" as any).insert({
+      user_id: userId,
+      action,
+      page: page || window.location.pathname,
+      user_agent: navigator.userAgent,
+    } as any);
+  } catch { /* silent */ }
+};
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
@@ -31,11 +42,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (_event, session) => {
+      async (event, session) => {
         setSession(session);
         setUser(session?.user ?? null);
         if (session?.user) {
           await fetchRoles(session.user.id);
+          if (event === "SIGNED_IN") logAccess(session.user.id, "login");
         } else {
           setRoles([]);
         }

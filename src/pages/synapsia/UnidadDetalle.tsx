@@ -95,6 +95,7 @@ interface DashboardData {
   monthly: { month: string; ingresos: number; gastos: number }[];
   patientSummary: PatientSummary[];
   expenseByCategory: { name: string; value: number; entries: any[] }[];
+  incomeByPatient: { name: string; value: number; entries: any[] }[];
   staffList: any[];
 }
 
@@ -167,6 +168,7 @@ export default function UnidadDetalle() {
     monthly: [],
     patientSummary: [],
     expenseByCategory: [],
+    incomeByPatient: [],
     staffList: [],
   });
   const [patientDialogOpen, setPatientDialogOpen] = useState(false);
@@ -176,6 +178,9 @@ export default function UnidadDetalle() {
   const [categorySort, setCategorySort] = useState<"date_desc" | "date_asc" | "amount_desc" | "amount_asc">("date_desc");
   const [staffDialogOpen, setStaffDialogOpen] = useState(false);
   const [staffSort, setStaffSort] = useState<{ key: string; dir: "asc" | "desc" }>({ key: "full_name", dir: "asc" });
+  const [incomePatientOpen, setIncomePatientOpen] = useState(false);
+  const [selectedIncomePatient, setSelectedIncomePatient] = useState<{ name: string; value: number; entries: any[] } | null>(null);
+  const [incomePatientSort, setIncomePatientSort] = useState<"date_desc" | "date_asc" | "amount_desc" | "amount_asc">("date_desc");
 
   const loadDashboard = useCallback(async () => {
     if (!id) return;
@@ -200,7 +205,7 @@ export default function UnidadDetalle() {
       builder.then((res: any) => resolve(res)).catch(() => resolve({ data: [], count: null }));
     });
 
-    const [patientRes, staffUnitsRes, staffAllRes, invRes, reqRes, poRes, feeRes, expenseAllEntriesRes, incomeAllEntriesRes, monthlyRes, consultDailyRes, consultTodayRes, consultMonthRes, abonosRes, recentRes, todayDetailRes, expenseCategoryRes] = await Promise.all([
+    const [patientRes, staffUnitsRes, staffAllRes, invRes, reqRes, poRes, feeRes, expenseAllEntriesRes, incomeAllEntriesRes, incomeDetailRes, monthlyRes, consultDailyRes, consultTodayRes, consultMonthRes, abonosRes, recentRes, todayDetailRes, expenseCategoryRes] = await Promise.all([
       q((supabase.from as any)("patients").select("id").eq("health_unit_id", id)),
       q((supabase.from as any)("payroll_employee_units").select("employee_id").eq("health_unit_id", id)),
       q((supabase.from as any)("payroll_employees").select("*").eq("is_active", true)),
@@ -210,6 +215,7 @@ export default function UnidadDetalle() {
       q((supabase.from as any)("client_fees").select("*").eq("health_unit_id", id).eq("is_active", true)),
       q((supabase.from as any)("expense_entries").select("amount, expense_date, period_month, period_year, entry_type").eq("health_unit_id", id).eq("entry_type", "gasto")),
       q((supabase.from as any)("expense_entries").select("amount, expense_date, period_month, period_year, entry_type").eq("health_unit_id", id).eq("entry_type", "ingreso")),
+      q((supabase.from as any)("expense_entries").select("amount, expense_date, period_month, period_year, entry_type, patient_name, description, category").eq("health_unit_id", id).eq("entry_type", "ingreso")),
       q((supabase.from as any)("expense_entries").select("amount, entry_type, period_month").eq("health_unit_id", id).eq("period_year", currentYear)),
       q((supabase.from as any)("consultation_log").select("record_date, amount_collected").eq("health_unit_id", id).gte("record_date", pr.from).lte("record_date", pr.to).order("record_date")),
       q((supabase.from as any)("consultation_log").select("amount_collected", { count: "exact", head: false }).eq("health_unit_id", id).eq("record_date", todayStr)),
@@ -341,6 +347,17 @@ export default function UnidadDetalle() {
     });
     const expenseByCategory = Object.values(catMap).sort((a, b) => b.value - a.value);
 
+    const patMap: Record<string, { name: string; value: number; entries: any[] }> = {};
+    ((incomeDetailRes.data as any[]) || []).filter((e: any) => {
+      return viewMode === "period" ? periodMonths.some(pm => pm.month === e.period_month && pm.year === e.period_year) : (e.expense_date >= pr.from && e.expense_date <= pr.to);
+    }).forEach((e: any) => {
+      const pat = e.patient_name || "Sin paciente";
+      if (!patMap[pat]) patMap[pat] = { name: pat, value: 0, entries: [] };
+      patMap[pat].value += Number(e.amount || 0);
+      patMap[pat].entries.push(e);
+    });
+    const incomeByPatient = Object.values(patMap).sort((a, b) => b.value - a.value);
+
     setData(prev => ({
       patients: (patientRes.data as any[])?.length || 0,
       staff: staffList.length,
@@ -362,6 +379,7 @@ export default function UnidadDetalle() {
       monthly,
       patientSummary: prev.patientSummary,
       expenseByCategory,
+      incomeByPatient,
       staffList,
     }));
     setLoading(false);
@@ -788,6 +806,84 @@ export default function UnidadDetalle() {
               </CardContent>
             </Card>
 
+            {/* Gráfica de dona: Ingresos por paciente */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base flex items-center gap-2">
+                  <TrendingUp className="w-5 h-5" /> Ingresos por paciente
+                </CardTitle>
+                <CardDescription>Distribución de ingresos del período: {pr.label}</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="h-72">
+                  {data.incomeByPatient.length > 0 ? (
+                    <ResponsiveContainer width="100%" height="100%">
+                      <RePieChart>
+                        <Pie
+                          data={data.incomeByPatient}
+                          cx="50%"
+                          cy="50%"
+                          innerRadius={60}
+                          outerRadius={110}
+                          paddingAngle={2}
+                          dataKey="value"
+                          nameKey="name"
+                          onClick={(entry) => {
+                            setSelectedIncomePatient({ name: entry.name, value: entry.value, entries: entry.entries });
+                            setIncomePatientSort("date_desc");
+                            setIncomePatientOpen(true);
+                          }}
+                          style={{ cursor: "pointer" }}
+                        >
+                          {data.incomeByPatient.map((_, i) => (
+                            <Cell key={i} fill={["#22c55e","#06b6d4","#8b5cf6","#eab308","#f97316","#ec4899","#6366f1","#14b8a6","#ef4444","#f43f5e"][i % 10]} />
+                          ))}
+                        </Pie>
+                        <ReTooltip formatter={(v: number) => `$${Number(v).toLocaleString()}`} />
+                        <Legend />
+                      </RePieChart>
+                    </ResponsiveContainer>
+                  ) : (
+                    <div className="h-full flex items-center justify-center text-muted-foreground text-sm">
+                      Sin ingresos registrados en el período
+                    </div>
+                  )}
+                </div>
+                {data.incomeByPatient.length > 0 && (
+                  <div className="mt-4 overflow-x-auto">
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr className="border-b text-muted-foreground text-xs">
+                          <th className="text-left px-3 py-2 font-medium">Paciente</th>
+                          <th className="text-right px-3 py-2 font-medium">Monto</th>
+                          <th className="text-right px-3 py-2 font-medium">% del total</th>
+                          <th className="text-right px-3 py-2 font-medium">Movimientos</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {data.incomeByPatient.map((pat) => {
+                          const total = data.incomeByPatient.reduce((s, p) => s + p.value, 0);
+                          const pct = total > 0 ? ((pat.value / total) * 100).toFixed(1) : "0";
+                          return (
+                            <tr
+                              key={pat.name}
+                              className="border-b last:border-0 hover:bg-muted/50 cursor-pointer"
+                              onClick={() => { setSelectedIncomePatient(pat); setIncomePatientSort("date_desc"); setIncomePatientOpen(true); }}
+                            >
+                              <td className="px-3 py-2 font-medium">{pat.name}</td>
+                              <td className="px-3 py-2 text-right font-mono text-green-700">${pat.value.toLocaleString()}</td>
+                              <td className="px-3 py-2 text-right">{pct}%</td>
+                              <td className="px-3 py-2 text-right">{pat.entries.length}</td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
             {/* Abonos mensuales de pacientes */}
             <Card>
               <CardHeader>
@@ -1135,6 +1231,70 @@ export default function UnidadDetalle() {
             <div className="py-12 text-center text-muted-foreground">
               <Wallet className="w-8 h-8 mx-auto mb-2 opacity-40" />
               <p>Sin movimientos en esta categoría</p>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog detalle ingresos por paciente */}
+      <Dialog open={incomePatientOpen} onOpenChange={setIncomePatientOpen}>
+        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <TrendingUp className="w-5 h-5" /> {selectedIncomePatient?.name || "Paciente"} — {pr.label}
+            </DialogTitle>
+          </DialogHeader>
+          {selectedIncomePatient && selectedIncomePatient.entries.length > 0 ? (
+            <>
+              <div className="flex items-center justify-between mb-2">
+                <div>
+                  <span className="text-sm text-muted-foreground">Total: </span>
+                  <span className="font-bold text-green-700">${selectedIncomePatient.value.toLocaleString()}</span>
+                  <span className="text-sm text-muted-foreground ml-4">({selectedIncomePatient.entries.length} movimiento(s))</span>
+                </div>
+                <div className="flex gap-1">
+                  <Button size="sm" variant={incomePatientSort === "date_desc" || incomePatientSort === "date_asc" ? "default" : "outline"} className="h-7 text-xs" onClick={() => setIncomePatientSort(incomePatientSort === "date_desc" ? "date_asc" : "date_desc")}>
+                    <CalendarDays className="w-3 h-3 mr-1" /> Fecha {incomePatientSort === "date_desc" ? "↓" : incomePatientSort === "date_asc" ? "↑" : ""}
+                  </Button>
+                  <Button size="sm" variant={incomePatientSort === "amount_desc" || incomePatientSort === "amount_asc" ? "default" : "outline"} className="h-7 text-xs" onClick={() => setIncomePatientSort(incomePatientSort === "amount_desc" ? "amount_asc" : "amount_desc")}>
+                    <DollarSign className="w-3 h-3 mr-1" /> Monto {incomePatientSort === "amount_desc" ? "↓" : incomePatientSort === "amount_asc" ? "↑" : ""}
+                  </Button>
+                </div>
+              </div>
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b text-muted-foreground text-xs">
+                      <th className="text-left px-3 py-2 font-medium">Descripción</th>
+                      <th className="text-left px-3 py-2 font-medium">Categoría</th>
+                      <th className="text-left px-3 py-2 font-medium">Fecha</th>
+                      <th className="text-right px-3 py-2 font-medium">Monto</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {[...selectedIncomePatient.entries].sort((a, b) => {
+                      if (incomePatientSort === "date_desc") return new Date(b.expense_date || 0).getTime() - new Date(a.expense_date || 0).getTime();
+                      if (incomePatientSort === "date_asc") return new Date(a.expense_date || 0).getTime() - new Date(b.expense_date || 0).getTime();
+                      if (incomePatientSort === "amount_desc") return Number(b.amount || 0) - Number(a.amount || 0);
+                      return Number(a.amount || 0) - Number(b.amount || 0);
+                    }).map((e, i) => (
+                      <tr key={i} className="border-b last:border-0 hover:bg-muted/50">
+                        <td className="px-3 py-2 font-medium">{e.description || "—"}</td>
+                        <td className="px-3 py-2 text-xs">{e.category || "—"}</td>
+                        <td className="px-3 py-2 text-xs">
+                          {e.expense_date ? format(localDate(e.expense_date), "PP", { locale: es }) : "—"}
+                        </td>
+                        <td className="px-3 py-2 text-right font-mono text-green-700">${Number(e.amount).toLocaleString()}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </>
+          ) : (
+            <div className="py-12 text-center text-muted-foreground">
+              <TrendingUp className="w-8 h-8 mx-auto mb-2 opacity-40" />
+              <p>Sin ingresos para este paciente</p>
             </div>
           )}
         </DialogContent>
