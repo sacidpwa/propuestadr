@@ -12,8 +12,18 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { ArrowLeft, LogOut, Plus, Users, ListTodo, Target, MessageSquare, Check, Clock, AlertTriangle, Send, Eye, Trash2, Pencil } from "lucide-react";
+import { ArrowLeft, LogOut, Plus, Users, ListTodo, Target, MessageSquare, Check, Clock, AlertTriangle, Send, Eye, Trash2, Pencil, Navigation } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
+
+const NAV_LINKS = [
+  { label: "Planta en vivo", path: "/synapsia/floor" },
+  { label: "Unidades de salud", path: "/synapsia/unidades" },
+  { label: "Dashboard ejecutivo", path: "/synapsia/dashboard" },
+  { label: "Centro de autorizaciones", path: "/synapsia/autorizaciones" },
+  { label: "Plantilla laboral", path: "/synapsia/plantilla" },
+  { label: "Usuarios", path: "/synapsia/users" },
+  { label: "Admin home", path: "/synapsia/admin" },
+];
 import synapsiaIcon from "@/assets/synapsia-icon.svg";
 import { toast } from "@/hooks/use-toast";
 import { format, formatDistanceToNow } from "date-fns";
@@ -343,7 +353,20 @@ export default function SuperAdminDashboard() {
               <p className="text-xs text-muted-foreground">{user?.email}</p>
             </div>
           </div>
-          <Button variant="ghost" size="icon" onClick={signOut}><LogOut className="w-4 h-4" /></Button>
+          <div className="flex items-center gap-2">
+            <Select onValueChange={(v) => navigate(v)}>
+              <SelectTrigger className="w-[180px] h-9 text-xs">
+                <Navigation className="w-3 h-3 mr-2" />
+                <SelectValue placeholder="Navegar a..." />
+              </SelectTrigger>
+              <SelectContent>
+                {NAV_LINKS.map((l) => (
+                  <SelectItem key={l.path} value={l.path}>{l.label}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Button variant="ghost" size="icon" onClick={signOut}><LogOut className="w-4 h-4" /></Button>
+          </div>
         </div>
       </header>
 

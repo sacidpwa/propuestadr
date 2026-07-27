@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { ArrowLeft, LogOut, Building2, ChevronRight } from "lucide-react";
 import synapsiaIcon from "@/assets/synapsia-icon.svg";
+import NavigationDropdown from "@/components/synapsia/NavigationDropdown";
 
 interface HealthUnit { id: string; name: string; description: string | null; is_active: boolean; }
 
@@ -30,7 +31,10 @@ export default function Unidades() {
             <img src={synapsiaIcon} alt="" className="w-9 h-9" />
             <div><h1 className="text-lg font-bold">Unidades de salud</h1><p className="text-xs text-muted-foreground">{user?.email}</p></div>
           </div>
-          <Button variant="ghost" size="icon" onClick={signOut}><LogOut className="w-4 h-4" /></Button>
+          <div className="flex items-center gap-2">
+            <NavigationDropdown />
+            <Button variant="ghost" size="icon" onClick={signOut}><LogOut className="w-4 h-4" /></Button>
+          </div>
         </div>
       </header>
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">

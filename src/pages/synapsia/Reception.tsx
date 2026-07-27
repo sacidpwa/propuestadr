@@ -19,6 +19,7 @@ import {
   CheckCircle2, Loader2, DollarSign, Stethoscope, Plus, Trash2, Calculator
 } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
+import NavigationDropdown from "@/components/synapsia/NavigationDropdown";
 
 interface Specialist {
   id: string;
@@ -266,6 +267,7 @@ export default function Reception() {
             <span className="text-sm text-muted-foreground hidden sm:block">
               {format(new Date(), "EEEE d 'de' MMMM, yyyy", { locale: es })}
             </span>
+            <NavigationDropdown />
             <Button variant="ghost" size="icon" onClick={signOut}>
               <LogOut className="w-4 h-4" />
             </Button>

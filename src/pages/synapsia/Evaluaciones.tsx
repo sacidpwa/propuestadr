@@ -13,6 +13,7 @@ import { ArrowLeft, LogOut, Plus, Save, Trash2, ClipboardList } from "lucide-rea
 import { toast } from "sonner";
 import { format } from "date-fns";
 import synapsiaIcon from "@/assets/synapsia-icon.svg";
+import NavigationDropdown from "@/components/synapsia/NavigationDropdown";
 
 interface HealthUnit { id: string; name: string; }
 interface Evaluation {
@@ -162,7 +163,10 @@ export default function Evaluaciones() {
               <p className="text-xs text-muted-foreground">{user?.email}</p>
             </div>
           </div>
-          <Button variant="ghost" size="icon" onClick={signOut}><LogOut className="w-4 h-4" /></Button>
+          <div className="flex items-center gap-2">
+            <NavigationDropdown />
+            <Button variant="ghost" size="icon" onClick={signOut}><LogOut className="w-4 h-4" /></Button>
+          </div>
         </div>
       </header>
 

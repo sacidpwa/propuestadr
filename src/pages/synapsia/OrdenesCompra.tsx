@@ -15,6 +15,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import PinPrompt from "@/components/synapsia/PinPrompt";
 import { ArrowLeft, LogOut, Plus, Check, X, ShoppingCart, Package, Loader2, Building2, Phone, Mail, MapPin, Truck, CreditCard } from "lucide-react";
 import synapsiaIcon from "@/assets/synapsia-icon.svg";
+import NavigationDropdown from "@/components/synapsia/NavigationDropdown";
 import { toast } from "@/hooks/use-toast";
 import { fmt } from "@/lib/utils";
 import { format } from "date-fns";
@@ -307,7 +308,10 @@ export default function OrdenesCompra() {
               <p className="text-xs text-muted-foreground">{user?.email}</p>
             </div>
           </div>
-          <Button variant="ghost" size="icon" onClick={signOut}><LogOut className="w-4 h-4" /></Button>
+          <div className="flex items-center gap-2">
+            <NavigationDropdown />
+            <Button variant="ghost" size="icon" onClick={signOut}><LogOut className="w-4 h-4" /></Button>
+          </div>
         </div>
       </header>
 

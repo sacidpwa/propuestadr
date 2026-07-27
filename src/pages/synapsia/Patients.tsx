@@ -12,6 +12,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { ArrowLeft, Brain, FileText, Loader2, LogOut, Pencil, Search, UserPlus } from "lucide-react";
+import NavigationDropdown from "@/components/synapsia/NavigationDropdown";
 
 interface Patient { id: string; full_name: string; phone: string | null; email: string | null; date_of_birth: string | null; health_unit_id: string | null; health_unit_name?: string; }
 interface HealthUnit { id: string; name: string; }
@@ -159,7 +160,10 @@ export default function Patients() {
             <div className="w-10 h-10 rounded-xl bg-primary flex items-center justify-center"><Brain className="w-5 h-5 text-primary-foreground" /></div>
             <div><h1 className="text-lg font-bold">Pacientes</h1><p className="text-xs text-muted-foreground">{user?.email}</p></div>
           </div>
-          <Button variant="ghost" size="icon" onClick={signOut}><LogOut className="w-4 h-4" /></Button>
+          <div className="flex items-center gap-2">
+            <NavigationDropdown />
+            <Button variant="ghost" size="icon" onClick={signOut}><LogOut className="w-4 h-4" /></Button>
+          </div>
         </div>
       </header>
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-4">

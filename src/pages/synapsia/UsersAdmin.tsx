@@ -14,6 +14,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, Dialog
 import { useToast } from "@/hooks/use-toast";
 import { ArrowLeft, LogOut, Loader2, UserPlus, KeyRound, ShieldCheck, BarChart3, Users as UsersIcon, Pencil, Stethoscope } from "lucide-react";
 import synapsiaIcon from "@/assets/synapsia-icon.svg";
+import NavigationDropdown from "@/components/synapsia/NavigationDropdown";
 
 type Role = "admin" | "recepcion" | "especialista" | "administrativo" | "dueno" | "promotor" | "enfermera" | "intendencia" | "mantenimiento" | "asistente_admin" | "contador" | "rrhh" | "empleado";
 const ROLE_LABEL: Record<Role, string> = {
@@ -260,7 +261,10 @@ export default function UsersAdmin() {
             <img src={synapsiaIcon} alt="" className="w-9 h-9" />
             <div><h1 className="text-lg font-bold">Gestión de usuarios</h1><p className="text-xs text-muted-foreground">{user?.email}</p></div>
           </div>
-          <Button variant="ghost" size="icon" onClick={signOut}><LogOut className="w-4 h-4" /></Button>
+          <div className="flex items-center gap-2">
+            <NavigationDropdown />
+            <Button variant="ghost" size="icon" onClick={signOut}><LogOut className="w-4 h-4" /></Button>
+          </div>
         </div>
       </header>
 

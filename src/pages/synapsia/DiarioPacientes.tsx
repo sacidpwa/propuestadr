@@ -11,6 +11,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Dialog, DialogClose, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { ArrowLeft, LogOut, Plus, Pencil, Trash2, Search, Calendar } from "lucide-react";
 import synapsiaIcon from "@/assets/synapsia-icon.svg";
+import NavigationDropdown from "@/components/synapsia/NavigationDropdown";
 import { toast } from "@/hooks/use-toast";
 import { fmt } from "@/lib/utils";
 import { format } from "date-fns";
@@ -206,7 +207,10 @@ export default function DiarioPacientes() {
               <p className="text-xs text-muted-foreground">{user?.email}</p>
             </div>
           </div>
-          <Button variant="ghost" size="icon" onClick={signOut}><LogOut className="w-4 h-4" /></Button>
+          <div className="flex items-center gap-2">
+            <NavigationDropdown />
+            <Button variant="ghost" size="icon" onClick={signOut}><LogOut className="w-4 h-4" /></Button>
+          </div>
         </div>
       </header>
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-4">

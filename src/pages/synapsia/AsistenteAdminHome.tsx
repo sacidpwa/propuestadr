@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { LogOut, ClipboardList, ShoppingCart, HandCoins, Package, AlertTriangle, Building2, ArrowRight, ShoppingBag, Sparkles, Wrench, Pill } from "lucide-react";
 import synapsiaIcon from "@/assets/synapsia-icon.svg";
+import NavigationDropdown from "@/components/synapsia/NavigationDropdown";
 
 interface Req {
   id: string; title: string; total_amount: number; status: string; priority: string;
@@ -107,6 +108,7 @@ export default function AsistenteAdminHome() {
             <Button variant="outline" size="sm" onClick={() => navigate("/synapsia/unidades")}>
               <Building2 className="w-4 h-4 mr-1" /> Unidades
             </Button>
+            <NavigationDropdown />
             <Button variant="ghost" size="icon" onClick={signOut}><LogOut className="w-4 h-4" /></Button>
           </div>
         </div>

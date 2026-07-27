@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { BarChart3, Calendar, FileText, LogOut, Users, Wallet, Stethoscope, Calculator, ShieldCheck, LayoutDashboard, ClipboardList, CheckCircle } from "lucide-react";
 import synapsiaIcon from "@/assets/synapsia-icon.svg";
+import NavigationDropdown from "@/components/synapsia/NavigationDropdown";
 import { useState } from "react";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
@@ -51,6 +52,7 @@ export default function OwnerHome() {
                 <DialogFooter><Button variant="outline" onClick={() => setPinOpen(false)}>Cancelar</Button><Button onClick={setMyPin} disabled={pin.length < 4}>Guardar</Button></DialogFooter>
               </DialogContent>
             </Dialog>
+            <NavigationDropdown />
             <Button variant="ghost" size="icon" onClick={signOut}><LogOut className="w-4 h-4" /></Button>
           </div>
         </div>

@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { ArrowLeft, LogOut, ClipboardList, ShoppingCart, FileSpreadsheet, FileText, DollarSign, AlertTriangle, Building2, ShieldCheck, Users, UserCheck, Scale, Calculator, Crown, Wallet, CalendarIcon, BarChart3 } from "lucide-react";
 import synapsiaIcon from "@/assets/synapsia-icon.svg";
+import NavigationDropdown from "@/components/synapsia/NavigationDropdown";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 
@@ -121,10 +122,13 @@ export default function DashboardEjecutivo() {
               <p className="text-xs text-muted-foreground">{user?.email}</p>
             </div>
           </div>
-          <Button variant="outline" size="sm" onClick={() => navigate("/synapsia/log-movimientos")} className="mr-2">
-            Log inventario
-          </Button>
-          <Button variant="ghost" size="icon" onClick={signOut}><LogOut className="w-4 h-4" /></Button>
+          <div className="flex items-center gap-2">
+            <Button variant="outline" size="sm" onClick={() => navigate("/synapsia/log-movimientos")} className="mr-2">
+              Log inventario
+            </Button>
+            <NavigationDropdown />
+            <Button variant="ghost" size="icon" onClick={signOut}><LogOut className="w-4 h-4" /></Button>
+          </div>
         </div>
       </header>
 

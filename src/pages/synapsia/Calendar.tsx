@@ -14,6 +14,7 @@ import { useToast } from "@/hooks/use-toast";
 import { format, addDays, startOfWeek, isSameDay, parseISO } from "date-fns";
 import { es } from "date-fns/locale";
 import { ArrowLeft, Brain, CalendarPlus, ChevronLeft, ChevronRight, LogOut, Loader2, Trash2, UserPlus, XCircle, CalendarCheck, CheckCircle, Link as LinkIcon, RefreshCw } from "lucide-react";
+import NavigationDropdown from "@/components/synapsia/NavigationDropdown";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { getAuthUrl, buildEventFromAppointment, createCalendarEvent, updateCalendarEvent, deleteCalendarEvent, getValidAccessToken, listGoogleEvents, type GoogleEvent, listTaskLists, listTasks, createTask, completeTask, deleteTask, type GoogleTask, type GoogleTaskList } from "@/lib/googleCalendar";
 
@@ -509,7 +510,10 @@ export default function CalendarPage() {
               <p className="text-xs text-muted-foreground">{user?.email}</p>
             </div>
           </div>
-          <Button variant="ghost" size="icon" onClick={signOut}><LogOut className="w-4 h-4" /></Button>
+          <div className="flex items-center gap-2">
+            <NavigationDropdown />
+            <Button variant="ghost" size="icon" onClick={signOut}><LogOut className="w-4 h-4" /></Button>
+          </div>
         </div>
       </header>
 

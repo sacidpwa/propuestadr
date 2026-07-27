@@ -11,6 +11,7 @@ import {
   FileText, Building2, UserCheck, Wallet, TrendingUp, TrendingDown, Stethoscope,
 } from "lucide-react";
 import synapsiaIcon from "@/assets/synapsia-icon.svg";
+import NavigationDropdown from "@/components/synapsia/NavigationDropdown";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 
@@ -79,6 +80,7 @@ export default function DuenoUnidadDashboard() {
                 <Stethoscope className="w-4 h-4 mr-1" /> Perfil Especialista
               </Button>
             )}
+            <NavigationDropdown />
             <Button variant="ghost" size="icon" onClick={signOut}><LogOut className="w-4 h-4" /></Button>
           </div>
         </div>

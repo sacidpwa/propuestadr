@@ -17,6 +17,7 @@ import {
   History, CreditCard, Download, AlertCircle, Receipt, Check
 } from "lucide-react";
 import synapsiaIcon from "@/assets/synapsia-icon.svg";
+import NavigationDropdown from "@/components/synapsia/NavigationDropdown";
 import logoAlcatraces from "@/assets/logo-alcatraces.jpg";
 import logoSenior from "@/assets/logo-senior-living.jpg";
 import logoBenesse from "@/assets/logo-benesse.jpg";
@@ -339,7 +340,10 @@ export default function DetallePaciente() {
               <p className="text-xs text-muted-foreground">{user?.email}</p>
             </div>
           </div>
-          <Button variant="ghost" size="icon" onClick={signOut}><LogOut className="w-4 h-4" /></Button>
+          <div className="flex items-center gap-2">
+            <NavigationDropdown />
+            <Button variant="ghost" size="icon" onClick={signOut}><LogOut className="w-4 h-4" /></Button>
+          </div>
         </div>
       </header>
 

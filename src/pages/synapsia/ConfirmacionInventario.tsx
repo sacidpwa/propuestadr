@@ -12,6 +12,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { ArrowLeft, LogOut, CheckCircle, AlertTriangle, ClipboardCheck } from "lucide-react";
 import synapsiaIcon from "@/assets/synapsia-icon.svg";
+import NavigationDropdown from "@/components/synapsia/NavigationDropdown";
 import { toast } from "@/hooks/use-toast";
 import { format, differenceInDays } from "date-fns";
 import { es } from "date-fns/locale";
@@ -136,6 +137,7 @@ export default function ConfirmacionInventario() {
           </div>
           <div className="flex items-center gap-2">
             <Button variant="outline" size="sm" onClick={loadHistory}><ClipboardCheck className="w-4 h-4 mr-1" /> Historial</Button>
+            <NavigationDropdown />
             <Button variant="ghost" size="icon" onClick={signOut}><LogOut className="w-4 h-4" /></Button>
           </div>
         </div>

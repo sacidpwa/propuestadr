@@ -11,6 +11,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { ArrowLeft, Brain, FileSignature, HeartPulse, Loader2, Lock, LogOut, NotebookPen, Pill, Plus, RotateCcw, Save, Trash2 } from "lucide-react";
+import NavigationDropdown from "@/components/synapsia/NavigationDropdown";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 
@@ -337,7 +338,10 @@ export default function MedicalRecord() {
               <p className="text-xs text-muted-foreground">{patient?.full_name || "—"}</p>
             </div>
           </div>
-          <Button variant="ghost" size="icon" onClick={signOut}><LogOut className="w-4 h-4" /></Button>
+          <div className="flex items-center gap-2">
+            <NavigationDropdown />
+            <Button variant="ghost" size="icon" onClick={signOut}><LogOut className="w-4 h-4" /></Button>
+          </div>
         </div>
       </header>
       <main className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-4">

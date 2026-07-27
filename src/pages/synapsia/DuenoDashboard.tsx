@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { LogOut, Users, DollarSign, Package, Stethoscope, Building2, UserCheck, Calculator, BarChart3, ShieldCheck } from "lucide-react";
 import synapsiaIcon from "@/assets/synapsia-icon.svg";
+import NavigationDropdown from "@/components/synapsia/NavigationDropdown";
 
 interface UnitSummary {
   id: string; name: string; description: string;
@@ -75,6 +76,7 @@ export default function DuenoDashboard() {
                 <Stethoscope className="w-4 h-4 mr-1" /> Perfil Especialista
               </Button>
             )}
+            <NavigationDropdown />
             <Button variant="ghost" size="icon" onClick={signOut}><LogOut className="w-4 h-4" /></Button>
           </div>
         </div>

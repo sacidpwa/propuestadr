@@ -20,6 +20,7 @@ import {
   BarChart3, Users, Wallet, Calendar as CalendarIcon, Calculator, LayoutDashboard,
 } from "lucide-react";
 import synapsiaIcon from "@/assets/synapsia-icon.svg";
+import NavigationDropdown from "@/components/synapsia/NavigationDropdown";
 import { format, formatDistanceToNow } from "date-fns";
 import { es } from "date-fns/locale";
 
@@ -751,6 +752,7 @@ export default function FloorPlan() {
             )}
             {editMode && <Button size="sm" onClick={openNewZone}><Plus className="w-4 h-4 mr-1" /> Nueva zona</Button>}
             <Button size="sm" variant="secondary" onClick={() => openIntake()}><LogIn className="w-4 h-4 mr-1" /> Registrar llegada</Button>
+            <NavigationDropdown />
             <Button variant="ghost" size="icon" onClick={signOut} title="Cerrar sesión"><LogOut className="w-4 h-4" /></Button>
           </div>
         </div>

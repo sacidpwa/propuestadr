@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { ArrowLeft, LogOut, TrendingUp, DollarSign, Users, Activity, Wallet, AlertCircle, BookOpen, FileText } from "lucide-react";
 import synapsiaIcon from "@/assets/synapsia-icon.svg";
+import NavigationDropdown from "@/components/synapsia/NavigationDropdown";
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as ReTooltip, Legend, LineChart, Line } from "recharts";
 import { fmt } from "@/lib/utils";
 
@@ -248,6 +249,7 @@ export default function Metrics() {
                 <SelectItem value="all">Histórico</SelectItem>
               </SelectContent>
             </Select>
+            <NavigationDropdown />
             <Button variant="ghost" size="icon" onClick={signOut}><LogOut className="w-4 h-4" /></Button>
           </div>
         </div>

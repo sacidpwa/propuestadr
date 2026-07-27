@@ -18,6 +18,7 @@ import {
   LogOut, FileText, Plus, Trash2, Loader2, Download, Calculator, ArrowLeft, Building2, Pencil,
 } from "lucide-react";
 import { generateQuotePDF } from "@/lib/quotePdf";
+import NavigationDropdown from "@/components/synapsia/NavigationDropdown";
 
 interface CostItem {
   concept: string;
@@ -413,9 +414,12 @@ export default function Cotizador() {
               <p className="text-xs text-muted-foreground">Senior Living & Centro Benesse</p>
             </div>
           </div>
-          <Button variant="ghost" size="icon" onClick={signOut}>
-            <LogOut className="w-4 h-4" />
-          </Button>
+          <div className="flex items-center gap-2">
+            <NavigationDropdown />
+            <Button variant="ghost" size="icon" onClick={signOut}>
+              <LogOut className="w-4 h-4" />
+            </Button>
+          </div>
         </div>
       </header>
 

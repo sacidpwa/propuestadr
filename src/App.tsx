@@ -48,6 +48,8 @@ import GoogleCallback from "./pages/synapsia/GoogleCallback";
 import PrivacyPolicy from "./pages/synapsia/PrivacyPolicy";
 import TermsOfService from "./pages/synapsia/TermsOfService";
 import SuperAdminDashboard from "./pages/synapsia/SuperAdminDashboard";
+import UnreadMessagesPrompt from "./components/synapsia/UnreadMessagesPrompt";
+import FloatingSACID from "./components/synapsia/FloatingSACID";
 import LandingPage from "./pages/synapsia/LandingPage";
 import ProtectedRoute from "./components/synapsia/ProtectedRoute";
 import OwnerOnlyRoute from "./components/synapsia/OwnerOnlyRoute";
@@ -94,6 +96,8 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <AuthProvider>
+          <UnreadMessagesPrompt />
+          <FloatingSACID />
           <Routes>
             <Route path="/" element={<LandingPage />} />
             <Route path="/propuesta" element={<OwnerOnlyRoute><Index /></OwnerOnlyRoute>} />
