@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as ReTooltip, Legend, PieChart as RePieChart, Pie, Cell } from "recharts";
@@ -86,7 +87,7 @@ interface DashboardData {
   collectedToday: number;
   consultationsMonth: number;
   collectedMonth: number;
-  dailyInOut: { day: string; ingresos: number; egresos: number }[];
+  dailyInOut: { day: string; ingresos: number; egresos: number; adeudos: number }[];
   todayConsultations: any[];
   periodExpenses: number;
   periodIncome: number;
@@ -173,6 +174,9 @@ export default function UnidadDetalle() {
   });
   const [patientDialogOpen, setPatientDialogOpen] = useState(false);
   const [patientSummaryLoading, setPatientSummaryLoading] = useState(false);
+  const [patientSummaryCategory, setPatientSummaryCategory] = useState<string>("all");
+  const [patientSummaryCategories, setPatientSummaryCategories] = useState<string[]>([]);
+  const [patientSummaryRaw, setPatientSummaryRaw] = useState<{ incomeEntries: any[]; expenseEntries: any[]; consultEntries: any[]; abonosEntries: any[]; feeMap: Record<string, string>; patientsList: any[] } | null>(null);
   const [categoryDetailOpen, setCategoryDetailOpen] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<{ name: string; value: number; entries: any[] } | null>(null);
   const [categorySort, setCategorySort] = useState<"date_desc" | "date_asc" | "amount_desc" | "amount_asc">("date_desc");
@@ -213,10 +217,10 @@ export default function UnidadDetalle() {
       q((supabase.from as any)("requisitions").select("id", { count: "exact", head: true }).eq("health_unit_id", id).in("status", ["pendiente", "autorizada"])),
       q((supabase.from as any)("purchase_orders").select("id", { count: "exact", head: true }).eq("health_unit_id", id).in("status", ["pendiente", "autorizada", "comprada"])),
       q((supabase.from as any)("client_fees").select("*").eq("health_unit_id", id).eq("is_active", true)),
-      q((supabase.from as any)("expense_entries").select("amount, expense_date, period_month, period_year, entry_type").eq("health_unit_id", id).eq("entry_type", "gasto")),
+      q((supabase.from as any)("expense_entries").select("amount, expense_date, period_month, period_year, entry_type, notes").eq("health_unit_id", id).eq("entry_type", "gasto")),
       q((supabase.from as any)("expense_entries").select("amount, expense_date, period_month, period_year, entry_type").eq("health_unit_id", id).eq("entry_type", "ingreso")),
       q((supabase.from as any)("expense_entries").select("amount, expense_date, period_month, period_year, entry_type, patient_name, description, category").eq("health_unit_id", id).eq("entry_type", "ingreso")),
-      q((supabase.from as any)("expense_entries").select("amount, entry_type, period_month").eq("health_unit_id", id).eq("period_year", currentYear)),
+      q((supabase.from as any)("expense_entries").select("amount, entry_type, period_month, notes").eq("health_unit_id", id).eq("period_year", currentYear)),
       q((supabase.from as any)("consultation_log").select("record_date, amount_collected").eq("health_unit_id", id).gte("record_date", pr.from).lte("record_date", pr.to).order("record_date")),
       q((supabase.from as any)("consultation_log").select("amount_collected", { count: "exact", head: false }).eq("health_unit_id", id).eq("record_date", todayStr)),
       q((supabase.from as any)("consultation_log").select("amount_collected", { count: "exact", head: false }).eq("health_unit_id", id).gte("record_date", `${currentYear}-${String(currentMonth).padStart(2, "0")}-01`)),
@@ -244,12 +248,14 @@ export default function UnidadDetalle() {
     const periodExpenses = expenses;
     const periodIncome = income;
 
-    const monthlyMap: Record<string, { ingresos: number; gastos: number }> = {};
-    for (let m = 0; m < 12; m++) monthlyMap[MONTHS[m]] = { ingresos: 0, gastos: 0 };
+    const monthlyMap: Record<string, { ingresos: number; gastos: number; adeudos: number }> = {};
+    for (let m = 0; m < 12; m++) monthlyMap[MONTHS[m]] = { ingresos: 0, gastos: 0, adeudos: 0 };
+    const isAdeudo = (e: any) => e.notes && e.notes.startsWith("[ADEUDO:");
     ((monthlyRes.data as any[]) || []).forEach((e: any) => {
       const m = MONTHS[Number(e.period_month) - 1];
       if (monthlyMap[m]) {
         if (e.entry_type === "ingreso") monthlyMap[m].ingresos += Number(e.amount || 0);
+        else if (isAdeudo(e)) monthlyMap[m].adeudos += Number(e.amount || 0);
         else monthlyMap[m].gastos += Number(e.amount || 0);
       }
     });
@@ -261,19 +267,22 @@ export default function UnidadDetalle() {
     const periodFrom = localDate(pr.from);
     const periodTo = localDate(pr.to);
     const dayCount = Math.ceil((periodTo.getTime() - periodFrom.getTime()) / (1000 * 60 * 60 * 24)) + 1;
-    const dailyMap: Record<string, { ingresos: number; egresos: number }> = {};
+    const dailyMap: Record<string, { ingresos: number; egresos: number; adeudos: number }> = {};
     for (let d = 0; d < dayCount; d++) {
       const dt = localDate(pr.from);
       dt.setDate(dt.getDate() + d);
       const key = format(dt, "yyyy-MM-dd");
-      dailyMap[key] = { ingresos: 0, egresos: 0 };
+      dailyMap[key] = { ingresos: 0, egresos: 0, adeudos: 0 };
     }
 
-    const dailyExpenses: Record<string, number> = {};
     expensesByDate.forEach((e: any) => {
       const key = e.expense_date?.slice(0, 10);
       if (key && dailyMap[key]) {
-        dailyMap[key].egresos += Number(e.amount || 0);
+        if (isAdeudo(e)) {
+          dailyMap[key].adeudos += Number(e.amount || 0);
+        } else {
+          dailyMap[key].egresos += Number(e.amount || 0);
+        }
       }
     });
 
@@ -340,10 +349,16 @@ export default function UnidadDetalle() {
     ((expenseCategoryRes.data as any[]) || []).filter((e: any) => {
       return viewMode === "period" ? periodMonths.some(pm => pm.month === e.period_month && pm.year === e.period_year) : (e.expense_date >= pr.from && e.expense_date <= pr.to);
     }).forEach((e: any) => {
-      const cat = e.category || "Sin categoría";
-      if (!catMap[cat]) catMap[cat] = { name: cat, value: 0, entries: [] };
-      catMap[cat].value += Number(e.amount || 0);
-      catMap[cat].entries.push(e);
+      if (isAdeudo(e)) {
+        if (!catMap["Adeudos"]) catMap["Adeudos"] = { name: "Adeudos", value: 0, entries: [] };
+        catMap["Adeudos"].value += Number(e.amount || 0);
+        catMap["Adeudos"].entries.push(e);
+      } else {
+        const cat = e.category || "Sin categoría";
+        if (!catMap[cat]) catMap[cat] = { name: cat, value: 0, entries: [] };
+        catMap[cat].value += Number(e.amount || 0);
+        catMap[cat].entries.push(e);
+      }
     });
     const expenseByCategory = Object.values(catMap).sort((a, b) => b.value - a.value);
 
@@ -404,7 +419,7 @@ export default function UnidadDetalle() {
     const [patientsRes, incomeRes, expenseRes, abonosRes, consultRes, feesRes] = await Promise.all([
       qp((supabase.from as any)("patients").select("id, full_name").eq("health_unit_id", id)),
       qp((supabase.from as any)("expense_entries").select("patient_id, patient_name, amount").eq("health_unit_id", id).eq("entry_type", "ingreso").gte("expense_date", pr.from).lte("expense_date", pr.to)),
-      qp((supabase.from as any)("expense_entries").select("patient_id, patient_name, amount").eq("health_unit_id", id).eq("entry_type", "gasto").gte("expense_date", pr.from).lte("expense_date", pr.to)),
+      qp((supabase.from as any)("expense_entries").select("patient_id, patient_name, amount, category, notes").eq("health_unit_id", id).eq("entry_type", "gasto").gte("expense_date", pr.from).lte("expense_date", pr.to)),
       qp((supabase.from as any)("client_fee_payments").select("amount, fee_id").gte("paid_at", pr.from)),
       qp((supabase.from as any)("consultation_log").select("patient_name, amount_collected").eq("health_unit_id", id).gte("record_date", pr.from).lte("record_date", pr.to)),
       qp((supabase.from as any)("client_fees").select("id, patient_name").eq("health_unit_id", id)),
@@ -451,6 +466,19 @@ export default function UnidadDetalle() {
       }
     });
 
+    // Dividir gastos generales (sin paciente y sin flag de adeudo) entre todos los pacientes activos
+    const generalExpenses = expenseEntries.filter((e: any) => !e.patient_name && !(e.notes && e.notes.startsWith("[ADEUDO:")));
+    const totalGeneralExpenses = generalExpenses.reduce((s: number, e: any) => s + Number(e.amount || 0), 0);
+    const activePatientCount = patientsList.length;
+    if (activePatientCount > 0 && totalGeneralExpenses > 0) {
+      const perPatient = totalGeneralExpenses / activePatientCount;
+      patientsList.forEach((p: any) => {
+        if (summaryMap[p.full_name]) {
+          summaryMap[p.full_name].egresos += perPatient;
+        }
+      });
+    }
+
     abonosEntries.forEach((a: any) => {
       const name = feeMap[a.fee_id];
       if (name && summaryMap[name]) {
@@ -463,6 +491,10 @@ export default function UnidadDetalle() {
       saldo: s.ingresos - s.egresos,
     })).sort((a, b) => b.ingresos - a.ingresos);
 
+    const cats = [...new Set(expenseEntries.map((e: any) => e.category).filter(Boolean))].sort();
+    setPatientSummaryCategories(cats);
+    setPatientSummaryRaw({ incomeEntries, expenseEntries, consultEntries, abonosEntries, feeMap, patientsList });
+    setPatientSummaryCategory("all");
     setData(prev => ({ ...prev, patientSummary: summary }));
     } catch (err) {
       console.error("Error loading patient summary:", err);
@@ -470,6 +502,44 @@ export default function UnidadDetalle() {
       setPatientSummaryLoading(false);
     }
   }
+
+  useEffect(() => {
+    if (!patientSummaryRaw) return;
+    const { incomeEntries, expenseEntries, consultEntries, abonosEntries, feeMap, patientsList } = patientSummaryRaw;
+
+    const filterByCategory = (entries: any[]) =>
+      patientSummaryCategory === "all" ? entries : entries.filter(e => e.category === patientSummaryCategory);
+
+    const filteredIncome = filterByCategory(incomeEntries);
+    const filteredExpense = filterByCategory(expenseEntries);
+    const filteredConsult = consultEntries;
+    const filteredAbonos = abonosEntries;
+
+    const summaryMap: Record<string, PatientSummary> = {};
+    patientsList.forEach((p: any) => {
+      summaryMap[p.full_name] = { patient_id: p.id, patient_name: p.full_name, ingresos: 0, egresos: 0, abonos: 0, saldo: 0 };
+    });
+
+    filteredIncome.forEach((e: any) => { if (e.patient_name && summaryMap[e.patient_name]) summaryMap[e.patient_name].ingresos += Number(e.amount || 0); });
+    filteredConsult.forEach((c: any) => { if (c.patient_name && summaryMap[c.patient_name]) summaryMap[c.patient_name].ingresos += Number(c.amount_collected || 0); });
+    filteredExpense.forEach((e: any) => { if (e.patient_name && summaryMap[e.patient_name]) summaryMap[e.patient_name].egresos += Number(e.amount || 0); });
+
+    const generalExpenses = filteredExpense.filter((e: any) => !e.patient_name && !(e.notes && e.notes.startsWith("[ADEUDO:")));
+    const totalGeneralExpenses = generalExpenses.reduce((s: number, e: any) => s + Number(e.amount || 0), 0);
+    const activePatientCount = patientsList.length;
+    if (activePatientCount > 0 && totalGeneralExpenses > 0) {
+      const perPatient = totalGeneralExpenses / activePatientCount;
+      patientsList.forEach((p: any) => { if (summaryMap[p.full_name]) summaryMap[p.full_name].egresos += perPatient; });
+    }
+
+    filteredAbonos.forEach((a: any) => {
+      const name = feeMap[a.fee_id];
+      if (name && summaryMap[name]) summaryMap[name].abonos += Number(a.amount || 0);
+    });
+
+    const summary = Object.values(summaryMap).map(s => ({ ...s, saldo: s.ingresos - s.egresos })).sort((a, b) => b.ingresos - a.ingresos);
+    setData(prev => ({ ...prev, patientSummary: summary }));
+  }, [patientSummaryRaw, patientSummaryCategory]);
 
   useEffect(() => {
     if (!id) return;
@@ -701,7 +771,7 @@ export default function UnidadDetalle() {
             <Card>
               <CardHeader>
                 <CardTitle className="text-base flex items-center gap-2">
-                  <TrendingUp className="w-5 h-5" /> Ingresos vs Egresos
+                  <TrendingUp className="w-5 h-5" /> Ingresos, Egresos y Adeudos
                 </CardTitle>
                 <CardDescription>Movimientos diarios del período: {pr.label}</CardDescription>
               </CardHeader>
@@ -717,6 +787,7 @@ export default function UnidadDetalle() {
                         <Legend />
                         <Bar dataKey="ingresos" fill="#22c55e" name="Ingresos" radius={[4, 4, 0, 0]} />
                         <Bar dataKey="egresos" fill="#ef4444" name="Egresos" radius={[4, 4, 0, 0]} />
+                        <Bar dataKey="adeudos" fill="#f59e0b" name="Adeudos" radius={[4, 4, 0, 0]} />
                       </BarChart>
                     </ResponsiveContainer>
                   ) : (
@@ -732,7 +803,7 @@ export default function UnidadDetalle() {
             <Card>
               <CardHeader>
                 <CardTitle className="text-base flex items-center gap-2">
-                  <PieChart className="w-5 h-5" /> Gastos por categoría
+                  <PieChart className="w-5 h-5" /> Gastos y Adeudos por categoría
                 </CardTitle>
                 <CardDescription>Distribución de gastos del período: {pr.label}</CardDescription>
               </CardHeader>
@@ -988,6 +1059,7 @@ export default function UnidadDetalle() {
                       <Legend />
                       <Bar dataKey="ingresos" fill="#22c55e" name="Ingresos" radius={[4, 4, 0, 0]} />
                       <Bar dataKey="gastos" fill="#ef4444" name="Gastos" radius={[4, 4, 0, 0]} />
+                      <Bar dataKey="adeudos" fill="#f59e0b" name="Adeudos" radius={[4, 4, 0, 0]} />
                     </BarChart>
                   </ResponsiveContainer>
                 </div>
@@ -1125,6 +1197,18 @@ export default function UnidadDetalle() {
               <Users className="w-5 h-5" /> Resumen por paciente — {pr.label}
             </DialogTitle>
           </DialogHeader>
+          {patientSummaryCategories.length > 0 && (
+            <div className="flex items-center gap-2">
+              <Label className="text-xs whitespace-nowrap">Filtrar categoría:</Label>
+              <Select value={patientSummaryCategory} onValueChange={setPatientSummaryCategory}>
+                <SelectTrigger className="h-8 w-48"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todas</SelectItem>
+                  {patientSummaryCategories.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
           {patientSummaryLoading ? (
             <div className="py-12 text-center text-muted-foreground">Cargando...</div>
           ) : data.patientSummary.length > 0 ? (

@@ -6,9 +6,10 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { ArrowLeft, LogOut, ClipboardList, ShoppingCart, FileSpreadsheet, FileText, DollarSign, AlertTriangle, Building2, ShieldCheck, Users, UserCheck, Scale, Calculator, Crown, Wallet, CalendarIcon, BarChart3 } from "lucide-react";
+import { ArrowLeft, LogOut, ClipboardList, ShoppingCart, FileSpreadsheet, FileText, DollarSign, AlertTriangle, Building2, ShieldCheck, Users, UserCheck, Scale, Calculator, Crown, Wallet, CalendarIcon, BarChart3, Zap } from "lucide-react";
 import synapsiaIcon from "@/assets/synapsia-icon.svg";
 import NavigationDropdown from "@/components/synapsia/NavigationDropdown";
+import CapturaRapida from "@/components/synapsia/CapturaRapida";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 
@@ -28,6 +29,7 @@ export default function DashboardEjecutivo() {
   const [pendingOrdPago, setPendingOrdPago] = useState<OrdPago[]>([]);
   const [totalCashOut, setTotalCashOut] = useState(0);
   const [expensesByUnit, setExpensesByUnit] = useState<Record<string, number>>({});
+  const [capturaOpen, setCapturaOpen] = useState(false);
 
   useEffect(() => {
     (async () => {
@@ -123,6 +125,9 @@ export default function DashboardEjecutivo() {
             </div>
           </div>
           <div className="flex items-center gap-2">
+            <Button variant="default" size="sm" onClick={() => setCapturaOpen(true)} className="bg-yellow-500 hover:bg-yellow-600 text-white">
+              <Zap className="w-4 h-4 mr-1" /> Captura rápida
+            </Button>
             <Button variant="outline" size="sm" onClick={() => navigate("/synapsia/log-movimientos")} className="mr-2">
               Log inventario
             </Button>
@@ -416,6 +421,7 @@ export default function DashboardEjecutivo() {
           </Card>
         )}
       </main>
+      <CapturaRapida open={capturaOpen} onOpenChange={setCapturaOpen} units={units} />
     </div>
   );
 }

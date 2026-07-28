@@ -49,7 +49,7 @@ export default function GastosUnidad() {
   const [amountMax, setAmountMax] = useState("");
   const [open, setOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [form, setForm] = useState({ entry_type: "gasto", description: "", amount: 0, category: "", notes: "", operation_date: format(new Date(), "yyyy-MM-dd"), file: undefined as File | undefined, patient_id: "", patient_name: "" });
+  const [form, setForm] = useState({ entry_type: "gasto", description: "", amount: 0, category: "", notes: "", operation_date: format(new Date(), "yyyy-MM-dd"), file: undefined as File | undefined, patient_id: "", patient_name: "", es_pago_adeudo: false, monto_adeudado: 0 });
   const [patients, setPatients] = useState<{ id: string; full_name: string }[]>([]);
   const [patientSearch, setPatientSearch] = useState("");
   const [paymentType, setPaymentType] = useState("");
@@ -142,7 +142,7 @@ export default function GastosUnidad() {
   const currentMonth = new Date().getMonth() + 1;
   const currentYear = new Date().getFullYear();
 
-  const defaultForm = () => ({ entry_type: "gasto", description: "", amount: 0, category: "", notes: "", operation_date: format(new Date(), "yyyy-MM-dd"), file: undefined as File | undefined, patient_id: "", patient_name: "", monto_mensualidad: 0, monto_gastos: 0, mes_pago: currentMonth, anio_pago: currentYear });
+  const defaultForm = () => ({ entry_type: "gasto", description: "", amount: 0, category: "", notes: "", operation_date: format(new Date(), "yyyy-MM-dd"), file: undefined as File | undefined, patient_id: "", patient_name: "", monto_mensualidad: 0, monto_gastos: 0, mes_pago: currentMonth, anio_pago: currentYear, es_pago_adeudo: false, monto_adeudado: 0 });
 
   function openNew() {
     setEditingId(null);
@@ -252,12 +252,16 @@ export default function GastosUnidad() {
       toast({ title: isEditing ? "Actualizado" : `${entriesToInsert.length} registro(s) registrado(s)` });
     } else {
       // Original logic for non-patient entries or single amount
+      const notesWithAdeudo = form.es_pago_adeudo
+        ? `[ADEUDO:${form.monto_adeudado}]${form.notes ? " " + form.notes : ""}`
+        : form.notes || null;
+
       const payload: any = {
         entry_type: form.entry_type,
         description: form.description,
         amount: form.amount,
         category: form.entry_type === "ingreso" && patientId && paymentType ? (paymentType === "mensualidad" ? "Mensualidad" : "Nota de venta") : form.category || null,
-        notes: form.notes || null,
+        notes: notesWithAdeudo,
         operation_date: form.operation_date,
         expense_date: form.operation_date,
         period_month: form.mes_pago,
@@ -518,6 +522,31 @@ export default function GastosUnidad() {
                       </datalist>
                     </div>
                   </div>
+                  {form.entry_type === "gasto" && (
+                    <div className="flex items-center gap-3 p-2 border rounded-lg bg-muted/30">
+                      <input
+                        type="checkbox"
+                        id="pago-adeudo"
+                        checked={form.es_pago_adeudo}
+                        onChange={e => setForm({ ...form, es_pago_adeudo: e.target.checked, monto_adeudado: e.target.checked ? form.amount : 0 })}
+                        className="h-4 w-4"
+                      />
+                      <Label htmlFor="pago-adeudo" className="text-sm cursor-pointer">Es pago de adeudo</Label>
+                      {form.es_pago_adeudo && (
+                        <div className="ml-auto flex items-center gap-2">
+                          <Label className="text-xs whitespace-nowrap">Monto adeudado:</Label>
+                          <Input
+                            type="number"
+                            min="0"
+                            step="0.01"
+                            className="h-7 w-28 text-xs"
+                            value={form.monto_adeudado || ""}
+                            onChange={e => setForm({ ...form, monto_adeudado: parseFloat(e.target.value) || 0 })}
+                          />
+                        </div>
+                      )}
+                    </div>
+                  )}
                   <div className="grid grid-cols-2 gap-3">
                     <div>
                       <Label className="text-xs">Mes al que corresponde</Label>
