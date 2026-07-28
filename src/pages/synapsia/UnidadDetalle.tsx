@@ -2,6 +2,7 @@ import { useEffect, useState, useCallback } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -150,6 +151,7 @@ export default function UnidadDetalle() {
   const { user, signOut, hasRole } = useAuth();
   const navigate = useNavigate();
   const [unit, setUnit] = useState<HealthUnit | null>(null);
+  const isMobile = useIsMobile();
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [period, setPeriod] = useState(`mes-${new Date().getMonth() + 1}-${new Date().getFullYear()}`);
   const [viewMode, setViewMode] = useState<"period" | "execution">("period");
@@ -801,14 +803,14 @@ export default function UnidadDetalle() {
 
             {/* Gráfica de dona: Gastos por categoría */}
             <Card>
-              <CardHeader>
-                <CardTitle className="text-base flex items-center gap-2">
-                  <PieChart className="w-5 h-5" /> Gastos y Adeudos por categoría
+              <CardHeader className="px-4 sm:px-6">
+                <CardTitle className="text-sm sm:text-base flex items-center gap-2">
+                  <PieChart className="w-4 h-4 sm:w-5 sm:h-5" /> Gastos y Adeudos por categoría
                 </CardTitle>
-                <CardDescription>Distribución de gastos del período: {pr.label}</CardDescription>
+                <CardDescription className="text-xs sm:text-sm">Distribución de gastos del período: {pr.label}</CardDescription>
               </CardHeader>
-              <CardContent>
-                <div className="h-72">
+              <CardContent className="px-2 sm:px-6">
+                <div className={isMobile ? "h-56" : "h-72"}>
                   {data.expenseByCategory.length > 0 ? (
                     <ResponsiveContainer width="100%" height="100%">
                       <RePieChart>
@@ -816,8 +818,8 @@ export default function UnidadDetalle() {
                           data={data.expenseByCategory}
                           cx="50%"
                           cy="50%"
-                          innerRadius={60}
-                          outerRadius={110}
+                          innerRadius={isMobile ? 40 : 60}
+                          outerRadius={isMobile ? 80 : 110}
                           paddingAngle={2}
                           dataKey="value"
                           nameKey="name"
@@ -833,11 +835,11 @@ export default function UnidadDetalle() {
                           ))}
                         </Pie>
                         <ReTooltip formatter={(v: number) => `$${Number(v).toLocaleString()}`} />
-                        <Legend />
+                        <Legend iconSize={isMobile ? 8 : 10} wrapperStyle={{ fontSize: isMobile ? 10 : 12 }} />
                       </RePieChart>
                     </ResponsiveContainer>
                   ) : (
-                    <div className="h-full flex items-center justify-center text-muted-foreground text-sm">
+                    <div className="h-full flex items-center justify-center text-muted-foreground text-xs sm:text-sm">
                       Sin gastos registrados en el período
                     </div>
                   )}
@@ -879,14 +881,14 @@ export default function UnidadDetalle() {
 
             {/* Gráfica de dona: Ingresos por paciente */}
             <Card>
-              <CardHeader>
-                <CardTitle className="text-base flex items-center gap-2">
-                  <TrendingUp className="w-5 h-5" /> Ingresos por paciente
+              <CardHeader className="px-4 sm:px-6">
+                <CardTitle className="text-sm sm:text-base flex items-center gap-2">
+                  <TrendingUp className="w-4 h-4 sm:w-5 sm:h-5" /> Ingresos por paciente
                 </CardTitle>
-                <CardDescription>Distribución de ingresos del período: {pr.label}</CardDescription>
+                <CardDescription className="text-xs sm:text-sm">Distribución de ingresos del período: {pr.label}</CardDescription>
               </CardHeader>
-              <CardContent>
-                <div className="h-72">
+              <CardContent className="px-2 sm:px-6">
+                <div className={isMobile ? "h-56" : "h-72"}>
                   {data.incomeByPatient.length > 0 ? (
                     <ResponsiveContainer width="100%" height="100%">
                       <RePieChart>
@@ -894,8 +896,8 @@ export default function UnidadDetalle() {
                           data={data.incomeByPatient}
                           cx="50%"
                           cy="50%"
-                          innerRadius={60}
-                          outerRadius={110}
+                          innerRadius={isMobile ? 40 : 60}
+                          outerRadius={isMobile ? 80 : 110}
                           paddingAngle={2}
                           dataKey="value"
                           nameKey="name"
@@ -911,11 +913,11 @@ export default function UnidadDetalle() {
                           ))}
                         </Pie>
                         <ReTooltip formatter={(v: number) => `$${Number(v).toLocaleString()}`} />
-                        <Legend />
+                        <Legend iconSize={isMobile ? 8 : 10} wrapperStyle={{ fontSize: isMobile ? 10 : 12 }} />
                       </RePieChart>
                     </ResponsiveContainer>
                   ) : (
-                    <div className="h-full flex items-center justify-center text-muted-foreground text-sm">
+                    <div className="h-full flex items-center justify-center text-muted-foreground text-xs sm:text-sm">
                       Sin ingresos registrados en el período
                     </div>
                   )}

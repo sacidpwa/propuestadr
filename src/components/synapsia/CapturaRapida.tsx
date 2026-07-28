@@ -170,10 +170,10 @@ export default function CapturaRapida({ open, onOpenChange, units }: Props) {
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-[95vw] sm:max-w-lg max-h-[90vh] overflow-y-auto px-3 sm:px-6">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <Zap className="w-5 h-5 text-yellow-500" />
+          <DialogTitle className="flex items-center gap-2 text-sm sm:text-base">
+            <Zap className="w-4 h-4 sm:w-5 sm:h-5 text-yellow-500" />
             Captura rápida de gasto
           </DialogTitle>
         </DialogHeader>
@@ -207,7 +207,7 @@ export default function CapturaRapida({ open, onOpenChange, units }: Props) {
             </div>
 
             {/* Date and amount row */}
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
                 <Label>Fecha *</Label>
                 <Input type="date" value={form.operation_date} onChange={e => {
@@ -238,7 +238,7 @@ export default function CapturaRapida({ open, onOpenChange, units }: Props) {
             </div>
 
             {/* Period */}
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
                 <Label>Mes a pagar</Label>
                 <Select value={form.mes_pago} onValueChange={v => setForm({ ...form, mes_pago: v })}>
@@ -283,14 +283,14 @@ export default function CapturaRapida({ open, onOpenChange, units }: Props) {
                       <p className="text-xs text-muted-foreground text-center">
                         Captura o pega una imagen del comprobante
                       </p>
-                      <div className="flex gap-2">
-                        <Button variant="outline" size="sm" type="button" onClick={() => cameraInputRef.current?.click()}>
+                      <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+                        <Button variant="outline" size="sm" type="button" className="w-full sm:w-auto" onClick={() => cameraInputRef.current?.click()}>
                           <Camera className="w-4 h-4 mr-1" /> Cámara
                         </Button>
-                        <Button variant="outline" size="sm" type="button" onClick={() => fileInputRef.current?.click()}>
+                        <Button variant="outline" size="sm" type="button" className="w-full sm:w-auto" onClick={() => fileInputRef.current?.click()}>
                           <Upload className="w-4 h-4 mr-1" /> Subir
                         </Button>
-                        <Button variant="outline" size="sm" type="button" onClick={() => {
+                        <Button variant="outline" size="sm" type="button" className="w-full sm:w-auto" onClick={() => {
                           navigator.clipboard.read?.().then(items => {
                             for (const item of items) {
                               for (const type of item.types) {
