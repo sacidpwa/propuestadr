@@ -124,12 +124,12 @@ export default function DashboardEjecutivo() {
               <p className="text-xs text-muted-foreground">{user?.email}</p>
             </div>
           </div>
-          <div className="flex items-center gap-2">
-            <Button variant="default" size="sm" onClick={() => setCapturaOpen(true)} className="bg-yellow-500 hover:bg-yellow-600 text-white">
-              <Zap className="w-4 h-4 mr-1" /> Captura rápida
+          <div className="flex items-center gap-1 sm:gap-2 flex-wrap justify-end">
+            <Button variant="default" size="sm" onClick={() => setCapturaOpen(true)} className="bg-yellow-500 hover:bg-yellow-600 text-white text-xs sm:text-sm px-2 sm:px-3">
+              <Zap className="w-3 h-3 sm:w-4 sm:h-4 mr-0 sm:mr-1" /> <span className="hidden sm:inline">Captura rápida</span><span className="sm:hidden">Gasto</span>
             </Button>
-            <Button variant="outline" size="sm" onClick={() => navigate("/synapsia/log-movimientos")} className="mr-2">
-              Log inventario
+            <Button variant="outline" size="sm" onClick={() => navigate("/synapsia/log-movimientos")} className="text-xs sm:text-sm px-2 sm:px-3">
+              <span className="hidden sm:inline">Log inventario</span><span className="sm:hidden">Log</span>
             </Button>
             <NavigationDropdown />
             <Button variant="ghost" size="icon" onClick={signOut}><LogOut className="w-4 h-4" /></Button>
