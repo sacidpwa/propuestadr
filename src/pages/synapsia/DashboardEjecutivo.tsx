@@ -235,14 +235,8 @@ export default function DashboardEjecutivo() {
           <Card>
             <CardHeader className="pb-2"><CardTitle className="text-sm flex items-center gap-2"><Building2 className="w-4 h-4" />Acceso rápido</CardTitle></CardHeader>
             <CardContent className="space-y-2">
-              <Button variant="outline" size="sm" className="w-full justify-start" onClick={() => navigate("/synapsia/metrics")}>
-                <BarChart3 className="w-4 h-4 mr-2" /> Métricas
-              </Button>
               <Button variant="outline" size="sm" className="w-full justify-start" onClick={() => navigate("/synapsia/autorizaciones")}>
                 <ShieldCheck className="w-4 h-4 mr-2" /> Centro de autorizaciones
-              </Button>
-              <Button variant="outline" size="sm" className="w-full justify-start" onClick={() => navigate("/synapsia/expenses")}>
-                <Wallet className="w-4 h-4 mr-2" /> Gastos generales
               </Button>
               <Button variant="outline" size="sm" className="w-full justify-start" onClick={() => navigate("/synapsia/cotizador")}>
                 <Calculator className="w-4 h-4 mr-2" /> Cotizador
@@ -250,11 +244,26 @@ export default function DashboardEjecutivo() {
               <Button variant="outline" size="sm" className="w-full justify-start" onClick={() => navigate("/synapsia/plantilla")}>
                 <UserCheck className="w-4 h-4 mr-2" /> Plantilla laboral
               </Button>
-              {units.map(u => (
-                <Button key={u.id} variant="ghost" size="sm" className="w-full justify-start" onClick={() => navigate(`/synapsia/unidades/${u.id}`)}>
-                  <Building2 className="w-4 h-4 mr-2" /> {u.name}
-                </Button>
-              ))}
+              {units.map(u => {
+                const isSynapsia = u.name === "Synapsia Consultorio";
+                return (
+                  <div key={u.id}>
+                    <Button variant="ghost" size="sm" className="w-full justify-start" onClick={() => navigate(`/synapsia/unidades/${u.id}`)}>
+                      <Building2 className="w-4 h-4 mr-2" /> {u.name}
+                    </Button>
+                    {isSynapsia && (
+                      <div className="pl-6 space-y-1">
+                        <Button variant="ghost" size="sm" className="w-full justify-start text-xs" onClick={() => navigate("/synapsia/metrics")}>
+                          <BarChart3 className="w-3 h-3 mr-2" /> Métricas
+                        </Button>
+                        <Button variant="ghost" size="sm" className="w-full justify-start text-xs" onClick={() => navigate("/synapsia/expenses")}>
+                          <Wallet className="w-3 h-3 mr-2" /> Gastos generales
+                        </Button>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
             </CardContent>
           </Card>
         </div>

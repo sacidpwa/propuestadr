@@ -15,7 +15,7 @@ import {
   ArrowLeft, LogOut, Menu, X, Pill, Wallet, FileText, Users, ClipboardList,
   Sparkles, Wrench, HandCoins, Receipt, ShoppingBag, ShoppingCart, Package,
   ClipboardCheck, Building2, UserCheck, TrendingUp, TrendingDown, DollarSign,
-  AlertCircle, ChevronLeft, ChevronRight, BookOpen, PiggyBank, CalendarDays, PieChart, BarChart3
+  AlertCircle, ChevronLeft, ChevronRight, BookOpen, PiggyBank, CalendarDays, PieChart
 } from "lucide-react";
 import synapsiaIcon from "@/assets/synapsia-icon.svg";
 import { format, startOfMonth, endOfMonth, subMonths, startOfYear, parseISO } from "date-fns";
@@ -26,7 +26,6 @@ interface HealthUnit { id: string; name: string; description: string | null; }
 interface AppEntry {
   key: string; label: string; desc: string; icon: any; route: string;
   roles: string[];
-  units?: string[];
 }
 
 const APPS: AppEntry[] = [
@@ -50,8 +49,6 @@ const APPS: AppEntry[] = [
   { key: "precios", label: "Precios por servicio", desc: "Catálogo de precios de la unidad", icon: DollarSign, route: "precios", roles: ["admin", "dueno", "administrativo", "asistente_admin", "contador", "enfermera"] },
   { key: "diario", label: "Diario de pacientes", desc: "Registro diario de consultas y pagos", icon: BookOpen, route: "diario", roles: ["admin", "dueno", "administrativo", "asistente_admin", "recepcion"] },
   { key: "caja-chica", label: "Caja Chica", desc: "Control de efectivo menor por unidad", icon: PiggyBank, route: "caja-chica", roles: ["admin", "dueno", "administrativo", "contador"] },
-  { key: "metrics", label: "Métricas", desc: "Cobros del periodo y desempeño", icon: BarChart3, route: "/synapsia/metrics", roles: ["admin", "dueno", "administrativo", "asistente_admin", "contador", "rrhh"], units: ["Synapsia Consultorio"] },
-  { key: "gastos-generales", label: "Gastos generales", desc: "Registro de gastos fijos y reporte", icon: Wallet, route: "/synapsia/expenses", roles: ["admin", "dueno", "administrativo", "asistente_admin", "contador"], units: ["Synapsia Consultorio"] },
 ];
 
 interface FeeOverdue { id: string; patient_name: string; amount: number; next_due_date: string; days_overdue: number; }
@@ -559,7 +556,7 @@ export default function UnidadDetalle() {
     loadDashboard();
   }, [id, loadDashboard]);
 
-  const apps = APPS.filter(a => (a.key === "dashboard" || a.roles.some(r => hasRole(r))) && (!a.units || (unit && a.units.includes(unit.name))));
+  const apps = APPS.filter(a => a.key === "dashboard" || a.roles.some(r => hasRole(r)));
   const pr = getPeriodRange(period);
 
   return (
