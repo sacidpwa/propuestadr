@@ -24,7 +24,7 @@ interface Employee {
   id: string; full_name: string; rfc: string | null; position: string | null;
   area: Area; health_unit_id: string | null; base_salary: number;
   frequency: Frequency; bank: string | null; bank_account: string | null; is_active: boolean;
-  notes: string | null;
+  is_external: boolean; notes: string | null;
 }
 
 interface HealthUnit {
@@ -228,7 +228,12 @@ export default function PlantillaLaboral() {
               <TableBody>
                 {filtered.map((e) => (
                   <TableRow key={e.id}>
-                    <TableCell className="font-medium">{e.full_name}</TableCell>
+                    <TableCell className="font-medium">
+                      {e.full_name}
+                      {e.is_external && (
+                        <Badge variant="outline" className="ml-2 bg-amber-500/10 text-amber-700 border-amber-500/30 text-[10px] px-1.5 py-0">Externo</Badge>
+                      )}
+                    </TableCell>
                     <TableCell className="text-muted-foreground">{e.position || "—"}</TableCell>
                     <TableCell className="capitalize">{AREA_LABELS[e.area] || e.area}</TableCell>
                     <TableCell className="text-muted-foreground max-w-[200px] truncate" title={e.unitNames}>
@@ -369,6 +374,13 @@ export default function PlantillaLaboral() {
                 onChange={(e) => setForm({ ...form, notes: e.target.value.toUpperCase() })}
               />
             </div>
+            <label className="flex items-center gap-2 cursor-pointer text-sm">
+              <Checkbox
+                checked={form.is_external || false}
+                onCheckedChange={(checked) => setForm({ ...form, is_external: !!checked })}
+              />
+              Prestador de servicios / Externo
+            </label>
             <div>
               <Label className="mb-2 block">Unidades de salud donde labora</Label>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 border rounded-md p-3">
