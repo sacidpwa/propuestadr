@@ -255,8 +255,8 @@ export default function UnidadDetalle() {
     });
     const monthly = Object.entries(monthlyMap).map(([month, v]) => ({ month, ...v }));
 
-    const expensesByDate = allExpenses.filter(matchesDateRange);
-    const incomeByDate = allIncomes.filter(matchesDateRange);
+    const expensesByDate = viewMode === "period" ? allExpenses.filter(matchesPeriod) : allExpenses.filter(matchesDateRange);
+    const incomeByDate = viewMode === "period" ? allIncomes.filter(matchesPeriod) : allIncomes.filter(matchesDateRange);
 
     const periodFrom = localDate(pr.from);
     const periodTo = localDate(pr.to);
