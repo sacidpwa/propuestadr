@@ -16,7 +16,7 @@ import { toast } from "@/hooks/use-toast";
 import { fmt } from "@/lib/utils";
 import { format } from "date-fns";
 
-const SERVICE_TYPES = ["Psiquiatría", "Paidopsiquiatría", "Psicología", "Evaluación Psicológica", "Pediatría"];
+const SERVICE_TYPES = ["Psiquiatría", "Paidopsiquiatría", "Psicología", "Evaluación Psicológica", "Pediatría", "Nutrición", "Medicina"];
 const PAYMENT_METHODS = ["Efectivo", "Tarjeta", "Transferencia"];
 
 type ConsultRow = {
