@@ -10,6 +10,10 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle
+} from "@/components/ui/alert-dialog";
 import PinPrompt from "@/components/synapsia/PinPrompt";
 import {
   ArrowLeft, LogOut, Save, Pencil, Phone, Mail, Cake, MapPin,
@@ -75,6 +79,8 @@ export default function DetallePaciente() {
   const [invForm, setInvForm] = useState({ concept: "", amount: 0, invoice_date: format(new Date(), "yyyy-MM-dd"), category: "" });
   const [servicePrices, setServicePrices] = useState<any[]>([]);
   const [manualPrice, setManualPrice] = useState(false);
+  const [editingInvoice, setEditingInvoice] = useState<PatientInvoice | null>(null);
+  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
   const [periodKey, setPeriodKey] = useState("este-mes");
   const [periodStart, setPeriodStart] = useState(() => format(new Date(), "yyyy-MM-01"));
   const [periodEnd, setPeriodEnd] = useState(() => format(new Date(), "yyyy-MM-dd"));
@@ -313,6 +319,30 @@ export default function DetallePaciente() {
     setInvForm({ concept: "", amount: 0, invoice_date: format(new Date(), "yyyy-MM-dd"), category: "" });
     setNewInvoiceOpen(false);
     setManualPrice(false);
+    loadInvoices();
+  }
+
+  async function handleEditInvoice() {
+    if (!editingInvoice) return;
+    if (!invForm.concept.trim() || !invForm.amount || !invForm.invoice_date) { toast({ title: "Completa concepto, monto y fecha", variant: "destructive" }); return; }
+    const { error } = await (supabase.from as any)("patient_invoices").update({
+      amount: invForm.amount,
+      concept: invForm.concept,
+      category: invForm.category || null,
+      invoice_date: invForm.invoice_date,
+    }).eq("id", editingInvoice.id);
+    if (error) { toast({ title: "Error al editar", description: error.message, variant: "destructive" }); return; }
+    toast({ title: "Gasto actualizado" });
+    setEditingInvoice(null);
+    setInvForm({ concept: "", amount: 0, invoice_date: format(new Date(), "yyyy-MM-dd"), category: "" });
+    loadInvoices();
+  }
+
+  async function handleDeleteInvoice(id: string) {
+    const { error } = await (supabase.from as any)("patient_invoices").delete().eq("id", id);
+    if (error) { toast({ title: "Error al eliminar", description: error.message, variant: "destructive" }); return; }
+    toast({ title: "Gasto eliminado" });
+    setDeleteConfirmId(null);
     loadInvoices();
   }
 
@@ -577,7 +607,7 @@ export default function DetallePaciente() {
                     <FileText className="w-4 h-4 mr-1" /> PDF
                   </Button>
                   {(hasRole("admin") || hasRole("dueno") || hasRole("administrativo") || hasRole("asistente_admin")) && (
-                    <Button onClick={() => setNewInvoiceOpen(true)}><Plus className="w-4 h-4 mr-1" /> Agregar gasto</Button>
+                    <Button onClick={() => { setEditingInvoice(null); setNewInvoiceOpen(true); }}><Plus className="w-4 h-4 mr-1" /> Agregar gasto</Button>
                   )}
                 </div>
               </div>
@@ -612,7 +642,7 @@ export default function DetallePaciente() {
               {newInvoiceOpen && (
                 <Card>
                   <CardHeader>
-                    <CardTitle className="text-sm">Nuevo gasto extra</CardTitle>
+                    <CardTitle className="text-sm">{editingInvoice ? "Editar gasto" : "Nuevo gasto extra"}</CardTitle>
                     <CardDescription>
                       {!manualPrice ? "Selecciona un servicio del catálogo de precios" : "Ingresa el concepto manualmente"}
                     </CardDescription>
@@ -661,12 +691,25 @@ export default function DetallePaciente() {
                       </p>
                     )}
                     <div className="flex justify-end gap-2">
-                      <Button variant="outline" onClick={() => { setNewInvoiceOpen(false); setManualPrice(false); }}>Cancelar</Button>
-                      <Button onClick={handleNewInvoice}>Registrar</Button>
+                      <Button variant="outline" onClick={() => { setNewInvoiceOpen(false); setManualPrice(false); setEditingInvoice(null); }}>Cancelar</Button>
+                      <Button onClick={editingInvoice ? handleEditInvoice : handleNewInvoice}>{editingInvoice ? "Guardar cambios" : "Registrar"}</Button>
                     </div>
                   </CardContent>
                 </Card>
               )}
+
+              <AlertDialog open={!!deleteConfirmId} onOpenChange={open => { if (!open) setDeleteConfirmId(null); }}>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Eliminar gasto</AlertDialogTitle>
+                    <AlertDialogDescription>¿Estás seguro de que deseas eliminar este registro? Esta acción no se puede deshacer.</AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                    <AlertDialogAction onClick={() => deleteConfirmId && handleDeleteInvoice(deleteConfirmId)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">Eliminar</AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
 
               <Card>
                 <CardHeader>
@@ -688,6 +731,9 @@ export default function DetallePaciente() {
                             <th className="text-center px-4 py-2 font-medium">Validación</th>
                             <th className="text-left px-4 py-2 font-medium">Registró</th>
                             <th className="text-right px-4 py-2 font-medium">Monto</th>
+                            {(hasRole("admin") || hasRole("dueno") || hasRole("administrativo") || hasRole("asistente_admin")) && (
+                              <th className="text-center px-4 py-2 font-medium">Acciones</th>
+                            )}
                           </tr>
                         </thead>
                         <tbody>
@@ -714,6 +760,22 @@ export default function DetallePaciente() {
                               </td>
                               <td className="px-4 py-2 text-xs text-muted-foreground">{inv.created_by_name || "—"}</td>
                               <td className="px-4 py-2 text-right font-mono font-medium">${Number(inv.amount).toLocaleString()}</td>
+                              {(hasRole("admin") || hasRole("dueno") || hasRole("administrativo") || hasRole("asistente_admin")) && (
+                                <td className="px-4 py-2 text-center">
+                                  <div className="flex items-center justify-center gap-1">
+                                    <button onClick={() => {
+                                      setEditingInvoice(inv);
+                                      setInvForm({ concept: inv.concept || "", amount: inv.amount, invoice_date: inv.invoice_date, category: inv.category || "" });
+                                      setNewInvoiceOpen(true);
+                                    }} className="p-1 rounded hover:bg-muted" title="Editar">
+                                      <Pencil className="w-4 h-4 text-muted-foreground" />
+                                    </button>
+                                    <button onClick={() => setDeleteConfirmId(inv.id)} className="p-1 rounded hover:bg-destructive/10" title="Eliminar">
+                                      <Trash2 className="w-4 h-4 text-destructive" />
+                                    </button>
+                                  </div>
+                                </td>
+                              )}
                             </tr>
                           ))}
                         </tbody>
