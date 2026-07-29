@@ -10,7 +10,7 @@ import { ArrowLeft, LogOut, ClipboardList, ShoppingCart, FileSpreadsheet, FileTe
 import synapsiaIcon from "@/assets/synapsia-icon.svg";
 import NavigationDropdown from "@/components/synapsia/NavigationDropdown";
 import CapturaRapida from "@/components/synapsia/CapturaRapida";
-import { format } from "date-fns";
+import { format, parseISO } from "date-fns";
 import { es } from "date-fns/locale";
 
 interface HealthUnit { id: string; name: string; }
@@ -389,7 +389,7 @@ export default function DashboardEjecutivo() {
                     <TableRow key={f.id}>
                       <TableCell className="font-medium">{f.patient_name}</TableCell>
                       <TableCell>{f.health_unit_id ? unitName(f.health_unit_id) : "—"}</TableCell>
-                      <TableCell className="text-xs">{format(new Date(f.invoice_date), "dd/MM/yyyy", { locale: es })}</TableCell>
+                      <TableCell className="text-xs">{format(parseISO(f.invoice_date), "dd/MM/yyyy", { locale: es })}</TableCell>
                       <TableCell className="text-right font-mono">${Number(f.amount).toLocaleString()}</TableCell>
                     </TableRow>
                   ))}

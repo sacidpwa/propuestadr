@@ -13,7 +13,7 @@ import { ArrowLeft, LogOut, Save, Search, UserPlus, Pencil, Phone, Mail, Cake, M
 import synapsiaIcon from "@/assets/synapsia-icon.svg";
 import NavigationDropdown from "@/components/synapsia/NavigationDropdown";
 import { toast } from "@/hooks/use-toast";
-import { format } from "date-fns";
+import { format, parseISO } from "date-fns";
 import { es } from "date-fns/locale";
 
 interface Patient {
@@ -318,7 +318,7 @@ export default function RegistroPaciente() {
                           <p className="font-medium">{p.full_name}</p>
                           <p className="text-xs text-muted-foreground">
                             {p.phone && <><Phone className="w-3 h-3 inline mr-1" />{p.phone} </>}
-                            {p.date_of_birth && <><Cake className="w-3 h-3 inline mr-1" />{format(new Date(p.date_of_birth), "PP", { locale: es })}</>}
+                            {p.date_of_birth && <><Cake className="w-3 h-3 inline mr-1" />{format(parseISO(p.date_of_birth), "PP", { locale: es })}</>}
                           </p>
                         </div>
                         <div className="flex items-center gap-1 ml-3">

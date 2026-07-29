@@ -12,7 +12,7 @@ import {
 } from "lucide-react";
 import synapsiaIcon from "@/assets/synapsia-icon.svg";
 import NavigationDropdown from "@/components/synapsia/NavigationDropdown";
-import { format } from "date-fns";
+import { format, parseISO } from "date-fns";
 import { es } from "date-fns/locale";
 
 export default function DuenoUnidadDashboard() {
@@ -134,7 +134,7 @@ export default function DuenoUnidadDashboard() {
                     <TableRow key={e.id}>
                       <TableCell className="font-medium truncate max-w-[250px]">{e.description}</TableCell>
                       <TableCell><Badge variant="outline" className={e.entry_type === "gasto" ? "bg-red-500/10 text-red-700" : "bg-green-500/10 text-green-700"}>{e.entry_type}</Badge></TableCell>
-                      <TableCell className="text-xs">{e.expense_date ? format(new Date(e.expense_date), "PP", { locale: es }) : "—"}</TableCell>
+                      <TableCell className="text-xs">{e.expense_date ? format(parseISO(e.expense_date), "PP", { locale: es }) : "—"}</TableCell>
                       <TableCell className="text-right font-mono">${Number(e.amount).toLocaleString()}</TableCell>
                     </TableRow>
                   ))}

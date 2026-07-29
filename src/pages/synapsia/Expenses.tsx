@@ -14,7 +14,7 @@ import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { ArrowLeft, Brain, DollarSign, Loader2, LogOut, Plus, Trash2, Wallet } from "lucide-react";
 import NavigationDropdown from "@/components/synapsia/NavigationDropdown";
-import { format } from "date-fns";
+import { format, parseISO } from "date-fns";
 import { es } from "date-fns/locale";
 
 interface FixedExpense { id: string; name: string; category: string | null; default_amount: number; is_active: boolean; }
@@ -224,7 +224,7 @@ export default function Expenses() {
                     {entries.length === 0 ? <TableRow><TableCell colSpan={5} className="text-center py-8 text-muted-foreground">Sin movimientos</TableCell></TableRow>
                       : entries.map(e => (
                         <TableRow key={e.id}>
-                          <TableCell className="text-sm">{format(new Date(e.expense_date), "dd MMM", { locale: es })}</TableCell>
+                          <TableCell className="text-sm">{format(parseISO(e.expense_date), "dd MMM", { locale: es })}</TableCell>
                           <TableCell>{e.description}</TableCell>
                           <TableCell className="text-sm text-muted-foreground">{e.category || "—"}</TableCell>
                           <TableCell className="text-right font-mono">${Number(e.amount).toLocaleString()}</TableCell>

@@ -16,7 +16,7 @@ import { ArrowLeft, LogOut, Plus, Paperclip, Trash2, ArrowRight, Pencil, CreditC
 import synapsiaIcon from "@/assets/synapsia-icon.svg";
 import NavigationDropdown from "@/components/synapsia/NavigationDropdown";
 import { toast } from "@/hooks/use-toast";
-import { format } from "date-fns";
+import { format, parseISO } from "date-fns";
 import { es } from "date-fns/locale";
 import { fmt } from "@/lib/utils";
 interface Entry {
@@ -597,7 +597,7 @@ export default function GastosUnidad() {
                 <div className="flex-1">
                   <div className="flex items-center gap-2 flex-wrap">
                     <Badge variant="outline" className={`capitalize ${TYPE_STYLE[e.entry_type]}`}>{TYPE_LABEL[e.entry_type]}</Badge>
-                    <span className="text-xs text-muted-foreground">{format(new Date(e.expense_date), "PP", { locale: es })}</span>
+                    <span className="text-xs text-muted-foreground">{format(parseISO(e.expense_date), "PP", { locale: es })}</span>
                     {e.category && <span className="text-xs text-muted-foreground">· {e.category}</span>}
                     {e.patient_name && <span className="text-xs text-muted-foreground">· Paciente: {e.patient_name}</span>}
                     {canDrill && <Badge variant="outline" className="bg-indigo-500/10 text-indigo-700 border-indigo-500/30 text-[10px]">OC</Badge>}

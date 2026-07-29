@@ -14,7 +14,7 @@ import PinPrompt from "@/components/synapsia/PinPrompt";
 import {
   ArrowLeft, LogOut, Save, Pencil, Phone, Mail, Cake, MapPin,
   DollarSign, Calendar, ShieldAlert, UserCheck, FileText, Plus,
-  History, CreditCard, Download, AlertCircle, Receipt, Check
+  History, CreditCard, Download, AlertCircle, Receipt, Check, Trash2
 } from "lucide-react";
 import synapsiaIcon from "@/assets/synapsia-icon.svg";
 import NavigationDropdown from "@/components/synapsia/NavigationDropdown";
@@ -22,7 +22,7 @@ import logoAlcatraces from "@/assets/logo-alcatraces.jpg";
 import logoSenior from "@/assets/logo-senior-living.jpg";
 import logoBenesse from "@/assets/logo-benesse.jpg";
 import { toast } from "@/hooks/use-toast";
-import { format } from "date-fns";
+import { format, parseISO } from "date-fns";
 import { es } from "date-fns/locale";
 import { printStatement, downloadStatementPDF } from "@/utils/estadoCuentaPDF";
 
@@ -208,7 +208,7 @@ export default function DetallePaciente() {
   function buildStatementData() {
     if (!patient || !unitId) return null as any;
     const rows = invoices.map(inv => ({
-      date: format(new Date(inv.invoice_date), "dd/MM/yyyy"),
+      date: format(parseISO(inv.invoice_date), "dd/MM/yyyy"),
       quantity: 1,
       description: inv.concept || "—",
       charge: Number(inv.amount),
@@ -225,7 +225,7 @@ export default function DetallePaciente() {
     });
     incomeEntries.forEach(e => {
       rows.push({
-        date: format(new Date(e.expense_date), "dd/MM/yyyy"),
+        date: format(parseISO(e.expense_date), "dd/MM/yyyy"),
         quantity: 1,
         description: `INGRESO - ${e.description || e.category || ""}`,
         charge: 0,
@@ -372,7 +372,7 @@ export default function DetallePaciente() {
                       <div><span className="text-muted-foreground">Nombre:</span><p className="font-medium">{patient.full_name}</p></div>
                       <div><span className="text-muted-foreground">Teléfono:</span><p>{patient.phone || "—"}</p></div>
                       <div><span className="text-muted-foreground">Email:</span><p>{patient.email || "—"}</p></div>
-                      <div><span className="text-muted-foreground">Fecha nac.:</span><p>{patient.date_of_birth ? format(new Date(patient.date_of_birth), "PP", { locale: es }) : "—"}</p></div>
+                      <div><span className="text-muted-foreground">Fecha nac.:</span><p>{patient.date_of_birth ? format(parseISO(patient.date_of_birth), "PP", { locale: es }) : "—"}</p></div>
                       <div><span className="text-muted-foreground">Dirección:</span><p>{patient.address || "—"}</p></div>
                       <div><span className="text-muted-foreground">Mensualidad:</span><p className="font-bold text-green-700">${monthlyFeeNum.toLocaleString()}</p></div>
                       <div><span className="text-muted-foreground">Día de pago:</span><p className="font-medium">Día {patient.payment_date || "—"} de cada mes</p></div>
@@ -547,7 +547,7 @@ export default function DetallePaciente() {
                       <tbody>
                         {incomeEntries.map(e => (
                           <tr key={e.id} className="border-b last:border-0 hover:bg-muted/50">
-                            <td className="px-4 py-2">{format(new Date(e.expense_date), "PP", { locale: es })}</td>
+                            <td className="px-4 py-2">{format(parseISO(e.expense_date), "PP", { locale: es })}</td>
                             <td className="px-4 py-2 text-xs">{e.description || "—"}</td>
                             <td className="px-4 py-2 text-xs text-muted-foreground">{e.category || "—"}</td>
                             <td className="px-4 py-2 text-right font-mono font-medium text-green-700">${Number(e.amount).toLocaleString()}</td>
@@ -693,7 +693,7 @@ export default function DetallePaciente() {
                         <tbody>
                           {invoices.map(inv => (
                             <tr key={inv.id} className="border-b last:border-0 hover:bg-muted/50">
-                              <td className="px-4 py-2">{format(new Date(inv.invoice_date), "PP", { locale: es })}</td>
+                              <td className="px-4 py-2">{format(parseISO(inv.invoice_date), "PP", { locale: es })}</td>
                               <td className="px-4 py-2 text-xs">{inv.concept || "—"}</td>
                               <td className="px-4 py-2 text-xs text-muted-foreground">{inv.category || "—"}</td>
                               <td className="px-4 py-2">
@@ -753,7 +753,7 @@ export default function DetallePaciente() {
                       <tbody>
                         {invoices.map(inv => (
                           <tr key={inv.id} className="border-b last:border-0 hover:bg-muted/50">
-                            <td className="px-4 py-2">{format(new Date(inv.invoice_date), "PP", { locale: es })}</td>
+                            <td className="px-4 py-2">{format(parseISO(inv.invoice_date), "PP", { locale: es })}</td>
                             <td className="px-4 py-2">Gasto extra</td>
                             <td className="px-4 py-2 text-xs">{inv.concept || "—"}</td>
                             <td className="px-4 py-2">

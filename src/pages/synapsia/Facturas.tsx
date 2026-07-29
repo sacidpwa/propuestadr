@@ -16,7 +16,7 @@ import synapsiaIcon from "@/assets/synapsia-icon.svg";
 import NavigationDropdown from "@/components/synapsia/NavigationDropdown";
 import { toast } from "@/hooks/use-toast";
 import { fmt } from "@/lib/utils";
-import { format } from "date-fns";
+import { format, parseISO } from "date-fns";
 import { es } from "date-fns/locale";
 
 interface Invoice {
@@ -172,7 +172,7 @@ export default function Facturas() {
                 <div className="flex-1">
                   <div className="flex items-center gap-2 flex-wrap">
                     <Badge variant="outline" className={`capitalize ${STATUS_STYLE[inv.status]}`}>{inv.status}</Badge>
-                    <span className="text-xs text-muted-foreground">{format(new Date(inv.invoice_date), "PP", { locale: es })}</span>
+                    <span className="text-xs text-muted-foreground">{format(parseISO(inv.invoice_date), "PP", { locale: es })}</span>
                     {inv.invoice_number && <span className="text-xs text-muted-foreground">· Folio {inv.invoice_number}</span>}
                   </div>
                   <p className="font-medium mt-1">{inv.patient_name}</p>
