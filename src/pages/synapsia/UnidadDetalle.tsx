@@ -99,6 +99,8 @@ interface DashboardData {
   expenseByCategory: { name: string; value: number; entries: any[] }[];
   incomeByPatient: { name: string; value: number; entries: any[] }[];
   staffList: any[];
+  pettyCashBalance: number;
+  pettyCashMovements: { month: string; entradas: number; salidas: number }[];
 }
 
 const MONTHS = ["Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"];
@@ -211,7 +213,7 @@ export default function UnidadDetalle() {
       builder.then((res: any) => resolve(res)).catch(() => resolve({ data: [], count: null }));
     });
 
-    const [patientRes, staffUnitsRes, staffAllRes, invRes, reqRes, poRes, feeRes, expenseAllEntriesRes, incomeAllEntriesRes, incomeDetailRes, monthlyRes, consultDailyRes, consultTodayRes, consultMonthRes, abonosRes, recentRes, todayDetailRes, expenseCategoryRes] = await Promise.all([
+    const [patientRes, staffUnitsRes, staffAllRes, invRes, reqRes, poRes, feeRes, expenseAllEntriesRes, incomeAllEntriesRes, incomeDetailRes, monthlyRes, consultDailyRes, consultTodayRes, consultMonthRes, abonosRes, recentRes, todayDetailRes, expenseCategoryRes, pettyCashRes] = await Promise.all([
       q((supabase.from as any)("patients").select("id").eq("health_unit_id", id)),
       q((supabase.from as any)("payroll_employee_units").select("employee_id").eq("health_unit_id", id)),
       q((supabase.from as any)("payroll_employees").select("*").eq("is_active", true)),
@@ -230,6 +232,7 @@ export default function UnidadDetalle() {
       q((supabase.from as any)("expense_entries").select("*").eq("health_unit_id", id).order("created_at", { ascending: false }).limit(5)),
       q((supabase.from as any)("consultation_log").select("*").eq("health_unit_id", id).eq("record_date", todayStr).order("created_at")),
       q((supabase.from as any)("expense_entries").select("description, amount, category, expense_date, period_month, period_year, notes").eq("health_unit_id", id).eq("entry_type", "gasto")),
+      q((supabase.from as any)("petty_cash").select("type, amount, category, description, reference_date").eq("health_unit_id", id)),
     ]);
 
     const unitEmployeeIds = ((staffUnitsRes.data as any[]) || []).map((u: any) => u.employee_id);
@@ -249,6 +252,23 @@ export default function UnidadDetalle() {
 
     const periodExpenses = expenses;
     const periodIncome = income;
+
+    const pettyCashMovements = (pettyCashRes.data as any[]) || [];
+    let pettyCashBalance = 0;
+    const pettyCashMonthlyMap: Record<string, { entradas: number; salidas: number }> = {};
+    for (let m = 0; m < 12; m++) pettyCashMonthlyMap[MONTHS[m]] = { entradas: 0, salidas: 0 };
+    pettyCashMovements.forEach((m: any) => {
+      const amt = Number(m.amount || 0);
+      if (m.type === "apertura" || m.type === "entrada") pettyCashBalance += amt;
+      else pettyCashBalance -= amt;
+      const mIdx = new Date(m.reference_date).getMonth();
+      const monthKey = MONTHS[mIdx];
+      if (pettyCashMonthlyMap[monthKey]) {
+        if (m.type === "apertura" || m.type === "entrada") pettyCashMonthlyMap[monthKey].entradas += amt;
+        else pettyCashMonthlyMap[monthKey].salidas += amt;
+      }
+    });
+    const pettyCashMonthly = Object.entries(pettyCashMonthlyMap).map(([month, v]) => ({ month, ...v }));
 
     const monthlyMap: Record<string, { ingresos: number; gastos: number; adeudos: number }> = {};
     for (let m = 0; m < 12; m++) monthlyMap[MONTHS[m]] = { ingresos: 0, gastos: 0, adeudos: 0 };
@@ -398,6 +418,8 @@ export default function UnidadDetalle() {
       expenseByCategory,
       incomeByPatient,
       staffList,
+      pettyCashBalance,
+      pettyCashMovements: pettyCashMonthly,
     }));
     setLoading(false);
     } catch (err) {
@@ -1068,6 +1090,42 @@ export default function UnidadDetalle() {
               </CardContent>
             </Card>
 
+            {/* Caja chica mensual */}
+            {data.pettyCashMovements.some((m: any) => m.entradas > 0 || m.salidas > 0) && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-base flex items-center gap-2">
+                    <PiggyBank className="w-5 h-5" /> Caja chica {new Date().getFullYear()}
+                  </CardTitle>
+                  <CardDescription>Entradas y salidas de efectivo por mes</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="flex items-center gap-4 mb-3">
+                    <div className="flex items-center gap-1 text-sm">
+                      <div className="w-3 h-3 rounded-full bg-blue-500" />
+                      <span className="text-muted-foreground">Saldo actual:</span>
+                      <span className={`font-bold ${data.pettyCashBalance >= 0 ? "text-blue-700" : "text-red-700"}`}>
+                        ${data.pettyCashBalance.toLocaleString()}
+                      </span>
+                    </div>
+                  </div>
+                  <div className="h-64">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart data={data.pettyCashMovements} margin={{ top: 5, right: 20, left: 0, bottom: 5 }}>
+                        <CartesianGrid strokeDasharray="3 3" className="stroke-border/50" />
+                        <XAxis dataKey="month" tick={{ fontSize: 12 }} />
+                        <YAxis tick={{ fontSize: 12 }} tickFormatter={(v: number) => `$${(v / 1000).toFixed(0)}k`} />
+                        <ReTooltip formatter={(v: number) => `$${Number(v).toLocaleString()}`} />
+                        <Legend />
+                        <Bar dataKey="entradas" fill="#3b82f6" name="Entradas" radius={[4, 4, 0, 0]} />
+                        <Bar dataKey="salidas" fill="#ef4444" name="Salidas" radius={[4, 4, 0, 0]} />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
             {/* Pendiente de cobro */}
             <Card>
               <CardHeader>
@@ -1125,7 +1183,7 @@ export default function UnidadDetalle() {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
                   <div className="space-y-1">
                     <p className="text-sm text-muted-foreground">Ingresos totales</p>
                     <p className="text-2xl font-bold text-green-700">${data.income.toLocaleString()}</p>
@@ -1135,9 +1193,15 @@ export default function UnidadDetalle() {
                     <p className="text-2xl font-bold text-red-700">${data.expenses.toLocaleString()}</p>
                   </div>
                   <div className="space-y-1">
+                    <p className="text-sm text-muted-foreground">Caja chica</p>
+                    <p className={`text-2xl font-bold ${data.pettyCashBalance >= 0 ? "text-blue-700" : "text-red-700"}`}>
+                      ${data.pettyCashBalance.toLocaleString()}
+                    </p>
+                  </div>
+                  <div className="space-y-1">
                     <p className="text-sm text-muted-foreground">Margen</p>
-                    <p className={`text-2xl font-bold ${data.income - data.expenses >= 0 ? "text-green-700" : "text-red-700"}`}>
-                      ${(data.income - data.expenses).toLocaleString()}
+                    <p className={`text-2xl font-bold ${data.income - data.expenses + data.pettyCashBalance >= 0 ? "text-green-700" : "text-red-700"}`}>
+                      ${(data.income - data.expenses + data.pettyCashBalance).toLocaleString()}
                     </p>
                   </div>
                   <div className="space-y-1">
