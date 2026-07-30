@@ -16,7 +16,7 @@ import synapsiaIcon from "@/assets/synapsia-icon.svg";
 import NavigationDropdown from "@/components/synapsia/NavigationDropdown";
 import { toast } from "@/hooks/use-toast";
 import { fmt } from "@/lib/utils";
-import { format, differenceInDays } from "date-fns";
+import { format, differenceInDays, parseISO } from "date-fns";
 import { es } from "date-fns/locale";
 
 interface Fee {
@@ -57,12 +57,12 @@ export default function Cartera() {
   const filtered = useMemo(() => {
     if (filter === "todos") return fees;
     if (filter === "activos") return fees.filter(f => f.is_active);
-    if (filter === "morosos") return fees.filter(f => f.is_active && new Date(f.next_due_date) < today);
+    if (filter === "morosos") return fees.filter(f => f.is_active && parseISO(f.next_due_date) < today);
     return fees;
   }, [fees, filter]);
 
   const totals = useMemo(() => {
-    const morosos = fees.filter(f => f.is_active && new Date(f.next_due_date) < today);
+    const morosos = fees.filter(f => f.is_active && parseISO(f.next_due_date) < today);
     const monto = morosos.reduce((s, f) => s + Number(f.amount), 0);
     return { morosos: morosos.length, monto, activos: fees.filter(f => f.is_active).length };
   }, [fees]);
@@ -164,7 +164,7 @@ export default function Cartera() {
         <div className="space-y-2">
           {filtered.length === 0 && <Card><CardContent className="py-10 text-center text-muted-foreground">Sin cuotas en este filtro.</CardContent></Card>}
           {filtered.map(f => {
-            const due = new Date(f.next_due_date);
+            const due = parseISO(f.next_due_date);
             const days = differenceInDays(due, today);
             const isOverdue = f.is_active && days < 0;
             return (

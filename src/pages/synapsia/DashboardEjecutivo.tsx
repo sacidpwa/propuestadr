@@ -359,7 +359,7 @@ export default function DashboardEjecutivo() {
                       <TableRow key={o.id}>
                         <TableCell>{o.health_unit_id ? unitName(o.health_unit_id) : "—"}</TableCell>
                         <TableCell className="text-sm truncate max-w-[200px]">{o.description}</TableCell>
-                        <TableCell className="text-xs">{o.operation_date ? format(new Date(o.operation_date), "dd/MM", { locale: es }) : "—"}</TableCell>
+                        <TableCell className="text-xs">{o.operation_date ? format(parseISO(o.operation_date), "dd/MM", { locale: es }) : "—"}</TableCell>
                         <TableCell className="text-right font-mono">${Number(o.amount).toLocaleString()}</TableCell>
                       </TableRow>
                     ))}

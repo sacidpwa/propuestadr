@@ -26,7 +26,7 @@ const NAV_LINKS = [
 ];
 import synapsiaIcon from "@/assets/synapsia-icon.svg";
 import { toast } from "@/hooks/use-toast";
-import { format, formatDistanceToNow } from "date-fns";
+import { format, formatDistanceToNow, parseISO } from "date-fns";
 import { es } from "date-fns/locale";
 
 interface UserProfile {
@@ -399,7 +399,7 @@ export default function SuperAdminDashboard() {
                         {t.description && <p className="text-xs text-muted-foreground mb-1">{t.description}</p>}
                         <div className="flex items-center gap-3 text-xs text-muted-foreground">
                           <span>Para: <strong>{t.assignee_name}</strong></span>
-                          {t.due_date && <span className={new Date(t.due_date) < new Date() && t.status !== "completada" ? "text-red-600 font-medium" : ""}>
+                          {t.due_date && <span className={parseISO(t.due_date) < new Date() && t.status !== "completada" ? "text-red-600 font-medium" : ""}>
                             <Clock className="w-3 h-3 inline mr-1" />Vence: {t.due_date}
                           </span>}
                           <span>Creada: {format(new Date(t.created_at), "dd/MM/yyyy")}</span>

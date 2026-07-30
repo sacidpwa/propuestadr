@@ -645,7 +645,7 @@ export default function CalendarPage() {
                             {task.status === "completed" ? <CheckCircle className="w-4 h-4 text-green-500" /> : <div className="w-4 h-4 rounded-full border-2 border-muted-foreground/30" />}
                           </button>
                           <span className={`flex-1 ${task.status === "completed" ? "line-through text-muted-foreground" : ""}`}>{task.title}</span>
-                          {task.due && <span className="text-xs text-muted-foreground">{format(new Date(task.due), "dd/MM")}</span>}
+                          {task.due && <span className="text-xs text-muted-foreground">{format(parseISO(task.due), "dd/MM")}</span>}
                           <button onClick={() => task.id && handleDeleteTask(task.id)} className="shrink-0 text-destructive/60 hover:text-destructive">
                             <XCircle className="w-3.5 h-3.5" />
                           </button>

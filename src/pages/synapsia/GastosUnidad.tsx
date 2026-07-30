@@ -180,7 +180,7 @@ export default function GastosUnidad() {
       toast({ title: "Faltan datos", variant: "destructive" });
       return;
     }
-    const opDate = new Date(form.operation_date);
+    const opDate = parseISO(form.operation_date);
     let receipt: string | null = null;
     if (form.file) receipt = await uploadReceipt(form.file);
 

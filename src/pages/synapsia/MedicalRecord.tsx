@@ -12,7 +12,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { useToast } from "@/hooks/use-toast";
 import { ArrowLeft, Brain, FileSignature, HeartPulse, Loader2, Lock, LogOut, NotebookPen, Pill, Plus, RotateCcw, Save, Trash2 } from "lucide-react";
 import NavigationDropdown from "@/components/synapsia/NavigationDropdown";
-import { format } from "date-fns";
+import { format, parseISO } from "date-fns";
 import { es } from "date-fns/locale";
 
 interface Patient { id: string; full_name: string; phone: string | null; email: string | null; date_of_birth: string | null; }
@@ -480,7 +480,7 @@ export default function MedicalRecord() {
                   <CardTitle className="text-sm flex items-center justify-between">
                     <span className="flex items-center gap-2">
                       {n.is_locked && <Lock className="w-3 h-3 text-primary" />}
-                      {format(new Date(n.session_date), "PPpp", { locale: es })}
+                      {format(parseISO(n.session_date), "PPpp", { locale: es })}
                     </span>
                     <span className="text-xs text-muted-foreground">{n.specialists?.full_name}</span>
                   </CardTitle>

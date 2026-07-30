@@ -14,7 +14,7 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ArrowLeft, LogOut, Plus, Trash2, Loader2, PiggyBank, ChevronLeft, ChevronRight } from "lucide-react";
 import NavigationDropdown from "@/components/synapsia/NavigationDropdown";
 import { toast } from "@/hooks/use-toast";
-import { format } from "date-fns";
+import { format, parseISO } from "date-fns";
 import { es } from "date-fns/locale";
 import { fmt } from "@/lib/utils";
 
@@ -83,7 +83,7 @@ export default function CajaChica() {
 
   const filteredByMonth = useMemo(() => {
     return movements.filter(m => {
-      const d = new Date(m.reference_date);
+      const d = parseISO(m.reference_date);
       return d.getMonth() + 1 === month && d.getFullYear() === year;
     });
   }, [movements, month, year]);
@@ -255,7 +255,7 @@ export default function CajaChica() {
                   <div className="flex-1">
                     <div className="flex items-center gap-2 flex-wrap">
                       <Badge variant="outline" className={`capitalize ${TYPE_STYLE[m.type]}`}>{TYPE_LABEL[m.type]}</Badge>
-                      <span className="text-xs text-muted-foreground">{format(new Date(m.reference_date), "PP", { locale: es })}</span>
+                      <span className="text-xs text-muted-foreground">{format(parseISO(m.reference_date), "PP", { locale: es })}</span>
                       {m.category && <span className="text-xs text-muted-foreground">· {m.category}</span>}
                     </div>
                     {m.description && <p className="text-sm mt-1">{m.description}</p>}

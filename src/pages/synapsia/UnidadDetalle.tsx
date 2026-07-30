@@ -263,7 +263,7 @@ export default function UnidadDetalle() {
       const amt = Number(m.amount || 0);
       if (m.type === "apertura" || m.type === "entrada") pettyCashBalance += amt;
       else pettyCashBalance -= amt;
-      const mIdx = new Date(m.reference_date).getMonth();
+      const mIdx = parseISO(m.reference_date).getMonth();
       const monthKey = MONTHS[mIdx];
       if (pettyCashMonthlyMap[monthKey]) {
         if (m.type === "apertura" || m.type === "entrada") pettyCashMonthlyMap[monthKey].entradas += amt;
@@ -1157,7 +1157,7 @@ export default function UnidadDetalle() {
                           <tr key={fee.id} className="border-b last:border-0 hover:bg-muted/50">
                             <td className="px-4 py-2 font-medium">{fee.patient_name}</td>
                             <td className="px-4 py-2">${fee.amount.toLocaleString()}</td>
-                            <td className="px-4 py-2 text-xs">{format(new Date(fee.next_due_date), "PP", { locale: es })}</td>
+                            <td className="px-4 py-2 text-xs">{format(parseISO(fee.next_due_date), "PP", { locale: es })}</td>
                             <td className="px-4 py-2">
                               <Badge variant={fee.days_overdue > 30 ? "destructive" : "secondary"} className={fee.days_overdue <= 30 ? "bg-amber-500/10 text-amber-700" : ""}>
                                 {fee.days_overdue} días

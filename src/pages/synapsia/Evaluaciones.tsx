@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { ArrowLeft, LogOut, Plus, Save, Trash2, ClipboardList } from "lucide-react";
 import { toast } from "sonner";
-import { format } from "date-fns";
+import { format, parseISO } from "date-fns";
 import synapsiaIcon from "@/assets/synapsia-icon.svg";
 import NavigationDropdown from "@/components/synapsia/NavigationDropdown";
 
@@ -292,7 +292,7 @@ export default function Evaluaciones() {
                     <div>
                       <CardTitle className="text-base">{e.full_name} <span className="text-muted-foreground font-normal">— {e.position}</span></CardTitle>
                       <CardDescription className="mt-1 flex flex-wrap gap-2 items-center">
-                        <span>{new Date(e.interview_date).toLocaleDateString("es-MX")}</span>
+                        <span>{format(parseISO(e.interview_date), "PP", { locale: es })}</span>
                         {unit && <Badge variant="secondary">{unit.name}</Badge>}
                         {e.reports_to && <span>· Reporta a: {e.reports_to}</span>}
                       </CardDescription>
