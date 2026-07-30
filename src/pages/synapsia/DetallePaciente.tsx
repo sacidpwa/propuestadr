@@ -213,16 +213,22 @@ export default function DetallePaciente() {
 
   function buildStatementData() {
     if (!patient || !unitId) return null as any;
-    const rows = invoices.map(inv => ({
-      date: format(parseISO(inv.invoice_date), "dd/MM/yyyy"),
-      quantity: 1,
-      description: inv.concept || "—",
-      charge: Number(inv.amount),
-      payment: 0,
-    }));
-    payments.forEach(p => {
+    const rows: { date: string; rawDate: string; quantity: number; description: string; charge: number; payment: number }[] = [];
+    invoices.forEach(inv => {
       rows.push({
-        date: format(new Date(p.paid_at), "dd/MM/yyyy"),
+        date: format(parseISO(inv.invoice_date), "dd/MM/yyyy"),
+        rawDate: inv.invoice_date,
+        quantity: 1,
+        description: inv.concept || "—",
+        charge: Number(inv.amount),
+        payment: 0,
+      });
+    });
+    payments.forEach(p => {
+      const d = new Date(p.paid_at);
+      rows.push({
+        date: format(d, "dd/MM/yyyy"),
+        rawDate: format(d, "yyyy-MM-dd"),
         quantity: 1,
         description: `PAGO - ${(p.method || "").toUpperCase()}`,
         charge: 0,
@@ -232,13 +238,14 @@ export default function DetallePaciente() {
     incomeEntries.forEach(e => {
       rows.push({
         date: format(parseISO(e.expense_date), "dd/MM/yyyy"),
+        rawDate: e.expense_date,
         quantity: 1,
         description: `INGRESO - ${e.description || e.category || ""}`,
         charge: 0,
         payment: Number(e.amount),
       });
     });
-    rows.sort((a, b) => a.date.localeCompare(b.date));
+    rows.sort((a, b) => a.rawDate.localeCompare(b.rawDate));
     const totalCharges = rows.reduce((s, r) => s + r.charge, 0);
     const totalPayments = rows.reduce((s, r) => s + r.payment, 0);
     return {
