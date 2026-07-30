@@ -175,6 +175,8 @@ export default function UnidadDetalle() {
     expenseByCategory: [],
     incomeByPatient: [],
     staffList: [],
+    pettyCashBalance: 0,
+    pettyCashMovements: [],
   });
   const [patientDialogOpen, setPatientDialogOpen] = useState(false);
   const [patientSummaryLoading, setPatientSummaryLoading] = useState(false);
