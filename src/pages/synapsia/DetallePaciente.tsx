@@ -51,6 +51,7 @@ interface PatientInvoice {
   amount: number; concept: string | null; status: string; category: string | null;
   verified_by: string | null; verified_at: string | null; source: string | null;
   uploaded_by: string | null; created_by_name?: string;
+  quantity: number | null; unit: string | null;
 }
 
 const UNIT_LOGOS: Record<string, string> = {
@@ -218,7 +219,7 @@ export default function DetallePaciente() {
       rows.push({
         date: format(parseISO(inv.invoice_date), "dd/MM/yyyy"),
         rawDate: inv.invoice_date,
-        quantity: 1,
+        quantity: inv.quantity || 1,
         description: inv.concept || "—",
         charge: Number(inv.amount),
         payment: 0,
