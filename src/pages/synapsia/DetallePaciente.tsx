@@ -51,7 +51,7 @@ interface PatientInvoice {
   amount: number; concept: string | null; status: string; category: string | null;
   verified_by: string | null; verified_at: string | null; source: string | null;
   uploaded_by: string | null; created_by_name?: string;
-  quantity: number | null; unit: string | null;
+  quantity: number | null; unit: string | null; unit_price: number | null;
 }
 
 const UNIT_LOGOS: Record<string, string> = {
@@ -77,7 +77,7 @@ export default function DetallePaciente() {
   const [incomeEntries, setIncomeEntries] = useState<any[]>([]);
   const [invoices, setInvoices] = useState<PatientInvoice[]>([]);
   const [newInvoiceOpen, setNewInvoiceOpen] = useState(false);
-  const [invForm, setInvForm] = useState({ concept: "", amount: 0, invoice_date: format(new Date(), "yyyy-MM-dd"), category: "", quantity: 1, unit: "pieza" });
+  const [invForm, setInvForm] = useState({ concept: "", amount: 0, invoice_date: format(new Date(), "yyyy-MM-dd"), category: "", quantity: 1, unit: "pieza", unit_price: 0 });
   const [servicePrices, setServicePrices] = useState<any[]>([]);
   const [manualPrice, setManualPrice] = useState(false);
   const [editingInvoice, setEditingInvoice] = useState<PatientInvoice | null>(null);
@@ -323,10 +323,11 @@ export default function DetallePaciente() {
       uploaded_by: user!.id,
       quantity: invForm.quantity,
       unit: invForm.unit,
+      unit_price: invForm.unit_price,
     });
     if (error) { toast({ title: "Error", description: error.message, variant: "destructive" }); return; }
     toast({ title: "Gasto extra registrado" });
-    setInvForm({ concept: "", amount: 0, invoice_date: format(new Date(), "yyyy-MM-dd"), category: "", quantity: 1, unit: "pieza" });
+    setInvForm({ concept: "", amount: 0, invoice_date: format(new Date(), "yyyy-MM-dd"), category: "", quantity: 1, unit: "pieza", unit_price: 0 });
     setNewInvoiceOpen(false);
     setManualPrice(false);
     loadInvoices();
@@ -342,11 +343,12 @@ export default function DetallePaciente() {
       invoice_date: invForm.invoice_date,
       quantity: invForm.quantity,
       unit: invForm.unit,
+      unit_price: invForm.unit_price,
     }).eq("id", editingInvoice.id);
     if (error) { toast({ title: "Error al editar", description: error.message, variant: "destructive" }); return; }
     toast({ title: "Gasto actualizado" });
     setEditingInvoice(null);
-    setInvForm({ concept: "", amount: 0, invoice_date: format(new Date(), "yyyy-MM-dd"), category: "", quantity: 1, unit: "pieza" });
+    setInvForm({ concept: "", amount: 0, invoice_date: format(new Date(), "yyyy-MM-dd"), category: "", quantity: 1, unit: "pieza", unit_price: 0 });
     loadInvoices();
   }
 
@@ -635,12 +637,12 @@ export default function DetallePaciente() {
                     <div className="flex gap-2">
                       <Button size="sm" variant="outline" className="border-teal-300 text-teal-800" onClick={() => {
                         setNewInvoiceOpen(true);
-                        setInvForm({ concept: "MENSUALIDAD", amount: Number(patient.monthly_fee), invoice_date: format(new Date(), "yyyy-MM-dd"), category: "COLEGIATURA", quantity: 1, unit: "pieza" });
+                        setInvForm({ concept: "MENSUALIDAD", amount: Number(patient.monthly_fee), invoice_date: format(new Date(), "yyyy-MM-dd"), category: "COLEGIATURA", quantity: 1, unit: "pieza", unit_price: Number(patient.monthly_fee) });
                       }}>
                         <Plus className="w-4 h-4 mr-1" /> Agregar a la nota
                       </Button>
                       <Button size="sm" variant="outline" onClick={() => {
-                        setInvForm({ concept: "", amount: 0, invoice_date: format(new Date(), "yyyy-MM-dd"), category: "", quantity: 1, unit: "pieza" });
+                        setInvForm({ concept: "", amount: 0, invoice_date: format(new Date(), "yyyy-MM-dd"), category: "", quantity: 1, unit: "pieza", unit_price: 0 });
                         setManualPrice(true);
                         setNewInvoiceOpen(true);
                       }}>
@@ -689,8 +691,17 @@ export default function DetallePaciente() {
                         <div><Label>Categoría</Label>
                           <Input value={invForm.category} onChange={e => setInvForm({ ...invForm, category: e.target.value })} placeholder="Ej: Enfermería, Alimentación, etc." />
                         </div>
+                        <div><Label>Precio unitario $</Label>
+                          <Input type="number" min="0" step="0.01" value={invForm.unit_price || ""} onChange={e => {
+                            const up = parseFloat(e.target.value) || 0;
+                            setInvForm({ ...invForm, unit_price: up, amount: up * invForm.quantity });
+                          }} />
+                        </div>
                         <div><Label>Cantidad</Label>
-                          <Input type="number" min="1" step="1" value={invForm.quantity} onChange={e => setInvForm({ ...invForm, quantity: parseInt(e.target.value) || 1 })} />
+                          <Input type="number" min="1" step="1" value={invForm.quantity} onChange={e => {
+                            const qty = parseInt(e.target.value) || 1;
+                            setInvForm({ ...invForm, quantity: qty, amount: invForm.unit_price * qty });
+                          }} />
                         </div>
                         <div><Label>Unidad</Label>
                           <Select value={invForm.unit} onValueChange={v => setInvForm({ ...invForm, unit: v })}>
@@ -703,7 +714,7 @@ export default function DetallePaciente() {
                             </SelectContent>
                           </Select>
                         </div>
-                        <div className="sm:col-span-2"><Label>Monto $</Label><Input type="number" min="0" step="0.01" value={invForm.amount} onChange={e => setInvForm({ ...invForm, amount: parseFloat(e.target.value) || 0 })} /></div>
+                        <div><Label>Monto total $</Label><Input type="number" min="0" step="0.01" value={invForm.amount} onChange={e => setInvForm({ ...invForm, amount: parseFloat(e.target.value) || 0 })} /></div>
                       </div>
                     )}
                     {!manualPrice && servicePrices.length > 0 && (
@@ -713,7 +724,7 @@ export default function DetallePaciente() {
                     )}
                     {manualPrice && servicePrices.length > 0 && (
                       <p className="text-xs text-muted-foreground text-right">
-                        <button type="button" onClick={() => { setManualPrice(false); setInvForm({ concept: "", amount: 0, invoice_date: format(new Date(), "yyyy-MM-dd"), category: "", quantity: 1, unit: "pieza" }); }} className="underline">Usar catálogo de precios</button>
+                        <button type="button" onClick={() => { setManualPrice(false); setInvForm({ concept: "", amount: 0, invoice_date: format(new Date(), "yyyy-MM-dd"), category: "", quantity: 1, unit: "pieza", unit_price: 0 }); }} className="underline">Usar catálogo de precios</button>
                       </p>
                     )}
                     <div className="flex justify-end gap-2">
@@ -755,6 +766,7 @@ export default function DetallePaciente() {
                             <th className="text-left px-4 py-2 font-medium">Categoría</th>
                             <th className="text-center px-4 py-2 font-medium">Cant.</th>
                             <th className="text-left px-4 py-2 font-medium">Unidad</th>
+                            <th className="text-right px-4 py-2 font-medium">P. Unit.</th>
                             <th className="text-left px-4 py-2 font-medium">Estado</th>
                             <th className="text-center px-4 py-2 font-medium">Validación</th>
                             <th className="text-left px-4 py-2 font-medium">Registró</th>
@@ -772,6 +784,7 @@ export default function DetallePaciente() {
                               <td className="px-4 py-2 text-xs text-muted-foreground">{inv.category || "—"}</td>
                               <td className="px-4 py-2 text-xs text-center">{inv.quantity || 1}</td>
                               <td className="px-4 py-2 text-xs text-muted-foreground">{inv.unit || "pieza"}</td>
+                              <td className="px-4 py-2 text-xs text-right font-mono">{inv.unit_price ? `$${Number(inv.unit_price).toLocaleString()}` : "—"}</td>
                               <td className="px-4 py-2">
                                 <Badge variant={inv.status === "verificada" ? "secondary" : inv.status === "erronea" ? "destructive" : "outline"}>
                                   {inv.status}
@@ -795,7 +808,7 @@ export default function DetallePaciente() {
                                   <div className="flex items-center justify-center gap-1">
                                     <button onClick={() => {
                                       setEditingInvoice(inv);
-                                      setInvForm({ concept: inv.concept || "", amount: inv.amount, invoice_date: inv.invoice_date, category: inv.category || "", quantity: inv.quantity || 1, unit: inv.unit || "pieza" });
+                                      setInvForm({ concept: inv.concept || "", amount: inv.amount, invoice_date: inv.invoice_date, category: inv.category || "", quantity: inv.quantity || 1, unit: inv.unit || "pieza", unit_price: inv.unit_price || 0 });
                                       setNewInvoiceOpen(true);
                                     }} className="p-1 rounded hover:bg-muted" title="Editar">
                                       <Pencil className="w-4 h-4 text-muted-foreground" />
