@@ -1138,7 +1138,7 @@ export default function UnidadDetalle() {
                 </CardTitle>
                 <CardDescription>
                   {data.overdueFees > 0
-                    ? `${data.overdueFees} cuota(s) vencida(s) por un total de $${fmt(data.overdueAmount)}`
+                    ? `${data.overdueFees} cuota(s) vencida(s) por un total de ${fmt(data.overdueAmount)}`
                     : "No hay cuotas vencidas"}
                 </CardDescription>
               </CardHeader>
@@ -1210,7 +1210,7 @@ export default function UnidadDetalle() {
                   </div>
                   <div className="space-y-1">
                     <p className="text-sm text-muted-foreground">Cuotas por cobrar</p>
-                    <p className="text-2xl font-bold">{data.overdueAmount > 0 ? `$${fmt(data.overdueAmount)}` : "$0.00"}</p>
+                    <p className="text-2xl font-bold">{data.overdueAmount > 0 ? `${fmt(data.overdueAmount)}` : "$0.00"}</p>
                   </div>
                 </div>
               </CardContent>
