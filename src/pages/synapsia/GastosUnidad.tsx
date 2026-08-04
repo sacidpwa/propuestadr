@@ -156,7 +156,8 @@ export default function GastosUnidad() {
         e.description.toLowerCase().includes(q) ||
         (e.category && e.category.toLowerCase().includes(q)) ||
         (e.notes && e.notes.toLowerCase().includes(q)) ||
-        (e.patient_name && e.patient_name.toLowerCase().includes(q))
+        (e.patient_name && e.patient_name.toLowerCase().includes(q)) ||
+        Number(e.amount).toString().includes(q)
       );
     }
     if (dateFrom) list = list.filter(e => e.expense_date >= dateFrom);
