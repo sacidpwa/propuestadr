@@ -301,7 +301,7 @@ export default function GastosUnidad() {
     if (!confirm("¿Eliminar este registro?")) return;
     const { error } = await (supabase.from as any)("expense_entries").delete().eq("id", id);
     if (error) { toast({ title: "Error", description: error.message, variant: "destructive" }); return; }
-    load();
+    setEntries(prev => prev.filter(e => e.id !== id));
   }
 
   function askPin(title: string, action: () => Promise<void>) {
