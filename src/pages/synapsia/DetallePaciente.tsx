@@ -80,6 +80,8 @@ export default function DetallePaciente() {
   const [invForm, setInvForm] = useState({ concept: "", amount: 0, invoice_date: format(new Date(), "yyyy-MM-dd"), category: "", quantity: 1, unit: "pieza", unit_price: 0 });
   const [servicePrices, setServicePrices] = useState<any[]>([]);
   const [manualPrice, setManualPrice] = useState(false);
+  const [medicalItems, setMedicalItems] = useState<{ id: string; name: string; unit_price: number }[]>([]);
+  const [medItemSearch, setMedItemSearch] = useState("");
   const [editingInvoice, setEditingInvoice] = useState<PatientInvoice | null>(null);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
   const [periodKey, setPeriodKey] = useState("este-mes");
@@ -112,6 +114,7 @@ export default function DetallePaciente() {
     if (!patientId) return;
     loadPatient();
     loadServicePrices();
+    loadMedicalItems();
     if (unitId) loadUnit();
   }, [patientId]);
 
@@ -282,6 +285,12 @@ export default function DetallePaciente() {
     const { data } = await (supabase.from as any)("service_prices")
       .select("*").eq("health_unit_id", unitId).eq("is_active", true).order("category").order("concept");
     setServicePrices((data as any) || []);
+  }
+
+  async function loadMedicalItems() {
+    const { data } = await (supabase.from as any)("medical_items")
+      .select("id, name, unit_price").order("name");
+    setMedicalItems((data as any) || []);
   }
 
   async function handleSave() {
@@ -691,6 +700,45 @@ export default function DetallePaciente() {
                         <div><Label>Categoría</Label>
                           <Input value={invForm.category} onChange={e => setInvForm({ ...invForm, category: e.target.value })} placeholder="Ej: Enfermería, Alimentación, etc." />
                         </div>
+                      </div>
+                      {invForm.category === "Medicamentos" && (
+                        <div>
+                          <Label>Seleccionar medicamento/insumo</Label>
+                          <div className="relative">
+                            <Input
+                              value={medItemSearch}
+                              onChange={e => setMedItemSearch(e.target.value)}
+                              placeholder="Buscar medicamento..."
+                              className="h-9"
+                              list="patient-medical-items"
+                            />
+                            <datalist id="patient-medical-items">
+                              {medicalItems.map(mi => (
+                                <option key={mi.id} value={mi.name} />
+                              ))}
+                            </datalist>
+                          </div>
+                          <div className="flex flex-wrap gap-1.5 mt-2 max-h-32 overflow-y-auto">
+                            {medicalItems
+                              .filter(mi => medItemSearch && mi.name.toLowerCase().includes(medItemSearch.toLowerCase()))
+                              .slice(0, 20)
+                              .map(mi => (
+                                <button
+                                  key={mi.id}
+                                  type="button"
+                                  className="text-xs px-2 py-1 rounded border hover:bg-primary hover:text-primary-foreground transition-colors"
+                                  onClick={() => {
+                                    setInvForm(prev => ({ ...prev, concept: mi.name, unit_price: mi.unit_price, amount: mi.unit_price * prev.quantity }));
+                                    setMedItemSearch("");
+                                  }}
+                                >
+                                  {mi.name} — ${Number(mi.unit_price).toLocaleString("en-US", { minimumFractionDigits: 2 })}
+                                </button>
+                              ))}
+                          </div>
+                        </div>
+                      )}
+                      <div className="grid sm:grid-cols-2 gap-3">
                         <div><Label>Precio unitario $</Label>
                           <Input type="number" min="0" step="0.01" value={invForm.unit_price || ""} onChange={e => {
                             const up = parseFloat(e.target.value) || 0;

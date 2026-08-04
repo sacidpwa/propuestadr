@@ -67,8 +67,6 @@ export default function GastosUnidad() {
   const [catDialogOpen, setCatDialogOpen] = useState(false);
   const [newCatName, setNewCatName] = useState("");
   const [editingCat, setEditingCat] = useState<{ id: string; name: string } | null>(null);
-  const [medicalItems, setMedicalItems] = useState<{ id: string; name: string; unit_price: number }[]>([]);
-  const [medItemSearch, setMedItemSearch] = useState("");
 
   function waitForFile(): Promise<File | null> {
     return new Promise((resolve) => {
@@ -105,14 +103,6 @@ export default function GastosUnidad() {
   }
 
   useEffect(() => { loadCategories(); }, [unitId]);
-
-  async function loadMedicalItems() {
-    const { data } = await (supabase.from as any)("medical_items")
-      .select("id, name, unit_price").order("name");
-    setMedicalItems((data as any) || []);
-  }
-
-  useEffect(() => { loadMedicalItems(); }, []);
 
   async function handleAddCategory() {
     if (!newCatName.trim() || !unitId) return;
@@ -553,43 +543,11 @@ export default function GastosUnidad() {
 
               {(!form.patient_id || form.entry_type !== "ingreso") && (
                 <>
-                  {form.category === "Medicamentos" && (
-                    <div>
-                      <Label>Seleccionar medicamento/insumo</Label>
-                      <div className="relative">
-                        <Input
-                          value={medItemSearch}
-                          onChange={e => { setMedItemSearch(e.target.value); }}
-                          placeholder="Buscar medicamento..."
-                          className="h-9"
-                          list="medical-items-list"
-                          onFocus={() => setMedItemSearch("")}
-                        />
-                        <datalist id="medical-items-list">
-                          {medicalItems
-                            .filter(mi => !medItemSearch || mi.name.toLowerCase().includes(medItemSearch.toLowerCase()))
-                            .map(mi => (
-                              <option key={mi.id} value={mi.name} label={`$${mi.unit_price.toFixed(2)}`} />
-                            ))}
-                        </datalist>
-                      </div>
-                      <p className="text-xs text-muted-foreground mt-1">Selecciona o escribe para autocompletar descripción y monto</p>
-                    </div>
-                  )}
                   <div>
                     <Label>Descripción</Label>
                     <Input
                       value={form.description}
                       onChange={e => setForm({ ...form, description: e.target.value })}
-                      onBlur={() => {
-                        if (form.category === "Medicamentos" && medItemSearch) {
-                          const found = medicalItems.find(mi => mi.name.toLowerCase() === medItemSearch.toLowerCase());
-                          if (found) {
-                            setForm(prev => ({ ...prev, description: found.name, amount: found.unit_price }));
-                            setMedItemSearch("");
-                          }
-                        }
-                      }}
                     />
                   </div>
                   <div className="grid grid-cols-2 gap-3">
