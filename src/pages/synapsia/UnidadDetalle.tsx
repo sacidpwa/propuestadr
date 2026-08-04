@@ -148,6 +148,8 @@ function getPeriodRange(period: string, customFrom?: string, customTo?: string):
   }
 }
 
+const fmt = (n: number) => `$${Number(n).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+
 export default function UnidadDetalle() {
   const { id } = useParams<{ id: string }>();
   const { user, signOut, hasRole } = useAuth();
@@ -756,7 +758,7 @@ export default function UnidadDetalle() {
                     </div>
                     <div>
                       <p className="text-xs text-muted-foreground">Abonos del mes</p>
-                      <p className="text-xl font-bold text-violet-700">${data.totalAbonosMes.toLocaleString()}</p>
+                      <p className="text-xl font-bold text-violet-700">${fmt(data.totalAbonosMes)}</p>
                     </div>
                   </div>
                 </CardContent>
@@ -773,7 +775,7 @@ export default function UnidadDetalle() {
                     </div>
                     <div>
                       <p className="text-xs text-muted-foreground">Ingresos período</p>
-                      <p className="text-xl font-bold text-emerald-700">${data.periodIncome.toLocaleString()}</p>
+                      <p className="text-xl font-bold text-emerald-700">${fmt(data.periodIncome)}</p>
                     </div>
                   </div>
                 </CardContent>
@@ -786,7 +788,7 @@ export default function UnidadDetalle() {
                     </div>
                     <div>
                       <p className="text-xs text-muted-foreground">Egresos período</p>
-                      <p className="text-xl font-bold text-rose-700">${data.periodExpenses.toLocaleString()}</p>
+                      <p className="text-xl font-bold text-rose-700">${fmt(data.periodExpenses)}</p>
                     </div>
                   </div>
                 </CardContent>
@@ -809,7 +811,7 @@ export default function UnidadDetalle() {
                         <CartesianGrid strokeDasharray="3 3" className="stroke-border/50" />
                         <XAxis dataKey="day" tick={{ fontSize: 11 }} interval={data.dailyInOut.length > 15 ? Math.floor(data.dailyInOut.length / 10) : 0} />
                         <YAxis tick={{ fontSize: 11 }} tickFormatter={(v: number) => `$${(v / 1000).toFixed(0)}k`} />
-                        <ReTooltip formatter={(v: number) => `$${Number(v).toLocaleString()}`} />
+                        <ReTooltip formatter={(v: number) => fmt(v)} />
                         <Legend />
                         <Bar dataKey="ingresos" fill="#22c55e" name="Ingresos" radius={[4, 4, 0, 0]} />
                         <Bar dataKey="egresos" fill="#ef4444" name="Egresos" radius={[4, 4, 0, 0]} />
@@ -858,7 +860,7 @@ export default function UnidadDetalle() {
                             <Cell key={i} fill={["#ef4444","#f97316","#eab308","#22c55e","#06b6d4","#8b5cf6","#ec4899","#6366f1","#14b8a6","#f43f5e"][i % 10]} />
                           ))}
                         </Pie>
-                        <ReTooltip formatter={(v: number) => `$${Number(v).toLocaleString()}`} />
+                        <ReTooltip formatter={(v: number) => fmt(v)} />
                         <Legend iconSize={isMobile ? 8 : 10} wrapperStyle={{ fontSize: isMobile ? 10 : 12 }} />
                       </RePieChart>
                     </ResponsiveContainer>
@@ -890,7 +892,7 @@ export default function UnidadDetalle() {
                               onClick={() => { setSelectedCategory(cat); setCategorySort("date_desc"); setCategoryDetailOpen(true); }}
                             >
                               <td className="px-3 py-2 font-medium">{cat.name}</td>
-                              <td className="px-3 py-2 text-right font-mono text-red-700">${cat.value.toLocaleString()}</td>
+                              <td className="px-3 py-2 text-right font-mono text-red-700">${fmt(cat.value)}</td>
                               <td className="px-3 py-2 text-right">{pct}%</td>
                               <td className="px-3 py-2 text-right">{cat.entries.length}</td>
                             </tr>
@@ -936,7 +938,7 @@ export default function UnidadDetalle() {
                             <Cell key={i} fill={["#22c55e","#06b6d4","#8b5cf6","#eab308","#f97316","#ec4899","#6366f1","#14b8a6","#ef4444","#f43f5e"][i % 10]} />
                           ))}
                         </Pie>
-                        <ReTooltip formatter={(v: number) => `$${Number(v).toLocaleString()}`} />
+                        <ReTooltip formatter={(v: number) => fmt(v)} />
                         <Legend iconSize={isMobile ? 8 : 10} wrapperStyle={{ fontSize: isMobile ? 10 : 12 }} />
                       </RePieChart>
                     </ResponsiveContainer>
@@ -968,7 +970,7 @@ export default function UnidadDetalle() {
                               onClick={() => { setSelectedIncomePatient(pat); setIncomePatientSort("date_desc"); setIncomePatientOpen(true); }}
                             >
                               <td className="px-3 py-2 font-medium">{pat.name}</td>
-                              <td className="px-3 py-2 text-right font-mono text-green-700">${pat.value.toLocaleString()}</td>
+                              <td className="px-3 py-2 text-right font-mono text-green-700">${fmt(pat.value)}</td>
                               <td className="px-3 py-2 text-right">{pct}%</td>
                               <td className="px-3 py-2 text-right">{pat.entries.length}</td>
                             </tr>
@@ -987,7 +989,7 @@ export default function UnidadDetalle() {
                 <CardTitle className="text-base flex items-center gap-2">
                   <HandCoins className="w-5 h-5" /> Abonos mensuales de pacientes
                 </CardTitle>
-                <CardDescription>Pagos registrados en el mes actual — Total: ${data.totalAbonosMes.toLocaleString()}</CardDescription>
+                <CardDescription>Pagos registrados en el mes actual — Total: ${fmt(data.totalAbonosMes)}</CardDescription>
               </CardHeader>
               <CardContent className="p-0">
                 {data.monthlyAbonos.length > 0 ? (
@@ -1006,11 +1008,11 @@ export default function UnidadDetalle() {
                         {data.monthlyAbonos.map((a) => (
                           <tr key={a.patient_name} className="border-b last:border-0 hover:bg-muted/50">
                             <td className="px-4 py-2 font-medium">{a.patient_name}</td>
-                            <td className="px-4 py-2 text-right">${a.cuota_mensual.toLocaleString()}</td>
-                            <td className="px-4 py-2 text-right font-medium text-green-700">${a.total_abonos.toLocaleString()}</td>
+                            <td className="px-4 py-2 text-right">${fmt(a.cuota_mensual)}</td>
+                            <td className="px-4 py-2 text-right font-medium text-green-700">${fmt(a.total_abonos)}</td>
                             <td className="px-4 py-2 text-right">
                               <Badge variant={a.pendiente > 0 ? "destructive" : "secondary"} className={a.pendiente === 0 ? "bg-green-500/10 text-green-700" : ""}>
-                                ${a.pendiente.toLocaleString()}
+                                ${fmt(a.pendiente)}
                               </Badge>
                             </td>
                             <td className="px-4 py-2 text-xs text-muted-foreground truncate max-w-[200px]">{a.notas}</td>
@@ -1035,7 +1037,7 @@ export default function UnidadDetalle() {
                   <CardTitle className="text-base flex items-center gap-2">
                     <BookOpen className="w-5 h-5" /> Consultas de hoy
                   </CardTitle>
-                  <CardDescription>{data.consultationsToday} consulta(s) — ${data.collectedToday.toLocaleString()} cobrado</CardDescription>
+                  <CardDescription>{data.consultationsToday} consulta(s) — ${fmt(data.collectedToday)} cobrado</CardDescription>
                 </CardHeader>
                 <CardContent className="p-0">
                   <div className="overflow-x-auto">
@@ -1055,8 +1057,8 @@ export default function UnidadDetalle() {
                             <td className="px-4 py-2">{c.specialist_name}</td>
                             <td className="px-4 py-2 font-medium">{c.patient_name}</td>
                             <td className="px-4 py-2">{c.service_type}</td>
-                            <td className="px-4 py-2 text-right">${Number(c.cost).toLocaleString()}</td>
-                            <td className="px-4 py-2 text-right">${(c.amount_collected ? Number(c.amount_collected) : 0).toLocaleString()}</td>
+                            <td className="px-4 py-2 text-right">${fmt(Number(c.cost))}</td>
+                            <td className="px-4 py-2 text-right">${fmt(c.amount_collected ? Number(c.amount_collected) : 0)}</td>
                           </tr>
                         ))}
                       </tbody>
@@ -1081,7 +1083,7 @@ export default function UnidadDetalle() {
                       <CartesianGrid strokeDasharray="3 3" className="stroke-border/50" />
                       <XAxis dataKey="month" tick={{ fontSize: 12 }} />
                       <YAxis tick={{ fontSize: 12 }} tickFormatter={(v: number) => `$${(v / 1000).toFixed(0)}k`} />
-                      <ReTooltip formatter={(v: number) => `$${Number(v).toLocaleString()}`} />
+                      <ReTooltip formatter={(v: number) => fmt(v)} />
                       <Legend />
                       <Bar dataKey="ingresos" fill="#22c55e" name="Ingresos" radius={[4, 4, 0, 0]} />
                       <Bar dataKey="gastos" fill="#ef4444" name="Gastos" radius={[4, 4, 0, 0]} />
@@ -1107,7 +1109,7 @@ export default function UnidadDetalle() {
                       <div className="w-3 h-3 rounded-full bg-blue-500" />
                       <span className="text-muted-foreground">Saldo actual:</span>
                       <span className={`font-bold ${data.pettyCashBalance >= 0 ? "text-blue-700" : "text-red-700"}`}>
-                        ${data.pettyCashBalance.toLocaleString()}
+                        ${fmt(data.pettyCashBalance)}
                       </span>
                     </div>
                   </div>
@@ -1117,7 +1119,7 @@ export default function UnidadDetalle() {
                         <CartesianGrid strokeDasharray="3 3" className="stroke-border/50" />
                         <XAxis dataKey="month" tick={{ fontSize: 12 }} />
                         <YAxis tick={{ fontSize: 12 }} tickFormatter={(v: number) => `$${(v / 1000).toFixed(0)}k`} />
-                        <ReTooltip formatter={(v: number) => `$${Number(v).toLocaleString()}`} />
+                        <ReTooltip formatter={(v: number) => fmt(v)} />
                         <Legend />
                         <Bar dataKey="entradas" fill="#3b82f6" name="Entradas" radius={[4, 4, 0, 0]} />
                         <Bar dataKey="salidas" fill="#ef4444" name="Salidas" radius={[4, 4, 0, 0]} />
@@ -1136,7 +1138,7 @@ export default function UnidadDetalle() {
                 </CardTitle>
                 <CardDescription>
                   {data.overdueFees > 0
-                    ? `${data.overdueFees} cuota(s) vencida(s) por un total de $${data.overdueAmount.toLocaleString()}`
+                    ? `${data.overdueFees} cuota(s) vencida(s) por un total de $${fmt(data.overdueAmount)}`
                     : "No hay cuotas vencidas"}
                 </CardDescription>
               </CardHeader>
@@ -1156,7 +1158,7 @@ export default function UnidadDetalle() {
                         {data.overdueList.map((fee) => (
                           <tr key={fee.id} className="border-b last:border-0 hover:bg-muted/50">
                             <td className="px-4 py-2 font-medium">{fee.patient_name}</td>
-                            <td className="px-4 py-2">${fee.amount.toLocaleString()}</td>
+                            <td className="px-4 py-2">${fmt(fee.amount)}</td>
                             <td className="px-4 py-2 text-xs">{format(parseISO(fee.next_due_date), "PP", { locale: es })}</td>
                             <td className="px-4 py-2">
                               <Badge variant={fee.days_overdue > 30 ? "destructive" : "secondary"} className={fee.days_overdue <= 30 ? "bg-amber-500/10 text-amber-700" : ""}>
@@ -1188,27 +1190,27 @@ export default function UnidadDetalle() {
                 <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
                   <div className="space-y-1">
                     <p className="text-sm text-muted-foreground">Ingresos totales</p>
-                    <p className="text-2xl font-bold text-green-700">${data.income.toLocaleString()}</p>
+                    <p className="text-2xl font-bold text-green-700">${fmt(data.income)}</p>
                   </div>
                   <div className="space-y-1">
                     <p className="text-sm text-muted-foreground">Gastos totales</p>
-                    <p className="text-2xl font-bold text-red-700">${data.expenses.toLocaleString()}</p>
+                    <p className="text-2xl font-bold text-red-700">${fmt(data.expenses)}</p>
                   </div>
                   <div className="space-y-1">
                     <p className="text-sm text-muted-foreground">Caja chica</p>
                     <p className={`text-2xl font-bold ${data.pettyCashBalance >= 0 ? "text-blue-700" : "text-red-700"}`}>
-                      ${data.pettyCashBalance.toLocaleString()}
+                      ${fmt(data.pettyCashBalance)}
                     </p>
                   </div>
                   <div className="space-y-1">
                     <p className="text-sm text-muted-foreground">Margen</p>
                     <p className={`text-2xl font-bold ${data.income - data.expenses + data.pettyCashBalance >= 0 ? "text-green-700" : "text-red-700"}`}>
-                      ${(data.income - data.expenses + data.pettyCashBalance).toLocaleString()}
+                      ${fmt(data.income - data.expenses + data.pettyCashBalance)}
                     </p>
                   </div>
                   <div className="space-y-1">
                     <p className="text-sm text-muted-foreground">Cuotas por cobrar</p>
-                    <p className="text-2xl font-bold">{data.overdueAmount > 0 ? `$${data.overdueAmount.toLocaleString()}` : "$0"}</p>
+                    <p className="text-2xl font-bold">{data.overdueAmount > 0 ? `$${fmt(data.overdueAmount)}` : "$0.00"}</p>
                   </div>
                 </div>
               </CardContent>
@@ -1244,7 +1246,7 @@ export default function UnidadDetalle() {
                             <td className="px-4 py-2 text-xs">
                               {e.expense_date ? format(localDate(e.expense_date), "PP", { locale: es }) : "—"}
                             </td>
-                            <td className="px-4 py-2 text-right font-mono">${Number(e.amount).toLocaleString()}</td>
+                            <td className="px-4 py-2 text-right font-mono">${fmt(Number(e.amount))}</td>
                           </tr>
                         ))}
                       </tbody>
@@ -1295,12 +1297,12 @@ export default function UnidadDetalle() {
                   {data.patientSummary.map((p) => (
                     <tr key={p.patient_id} className="border-b last:border-0 hover:bg-muted/50">
                       <td className="px-3 py-2 font-medium">{p.patient_name}</td>
-                      <td className="px-3 py-2 text-right text-green-700">${p.ingresos.toLocaleString()}</td>
-                      <td className="px-3 py-2 text-right text-red-700">${p.egresos.toLocaleString()}</td>
-                      <td className="px-3 py-2 text-right text-blue-700">${p.abonos.toLocaleString()}</td>
+                      <td className="px-3 py-2 text-right text-green-700">${fmt(p.ingresos)}</td>
+                      <td className="px-3 py-2 text-right text-red-700">${fmt(p.egresos)}</td>
+                      <td className="px-3 py-2 text-right text-blue-700">${fmt(p.abonos)}</td>
                       <td className="px-3 py-2 text-right">
                         <Badge variant={p.saldo >= 0 ? "secondary" : "destructive"} className={p.saldo >= 0 ? "bg-green-500/10 text-green-700" : ""}>
-                          ${p.saldo.toLocaleString()}
+                          ${fmt(p.saldo)}
                         </Badge>
                       </td>
                     </tr>
@@ -1309,10 +1311,10 @@ export default function UnidadDetalle() {
                 <tfoot>
                   <tr className="border-t font-bold text-xs">
                     <td className="px-3 py-2">Total</td>
-                    <td className="px-3 py-2 text-right text-green-700">${data.patientSummary.reduce((s, p) => s + p.ingresos, 0).toLocaleString()}</td>
-                    <td className="px-3 py-2 text-right text-red-700">${data.patientSummary.reduce((s, p) => s + p.egresos, 0).toLocaleString()}</td>
-                    <td className="px-3 py-2 text-right text-blue-700">${data.patientSummary.reduce((s, p) => s + p.abonos, 0).toLocaleString()}</td>
-                    <td className="px-3 py-2 text-right">${data.patientSummary.reduce((s, p) => s + p.saldo, 0).toLocaleString()}</td>
+                    <td className="px-3 py-2 text-right text-green-700">${fmt(data.patientSummary.reduce((s, p) => s + p.ingresos, 0))}</td>
+                    <td className="px-3 py-2 text-right text-red-700">${fmt(data.patientSummary.reduce((s, p) => s + p.egresos, 0))}</td>
+                    <td className="px-3 py-2 text-right text-blue-700">${fmt(data.patientSummary.reduce((s, p) => s + p.abonos, 0))}</td>
+                    <td className="px-3 py-2 text-right">${fmt(data.patientSummary.reduce((s, p) => s + p.saldo, 0))}</td>
                   </tr>
                 </tfoot>
               </table>
@@ -1339,7 +1341,7 @@ export default function UnidadDetalle() {
               <div className="flex items-center justify-between mb-2">
                 <div>
                   <span className="text-sm text-muted-foreground">Total: </span>
-                  <span className="font-bold text-red-700">${selectedCategory.value.toLocaleString()}</span>
+                  <span className="font-bold text-red-700">${fmt(selectedCategory.value)}</span>
                   <span className="text-sm text-muted-foreground ml-4">({selectedCategory.entries.length} movimiento(s))</span>
                 </div>
                 <div className="flex gap-1">
@@ -1372,7 +1374,7 @@ export default function UnidadDetalle() {
                         <td className="px-3 py-2 text-xs">
                           {e.expense_date ? format(localDate(e.expense_date), "PP", { locale: es }) : "—"}
                         </td>
-                        <td className="px-3 py-2 text-right font-mono text-red-700">${Number(e.amount).toLocaleString()}</td>
+                        <td className="px-3 py-2 text-right font-mono text-red-700">${fmt(Number(e.amount))}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -1401,7 +1403,7 @@ export default function UnidadDetalle() {
               <div className="flex items-center justify-between mb-2">
                 <div>
                   <span className="text-sm text-muted-foreground">Total: </span>
-                  <span className="font-bold text-green-700">${selectedIncomePatient.value.toLocaleString()}</span>
+                  <span className="font-bold text-green-700">${fmt(selectedIncomePatient.value)}</span>
                   <span className="text-sm text-muted-foreground ml-4">({selectedIncomePatient.entries.length} movimiento(s))</span>
                 </div>
                 <div className="flex gap-1">
@@ -1436,7 +1438,7 @@ export default function UnidadDetalle() {
                         <td className="px-3 py-2 text-xs">
                           {e.expense_date ? format(localDate(e.expense_date), "PP", { locale: es }) : "—"}
                         </td>
-                        <td className="px-3 py-2 text-right font-mono text-green-700">${Number(e.amount).toLocaleString()}</td>
+                        <td className="px-3 py-2 text-right font-mono text-green-700">${fmt(Number(e.amount))}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -1494,7 +1496,7 @@ export default function UnidadDetalle() {
                       <td className="px-3 py-2 text-xs">{emp.position || "—"}</td>
                       <td className="px-3 py-2 text-xs capitalize">{emp.area}</td>
                       <td className="px-3 py-2 text-xs capitalize">{emp.frequency}</td>
-                      <td className="px-3 py-2 text-right font-mono">${Number(emp.base_salary).toLocaleString()}</td>
+                      <td className="px-3 py-2 text-right font-mono">${fmt(Number(emp.base_salary))}</td>
                     </tr>
                   ))}
                 </tbody>
