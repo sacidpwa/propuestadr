@@ -63,6 +63,10 @@ export default function GastosUnidad() {
   const [pinOpen, setPinOpen] = useState(false);
   const [pinAction, setPinAction] = useState<() => Promise<void>>(() => async () => {});
   const [pinTitle, setPinTitle] = useState("");
+  const [categories, setCategories] = useState<{ id: string; name: string }[]>([]);
+  const [catDialogOpen, setCatDialogOpen] = useState(false);
+  const [newCatName, setNewCatName] = useState("");
+  const [editingCat, setEditingCat] = useState<{ id: string; name: string } | null>(null);
 
   function waitForFile(): Promise<File | null> {
     return new Promise((resolve) => {
@@ -90,6 +94,44 @@ export default function GastosUnidad() {
       setPatients((data as any) || []);
     })();
   }, [unitId]);
+
+  async function loadCategories() {
+    if (!unitId) return;
+    const { data } = await (supabase.from as any)("expense_categories")
+      .select("id, name").eq("health_unit_id", unitId).order("name");
+    setCategories((data as any) || []);
+  }
+
+  useEffect(() => { loadCategories(); }, [unitId]);
+
+  async function handleAddCategory() {
+    if (!newCatName.trim() || !unitId) return;
+    const { error } = await (supabase.from as any)("expense_categories").insert({
+      name: newCatName.trim(), health_unit_id: unitId
+    });
+    if (error) { toast({ title: "Error", description: error.message, variant: "destructive" }); return; }
+    toast({ title: "Categoría creada" });
+    setNewCatName("");
+    loadCategories();
+  }
+
+  async function handleEditCategory() {
+    if (!editingCat || !newCatName.trim()) return;
+    const { error } = await (supabase.from as any)("expense_categories")
+      .update({ name: newCatName.trim() }).eq("id", editingCat.id);
+    if (error) { toast({ title: "Error", description: error.message, variant: "destructive" }); return; }
+    toast({ title: "Categoría actualizada" });
+    setEditingCat(null);
+    setNewCatName("");
+    loadCategories();
+  }
+
+  async function handleDeleteCategory(id: string) {
+    const { error } = await (supabase.from as any)("expense_categories").delete().eq("id", id);
+    if (error) { toast({ title: "Error", description: error.message, variant: "destructive" }); return; }
+    toast({ title: "Categoría eliminada" });
+    loadCategories();
+  }
 
   async function load() {
     if (!unitId) return;
@@ -356,6 +398,7 @@ export default function GastosUnidad() {
               <TabsTrigger value="orden_pago">Órdenes de pago</TabsTrigger>
             </TabsList>
           </Tabs>
+          <Button variant="outline" onClick={() => { setCatDialogOpen(true); }}><Pencil className="w-4 h-4 mr-1" /> Categorías</Button>
           <Button onClick={openNew}><Plus className="w-4 h-4 mr-1" /> Nuevo registro</Button>
         </div>
 
@@ -506,19 +549,7 @@ export default function GastosUnidad() {
                       <Label>Categoría</Label>
                       <Input value={form.category} onChange={e => setForm({ ...form, category: e.target.value })} list="expense-categories" placeholder="Seleccionar o escribir..." />
                       <datalist id="expense-categories">
-                        <option value="Nómina / Personal" />
-                        <option value="Medicamentos" />
-                        <option value="Alimentos" />
-                        <option value="Servicios (luz, agua, gas)" />
-                        <option value="Mantenimiento" />
-                        <option value="Limpieza" />
-                        <option value="Transporte" />
-                        <option value="Seguros" />
-                        <option value="Impuestos" />
-                        <option value="Papelería / Office" />
-                        <option value="Equipo / Mobiliario" />
-                        <option value="Mensualidad" />
-                        <option value="Gastos adicionales" />
+                        {categories.map(c => <option key={c.id} value={c.name} />)}
                       </datalist>
                     </div>
                   </div>
@@ -651,6 +682,31 @@ export default function GastosUnidad() {
                 <CreditCard className="w-4 h-4 mr-1" /> Continuar
               </Button>
             </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        <Dialog open={catDialogOpen} onOpenChange={setCatDialogOpen}>
+          <DialogContent className="max-w-md max-h-[80vh] overflow-y-auto">
+            <DialogHeader><DialogTitle>Gestionar categorías</DialogTitle></DialogHeader>
+            <div className="space-y-3">
+              <div className="flex gap-2">
+                <Input value={newCatName} onChange={e => setNewCatName(e.target.value)} placeholder={editingCat ? "Editar categoría..." : "Nueva categoría..."} onKeyDown={e => { if (e.key === "Enter") { editingCat ? handleEditCategory() : handleAddCategory(); } }} />
+                <Button onClick={editingCat ? handleEditCategory : handleAddCategory}>{editingCat ? "Actualizar" : "Agregar"}</Button>
+                {editingCat && <Button variant="ghost" onClick={() => { setEditingCat(null); setNewCatName(""); }}>Cancelar</Button>}
+              </div>
+              <div className="space-y-1">
+                {categories.map(c => (
+                  <div key={c.id} className="flex items-center justify-between py-1.5 px-2 rounded hover:bg-muted group">
+                    <span className="text-sm">{c.name}</span>
+                    <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <button onClick={() => { setEditingCat(c); setNewCatName(c.name); }} className="p-1 rounded hover:bg-background"><Pencil className="w-3 h-3" /></button>
+                      <button onClick={() => handleDeleteCategory(c.id)} className="p-1 rounded hover:bg-destructive/10"><Trash2 className="w-3 h-3 text-destructive" /></button>
+                    </div>
+                  </div>
+                ))}
+                {categories.length === 0 && <p className="text-sm text-muted-foreground text-center py-4">Sin categorías</p>}
+              </div>
+            </div>
           </DialogContent>
         </Dialog>
 
