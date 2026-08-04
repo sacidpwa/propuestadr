@@ -693,6 +693,7 @@ export default function DetallePaciente() {
                         </Select>
                       </div>
                     ) : (
+                      <>
                       <div className="grid sm:grid-cols-2 gap-3">
                         <div><Label>Concepto</Label>
                           <Input value={invForm.concept} onChange={e => setInvForm({ ...invForm, concept: e.target.value })} placeholder="Ej: Terapia física, Pañales, etc." />
@@ -764,6 +765,7 @@ export default function DetallePaciente() {
                         </div>
                         <div><Label>Monto total $</Label><Input type="number" min="0" step="0.01" value={invForm.amount} onChange={e => setInvForm({ ...invForm, amount: parseFloat(e.target.value) || 0 })} /></div>
                       </div>
+                      </>
                     )}
                     {!manualPrice && servicePrices.length > 0 && (
                       <p className="text-xs text-muted-foreground text-right">
