@@ -12,7 +12,7 @@ import PinPrompt from "@/components/synapsia/PinPrompt";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
-import { ArrowLeft, LogOut, Plus, Paperclip, Trash2, ArrowRight, Pencil, CreditCard, Loader2 } from "lucide-react";
+import { ArrowLeft, LogOut, Plus, Paperclip, Trash2, ArrowRight, Pencil, CreditCard, Loader2, Wallet } from "lucide-react";
 import synapsiaIcon from "@/assets/synapsia-icon.svg";
 import NavigationDropdown from "@/components/synapsia/NavigationDropdown";
 import { toast } from "@/hooks/use-toast";
@@ -63,6 +63,8 @@ export default function GastosUnidad() {
   const [pinOpen, setPinOpen] = useState(false);
   const [pinAction, setPinAction] = useState<() => Promise<void>>(() => async () => {});
   const [pinTitle, setPinTitle] = useState("");
+  const [asignarCajaChica, setAsignarCajaChica] = useState(false);
+  const [montoCajaChica, setMontoCajaChica] = useState(0);
   const [categories, setCategories] = useState<{ id: string; name: string }[]>([]);
   const [catDialogOpen, setCatDialogOpen] = useState(false);
   const [newCatName, setNewCatName] = useState("");
@@ -324,7 +326,21 @@ export default function GastosUnidad() {
         payload.created_by = user.id;
         const { error } = await (supabase.from as any)("expense_entries").insert(payload);
         if (error) { toast({ title: "Error", description: error.message, variant: "destructive" }); return; }
-        toast({ title: "Registrado" });
+
+        if (asignarCajaChica && montoCajaChica > 0) {
+          const { error: pcError } = await (supabase.from as any)("petty_cash").insert({
+            health_unit_id: unitId,
+            type: "entrada",
+            amount: montoCajaChica,
+            category: "Asignación desde gasto",
+            description: `Asignación por: ${form.description}`,
+            reference_date: form.operation_date,
+            created_by: user.id,
+          });
+          if (pcError) { toast({ title: "Gasto registrado pero error en caja chica", description: pcError.message, variant: "destructive" }); }
+        }
+
+        toast({ title: asignarCajaChica && montoCajaChica > 0 ? "Gasto registrado y caja chica actualizada" : "Registrado" });
       }
     }
 
@@ -332,6 +348,8 @@ export default function GastosUnidad() {
     setEditingId(null);
     setForm(defaultForm());
     setPatientSearch("");
+    setAsignarCajaChica(false);
+    setMontoCajaChica(0);
     load();
   }
 
@@ -431,7 +449,7 @@ export default function GastosUnidad() {
           )}
         </div>
 
-        <Dialog open={open} onOpenChange={(v) => { if (!v) { setEditingId(null); setPatientSearch(""); } setOpen(v); }}>
+        <Dialog open={open} onOpenChange={(v) => { if (!v) { setEditingId(null); setPatientSearch(""); setAsignarCajaChica(false); setMontoCajaChica(0); } setOpen(v); }}>
           <DialogContent className="max-w-lg">
             <DialogHeader><DialogTitle>{isEditing ? "Editar registro" : "Nuevo registro"}</DialogTitle></DialogHeader>
             <div className="space-y-3 max-h-[65vh] overflow-y-auto pr-1">
@@ -561,28 +579,53 @@ export default function GastosUnidad() {
                     </div>
                   </div>
                   {form.entry_type === "gasto" && (
-                    <div className="flex items-center gap-3 p-2 border rounded-lg bg-muted/30">
-                      <input
-                        type="checkbox"
-                        id="pago-adeudo"
-                        checked={form.es_pago_adeudo}
-                        onChange={e => setForm({ ...form, es_pago_adeudo: e.target.checked, monto_adeudado: e.target.checked ? form.amount : 0 })}
-                        className="h-4 w-4"
-                      />
-                      <Label htmlFor="pago-adeudo" className="text-sm cursor-pointer">Es pago de adeudo</Label>
-                      {form.es_pago_adeudo && (
-                        <div className="ml-auto flex items-center gap-2">
-                          <Label className="text-xs whitespace-nowrap">Monto adeudado:</Label>
-                          <Input
-                            type="number"
-                            min="0"
-                            step="0.01"
-                            className="h-7 w-28 text-xs"
-                            value={form.monto_adeudado || ""}
-                            onChange={e => setForm({ ...form, monto_adeudado: parseFloat(e.target.value) || 0 })}
-                          />
-                        </div>
-                      )}
+                    <div className="space-y-3">
+                      <div className="flex items-center gap-3 p-2 border rounded-lg bg-muted/30">
+                        <input
+                          type="checkbox"
+                          id="pago-adeudo"
+                          checked={form.es_pago_adeudo}
+                          onChange={e => setForm({ ...form, es_pago_adeudo: e.target.checked, monto_adeudado: e.target.checked ? form.amount : 0 })}
+                          className="h-4 w-4"
+                        />
+                        <Label htmlFor="pago-adeudo" className="text-sm cursor-pointer">Es pago de adeudo</Label>
+                        {form.es_pago_adeudo && (
+                          <div className="ml-auto flex items-center gap-2">
+                            <Label className="text-xs whitespace-nowrap">Monto adeudado:</Label>
+                            <Input
+                              type="number"
+                              min="0"
+                              step="0.01"
+                              className="h-7 w-28 text-xs"
+                              value={form.monto_adeudado || ""}
+                              onChange={e => setForm({ ...form, monto_adeudado: parseFloat(e.target.value) || 0 })}
+                            />
+                          </div>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-3 p-2 border rounded-lg bg-muted/30">
+                        <input
+                          type="checkbox"
+                          id="asignar-caja-chica"
+                          checked={asignarCajaChica}
+                          onChange={e => { setAsignarCajaChica(e.target.checked); if (e.target.checked) setMontoCajaChica(form.amount); }}
+                          className="h-4 w-4"
+                        />
+                        <Label htmlFor="asignar-caja-chica" className="text-sm cursor-pointer flex items-center gap-1"><Wallet className="w-3.5 h-3.5" /> Asignar a caja chica</Label>
+                        {asignarCajaChica && (
+                          <div className="ml-auto flex items-center gap-2">
+                            <Label className="text-xs whitespace-nowrap">Monto:</Label>
+                            <Input
+                              type="number"
+                              min="0"
+                              step="0.01"
+                              className="h-7 w-28 text-xs"
+                              value={montoCajaChica || ""}
+                              onChange={e => setMontoCajaChica(parseFloat(e.target.value) || 0)}
+                            />
+                          </div>
+                        )}
+                      </div>
                     </div>
                   )}
                   <div className="grid grid-cols-2 gap-3">
