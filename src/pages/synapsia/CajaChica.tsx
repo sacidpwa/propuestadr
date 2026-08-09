@@ -176,7 +176,7 @@ export default function CajaChica() {
   }
 
   const canEdit = hasRole("admin") || hasRole("dueno") || hasRole("administrativo") || hasRole("contador");
-  const canDelete = hasRole("admin") || hasRole("dueno");
+  const canDelete = hasRole("admin") || hasRole("dueno") || hasRole("administrativo");
 
   return (
     <div className="min-h-screen bg-background">
