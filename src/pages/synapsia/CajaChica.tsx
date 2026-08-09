@@ -143,12 +143,17 @@ export default function CajaChica() {
     setOpen(false);
     setEditingId(null);
     setForm(defaultForm());
-    const { data } = await (supabase.from as any)("petty_cash")
-      .select("*")
-      .eq("health_unit_id", unitId)
-      .order("reference_date", { ascending: false })
-      .order("created_at", { ascending: false });
-    setMovements((data as any) || []);
+
+    if (editingId) {
+      setMovements(prev => prev.map(m => m.id === editingId ? { ...m, ...payload } as Movement : m));
+    } else {
+      const { data } = await (supabase.from as any)("petty_cash")
+        .select("*")
+        .eq("health_unit_id", unitId)
+        .order("reference_date", { ascending: false })
+        .order("created_at", { ascending: false });
+      setMovements((data as any) || []);
+    }
   }
 
   async function remove(id: string) {
