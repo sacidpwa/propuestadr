@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ArrowLeft, LogOut, Plus, Trash2, Loader2, PiggyBank, ChevronLeft, ChevronRight } from "lucide-react";
+import { ArrowLeft, LogOut, Plus, Trash2, Loader2, PiggyBank, ChevronLeft, ChevronRight, Pencil } from "lucide-react";
 import NavigationDropdown from "@/components/synapsia/NavigationDropdown";
 import { toast } from "@/hooks/use-toast";
 import { format, parseISO } from "date-fns";
@@ -48,6 +48,7 @@ export default function CajaChica() {
 
   const [open, setOpen] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState({ type: "entrada", amount: 0, category: "", description: "", date: format(now, "yyyy-MM-dd") });
 
   useEffect(() => {
@@ -120,19 +121,27 @@ export default function CajaChica() {
     if (!form.amount || form.amount <= 0) { toast({ title: "Monto inválido", variant: "destructive" }); return; }
     if (form.type !== "apertura" && !form.category.trim()) { toast({ title: "Categoría requerida", variant: "destructive" }); return; }
     setSaving(true);
-    const { error } = await (supabase.from as any)("petty_cash").insert({
-      health_unit_id: unitId,
+
+    const payload = {
       type: form.type,
       amount: form.amount,
       category: form.category.trim() || null,
       description: form.description.trim() || null,
       reference_date: form.date,
-      created_by: user.id,
-    });
+    };
+
+    let error;
+    if (editingId) {
+      ({ error } = await (supabase.from as any)("petty_cash").update(payload).eq("id", editingId));
+    } else {
+      ({ error } = await (supabase.from as any)("petty_cash").insert({ ...payload, health_unit_id: unitId, created_by: user.id }));
+    }
+
     setSaving(false);
     if (error) { toast({ title: "Error", description: error.message, variant: "destructive" }); return; }
-    toast({ title: "Movimiento registrado" });
+    toast({ title: editingId ? "Movimiento actualizado" : "Movimiento registrado" });
     setOpen(false);
+    setEditingId(null);
     setForm(defaultForm());
     const { data } = await (supabase.from as any)("petty_cash")
       .select("*")
@@ -150,7 +159,14 @@ export default function CajaChica() {
   }
 
   function openNew() {
+    setEditingId(null);
     setForm({ ...defaultForm(), type: movements.length === 0 ? "apertura" : "entrada" });
+    setOpen(true);
+  }
+
+  function openEdit(m: Movement) {
+    setEditingId(m.id);
+    setForm({ type: m.type, amount: Number(m.amount), category: m.category || "", description: m.description || "", date: m.reference_date });
     setOpen(true);
   }
 
@@ -218,9 +234,9 @@ export default function CajaChica() {
           </Button>
         </div>
 
-        <Dialog open={open} onOpenChange={v => { if (!v) { setForm(defaultForm()); } setOpen(v); }}>
+        <Dialog open={open} onOpenChange={v => { if (!v) { setEditingId(null); setForm(defaultForm()); } setOpen(v); }}>
           <DialogContent className="max-w-md">
-            <DialogHeader><DialogTitle>Nuevo movimiento</DialogTitle></DialogHeader>
+            <DialogHeader><DialogTitle>{editingId ? "Editar movimiento" : "Nuevo movimiento"}</DialogTitle></DialogHeader>
             <div className="space-y-3">
               <div>
                 <Label>Tipo</Label>
@@ -239,7 +255,7 @@ export default function CajaChica() {
               <div><Label>Fecha</Label><Input type="date" value={form.date} onChange={e => setForm({ ...form, date: e.target.value })} /></div>
             </div>
             <DialogFooter>
-              <Button variant="outline" onClick={() => { setOpen(false); setForm(defaultForm()); }}>Cancelar</Button>
+              <Button variant="outline" onClick={() => { setOpen(false); setEditingId(null); setForm(defaultForm()); }}>Cancelar</Button>
               <Button onClick={save} disabled={saving}>{saving && <Loader2 className="w-4 h-4 mr-1 animate-spin" />}Guardar</Button>
             </DialogFooter>
           </DialogContent>
@@ -264,6 +280,11 @@ export default function CajaChica() {
                     <p className={`font-bold text-base ${m.type === "salida" ? "text-red-600" : m.type === "entrada" ? "text-green-600" : ""}`}>
                       {m.type === "salida" ? "-" : "+"}{fmt(Number(m.amount))}
                     </p>
+                    {canEdit && (
+                      <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => openEdit(m)}>
+                        <Pencil className="w-3.5 h-3.5" />
+                      </Button>
+                    )}
                     {canDelete && (
                       <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => remove(m.id)}>
                         <Trash2 className="w-3.5 h-3.5" />
