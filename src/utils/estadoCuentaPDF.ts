@@ -105,10 +105,12 @@ export function downloadStatementPDF(data: StatementData) {
 
   doc.setFontSize(9);
   doc.setFont("helvetica", "normal");
-  doc.text(`$${data.creditLimit.toLocaleString()}`, margin + colW * 0 + 2, boxY + 15);
-  doc.text(`$${data.creditAvailable.toLocaleString()}`, margin + colW * 1 + 2, boxY + 15);
-  doc.text(`$${data.overdueBalance.toLocaleString()}`, margin + colW * 2 + 2, boxY + 15);
-  doc.text(`$${data.totalBalance.toLocaleString()}`, margin + colW * 3 + 2, boxY + 15);
+  const fmt = (n: number) => `$${n.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+
+  doc.text(fmt(data.creditLimit), margin + colW * 0 + 2, boxY + 15);
+  doc.text(fmt(data.creditAvailable), margin + colW * 1 + 2, boxY + 15);
+  doc.text(fmt(data.overdueBalance), margin + colW * 2 + 2, boxY + 15);
+  doc.text(fmt(data.totalBalance), margin + colW * 3 + 2, boxY + 15);
 
   y = boxY + boxH + 8;
 
@@ -157,57 +159,50 @@ export function downloadStatementPDF(data: StatementData) {
   y = infoY + Math.max(infoLines.length, rightInfo.length) * 4 + 8;
 
   // Transactions table
-  const tableData = data.rows.map((r) => [
-    r.date,
-    r.quantity.toString(),
-    r.description,
-    r.charge > 0 ? `$${r.charge.toLocaleString()}` : "",
-    r.payment > 0 ? `$${r.payment.toLocaleString()}` : "",
-    "",
-  ]);
+  const fmt2 = (n: number) => `$${n.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
   // Calculate running balance
   let running = 0;
   const rowsWithBalance = data.rows.map((r) => {
-    const amount = r.charge - r.payment;
-    running += amount;
+    running += r.charge - r.payment;
     return [
       r.date,
       r.quantity.toString(),
       r.description,
-      r.charge > 0 ? `$${r.charge.toLocaleString()}` : "",
-      r.payment > 0 ? `$${r.payment.toLocaleString()}` : "",
-      `$${running.toLocaleString()}`,
+      fmt2(r.charge),
+      fmt2(running),
     ];
   });
-
-  const totalCharges = data.rows.reduce((s, r) => s + r.charge, 0);
-  const totalPayments = data.rows.reduce((s, r) => s + r.payment, 0);
 
   autoTable(doc, {
     startY: y,
     margin: { left: margin, right: margin },
     tableWidth: contentW,
-    head: [["Fecha", "Cant.", "Descripción", "Cargo", "Abono", "Saldo"]],
+    head: [
+      [
+        { content: "Fecha" },
+        { content: "Cant.", styles: { halign: "center" } },
+        { content: "Descripción" },
+        { content: "Precio Unitario", styles: { halign: "right" } },
+        { content: "Total", styles: { halign: "right" } },
+      ],
+    ],
     body: rowsWithBalance,
     foot: [
       [
-        { content: "TOTALES", colSpan: 3, styles: { fontStyle: "bold", fontSize: 8 } },
-        { content: `$${totalCharges.toLocaleString()}`, styles: { fontStyle: "bold", fontSize: 8 } },
-        { content: `$${totalPayments.toLocaleString()}`, styles: { fontStyle: "bold", fontSize: 8 } },
-        { content: `$${data.totalBalance.toLocaleString()}`, styles: { fontStyle: "bold", fontSize: 8 } },
+        { content: "TOTALES", colSpan: 4, styles: { fontStyle: "bold", fontSize: 8 } },
+        { content: fmt2(data.totalBalance), styles: { fontStyle: "bold", fontSize: 8, halign: "right" } },
       ],
     ],
     styles: { fontSize: 7, cellPadding: 1.5 },
     headStyles: { fillColor: [0, 128, 128], fontSize: 7, fontStyle: "bold", textColor: [255, 255, 255] },
     footStyles: { fillColor: [230, 245, 245], textColor: [0, 100, 100] },
     columnStyles: {
-      0: { cellWidth: 18 },
-      1: { cellWidth: 10, halign: "center" },
-      2: { cellWidth: "auto" },
-      3: { cellWidth: 22, halign: "right" },
-      4: { cellWidth: 22, halign: "right" },
-      5: { cellWidth: 22, halign: "right" },
+      0: { cellWidth: 20 },
+      1: { cellWidth: 12, halign: "center" },
+      2: { cellWidth: contentW - 20 - 12 - 34 - 34 },
+      3: { cellWidth: 34, halign: "right" },
+      4: { cellWidth: 34, halign: "right" },
     },
   });
 
@@ -216,6 +211,7 @@ export function downloadStatementPDF(data: StatementData) {
 
 function generateHTML(data: StatementData): string {
   let runningBalance = 0;
+  const fmt = (n: number) => `$${n.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
   const rowHtml = data.rows
     .map((r) => {
       runningBalance += r.charge - r.payment;
@@ -224,15 +220,11 @@ function generateHTML(data: StatementData): string {
       <td>${r.date}</td>
       <td class="center">${r.quantity}</td>
       <td>${r.description}</td>
-      <td class="right">${r.charge > 0 ? "$" + r.charge.toLocaleString() : ""}</td>
-      <td class="right">${r.payment > 0 ? "$" + r.payment.toLocaleString() : ""}</td>
-      <td class="right">$${runningBalance.toLocaleString()}</td>
+      <td class="right">${fmt(r.charge)}</td>
+      <td class="right">${fmt(runningBalance)}</td>
     </tr>`;
     })
     .join("");
-
-  const totalCharges = data.rows.reduce((s, r) => s + r.charge, 0);
-  const totalPayments = data.rows.reduce((s, r) => s + r.payment, 0);
 
   const logoSrc = data.unit.logoUrl || "";
 
@@ -251,10 +243,15 @@ function generateHTML(data: StatementData): string {
   .patient-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 2px 20px; margin: 10px 0; font-size: 10px; }
   .patient-grid strong { display: inline-block; width: 70px; }
   .patient-grid .addr { grid-column: 1 / -1; word-break: break-word; }
-  table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+  table { width: 100%; border-collapse: collapse; margin-top: 10px; table-layout: fixed; }
+  col.fecha { width: 14%; }
+  col.cant { width: 7%; }
+  col.desc { width: 45%; }
+  col.precio { width: 17%; }
+  col.total { width: 17%; }
   th { background: #008080; color: #fff; font-size: 9px; padding: 4px 6px; text-align: left; }
+  th.right, td.right { text-align: right; font-variant-numeric: tabular-nums; }
   td { padding: 3px 6px; border-bottom: 1px solid #ddd; font-size: 9px; }
-  .right { text-align: right; }
   .center { text-align: center; }
   .totals td { font-weight: bold; background: #e6f5f5; border-top: 2px solid #008080; color: #004d4d; }
   .subtitle { font-size: 9px; margin: 2px 0; }
@@ -271,10 +268,10 @@ function generateHTML(data: StatementData): string {
     </div>
   </div>
   <div class="info-box">
-    <div><label>Límite de Créd.</label><span>$${data.creditLimit.toLocaleString()}</span></div>
-    <div><label>Crédito Disp.</label><span>$${data.creditAvailable.toLocaleString()}</span></div>
-    <div><label>Saldo Vencido</label><span>$${data.overdueBalance.toLocaleString()}</span></div>
-    <div><label>Saldo Total</label><span>$${data.totalBalance.toLocaleString()}</span></div>
+    <div><label>Límite de Créd.</label><span>${fmt(data.creditLimit)}</span></div>
+    <div><label>Crédito Disp.</label><span>${fmt(data.creditAvailable)}</span></div>
+    <div><label>Saldo Vencido</label><span>${fmt(data.overdueBalance)}</span></div>
+    <div><label>Saldo Total</label><span>${fmt(data.totalBalance)}</span></div>
   </div>
   <p><strong>Cliente:</strong> ${data.patient.name}</p>
   <div class="patient-grid">
@@ -288,10 +285,11 @@ function generateHTML(data: StatementData): string {
     <div><strong>País:</strong> ${data.patient.country || "MÉXICO"}</div>
   </div>
   <table>
-    <thead><tr><th>Fecha</th><th>Cant.</th><th>Descripción</th><th class="right">Cargo</th><th class="right">Abono</th><th class="right">Saldo</th></tr></thead>
+    <colgroup><col class="fecha"><col class="cant"><col class="desc"><col class="precio"><col class="total"></colgroup>
+    <thead><tr><th>Fecha</th><th>Cant.</th><th>Descripción</th><th class="right">Precio Unitario</th><th class="right">Total</th></tr></thead>
     <tbody>${rowHtml}</tbody>
     <tfoot>
-      <tr class="totals"><td colspan="3">TOTALES</td><td class="right">$${totalCharges.toLocaleString()}</td><td class="right">$${totalPayments.toLocaleString()}</td><td class="right">$${data.totalBalance.toLocaleString()}</td></tr>
+      <tr class="totals"><td colspan="4">TOTALES</td><td class="right">${fmt(data.totalBalance)}</td></tr>
     </tfoot>
   </table>
 </body></html>`;

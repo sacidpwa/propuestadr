@@ -89,6 +89,11 @@ export default function DetallePaciente() {
   const [periodEnd, setPeriodEnd] = useState(() => format(new Date(), "yyyy-MM-dd"));
   const [customStart, setCustomStart] = useState(() => format(new Date(), "yyyy-MM-01"));
   const [customEnd, setCustomEnd] = useState(() => format(new Date(), "yyyy-MM-dd"));
+  const [invoicePeriodKey, setInvoicePeriodKey] = useState("este-mes");
+  const [invoiceStart, setInvoiceStart] = useState(() => format(new Date(), "yyyy-MM-01"));
+  const [invoiceEnd, setInvoiceEnd] = useState(() => format(new Date(), "yyyy-MM-dd"));
+  const [invoiceCustomStart, setInvoiceCustomStart] = useState(() => format(new Date(), "yyyy-MM-01"));
+  const [invoiceCustomEnd, setInvoiceCustomEnd] = useState(() => format(new Date(), "yyyy-MM-dd"));
 
   const [form, setForm] = useState({
     full_name: "", phone: "", email: "", date_of_birth: "", address: "",
@@ -111,6 +116,20 @@ export default function DetallePaciente() {
   }, [periodKey]);
 
   useEffect(() => {
+    if (invoicePeriodKey === "este-mes") {
+      setInvoiceStart(format(new Date(), "yyyy-MM-01"));
+      setInvoiceEnd(format(new Date(), "yyyy-MM-dd"));
+    } else if (invoicePeriodKey === "mes-pasado") {
+      const d = new Date();
+      setInvoiceStart(format(new Date(d.getFullYear(), d.getMonth() - 1, 1), "yyyy-MM-dd"));
+      setInvoiceEnd(format(new Date(d.getFullYear(), d.getMonth(), 0), "yyyy-MM-dd"));
+    } else if (invoicePeriodKey === "este-ano") {
+      setInvoiceStart(`${new Date().getFullYear()}-01-01`);
+      setInvoiceEnd(`${new Date().getFullYear()}-12-31`);
+    }
+  }, [invoicePeriodKey]);
+
+  useEffect(() => {
     if (!patientId) return;
     loadPatient();
     loadServicePrices();
@@ -123,7 +142,7 @@ export default function DetallePaciente() {
     loadPayments();
     loadIncomeEntries();
     loadInvoices();
-  }, [patientId, patient, periodStart, periodEnd]);
+  }, [patientId, patient, periodStart, periodEnd, invoiceStart, invoiceEnd]);
 
   async function loadUnit() {
     const { data } = await (supabase.from as any)("health_units").select("name").eq("id", unitId).maybeSingle();
@@ -200,8 +219,8 @@ export default function DetallePaciente() {
   async function loadInvoices() {
     const { data } = await (supabase.from as any)("patient_invoices")
       .select("*").eq("patient_id", patientId)
-      .gte("invoice_date", periodStart)
-      .lte("invoice_date", periodEnd)
+      .gte("invoice_date", invoiceStart)
+      .lte("invoice_date", invoiceEnd)
       .order("invoice_date", { ascending: false });
     const invs = (data as any) || [];
     if (invs.length) {
@@ -635,6 +654,26 @@ export default function DetallePaciente() {
                 </div>
               </div>
 
+              {/* Filtro de fecha */}
+              <div className="flex items-center gap-3">
+                <Select value={invoicePeriodKey} onValueChange={v => setInvoicePeriodKey(v)}>
+                  <SelectTrigger className="w-44"><SelectValue placeholder="Período" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="este-mes">Este mes</SelectItem>
+                    <SelectItem value="mes-pasado">Mes pasado</SelectItem>
+                    <SelectItem value="este-ano">Este año</SelectItem>
+                    <SelectItem value="custom">Personalizado</SelectItem>
+                  </SelectContent>
+                </Select>
+                {invoicePeriodKey === "custom" && (
+                  <div className="flex items-center gap-2">
+                    <Input type="date" className="w-36" value={invoiceCustomStart} onChange={e => { setInvoiceCustomStart(e.target.value); setInvoiceStart(e.target.value); }} />
+                    <span>—</span>
+                    <Input type="date" className="w-36" value={invoiceCustomEnd} onChange={e => { setInvoiceCustomEnd(e.target.value); setInvoiceEnd(e.target.value); }} />
+                  </div>
+                )}
+              </div>
+
               {/* Mensualidad sugerida */}
               {patient?.monthly_fee && !newInvoiceOpen && (
                 <Card className="border-teal-200 bg-teal-50/40">
@@ -801,7 +840,7 @@ export default function DetallePaciente() {
               <Card>
                 <CardHeader>
                   <CardTitle className="text-base">Gastos registrados</CardTitle>
-                  <CardDescription>Total: ${totalInvoiced.toLocaleString()}</CardDescription>
+                  <CardDescription>Total: ${totalInvoiced.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</CardDescription>
                 </CardHeader>
                 <CardContent className="p-0">
                   {invoices.length === 0 ? (
@@ -834,7 +873,7 @@ export default function DetallePaciente() {
                               <td className="px-4 py-2 text-xs text-muted-foreground">{inv.category || "—"}</td>
                               <td className="px-4 py-2 text-xs text-center">{inv.quantity || 1}</td>
                               <td className="px-4 py-2 text-xs text-muted-foreground">{inv.unit || "pieza"}</td>
-                              <td className="px-4 py-2 text-xs text-right font-mono">{inv.unit_price ? `$${Number(inv.unit_price).toLocaleString()}` : "—"}</td>
+                              <td className="px-4 py-2 text-xs text-right font-mono">{inv.unit_price ? `$${Number(inv.unit_price).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : "—"}</td>
                               <td className="px-4 py-2">
                                 <Badge variant={inv.status === "verificada" ? "secondary" : inv.status === "erronea" ? "destructive" : "outline"}>
                                   {inv.status}
@@ -852,7 +891,7 @@ export default function DetallePaciente() {
                                 )}
                               </td>
                               <td className="px-4 py-2 text-xs text-muted-foreground">{inv.created_by_name || "—"}</td>
-                              <td className="px-4 py-2 text-right font-mono font-medium">${Number(inv.amount).toLocaleString()}</td>
+                              <td className="px-4 py-2 text-right font-mono font-medium text-sm tabular-nums">${Number(inv.amount).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
                               {(hasRole("admin") || hasRole("dueno") || hasRole("administrativo") || hasRole("asistente_admin")) && (
                                 <td className="px-4 py-2 text-center">
                                   <div className="flex items-center justify-center gap-1">
@@ -925,7 +964,7 @@ export default function DetallePaciente() {
                                 <span className="text-xs text-muted-foreground">—</span>
                               )}
                             </td>
-                            <td className="px-4 py-2 text-right font-mono font-medium">${Number(inv.amount).toLocaleString()}</td>
+                            <td className="px-4 py-2 text-right font-mono font-medium text-sm tabular-nums">${Number(inv.amount).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
                           </tr>
                         ))}
                       </tbody>
