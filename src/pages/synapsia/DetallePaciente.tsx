@@ -142,7 +142,7 @@ export default function DetallePaciente() {
     loadPayments();
     loadIncomeEntries();
     loadInvoices();
-  }, [patientId, patient, periodStart, periodEnd, invoiceStart, invoiceEnd]);
+  }, [patientId, patient, tab, periodStart, periodEnd, invoiceStart, invoiceEnd]);
 
   async function loadUnit() {
     const { data } = await (supabase.from as any)("health_units").select("name").eq("id", unitId).maybeSingle();
@@ -219,10 +219,12 @@ export default function DetallePaciente() {
   }
 
   async function loadInvoices() {
+    const start = tab === "estado-cuenta" ? periodStart : invoiceStart;
+    const end = tab === "estado-cuenta" ? periodEnd : invoiceEnd;
     const { data } = await (supabase.from as any)("patient_invoices")
       .select("*").eq("patient_id", patientId)
-      .gte("invoice_date", invoiceStart)
-      .lte("invoice_date", invoiceEnd)
+      .gte("invoice_date", start)
+      .lte("invoice_date", end)
       .order("invoice_date", { ascending: false });
     const invs = (data as any) || [];
     if (invs.length) {
