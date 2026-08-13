@@ -237,7 +237,7 @@ export function downloadStatementPDF(data: StatementData) {
           { content: "Fecha" },
           { content: "Cant.", styles: { halign: "center" } },
           { content: "Descripción" },
-          { content: "Precio Unitario", styles: { halign: "right" } },
+          { content: "Cargo", styles: { halign: "right" } },
           { content: "Total", styles: { halign: "right" } },
         ],
       ],
@@ -298,7 +298,7 @@ function generateHTML(data: StatementData): string {
 
   const headRow = data.includeAbonos
     ? '<thead><tr><th>Fecha</th><th>Cant.</th><th>Descripción</th><th class="right">Cargo</th><th class="right">Abono</th><th class="right">Saldo</th></tr></thead>'
-    : '<thead><tr><th>Fecha</th><th>Cant.</th><th>Descripción</th><th class="right">Precio Unitario</th><th class="right">Total</th></tr></thead>';
+    : '<thead><tr><th>Fecha</th><th>Cant.</th><th>Descripción</th><th class="right">Cargo</th><th class="right">Total</th></tr></thead>';
 
   const footRow = data.includeAbonos
     ? `<tr class="totals"><td colspan="3">TOTALES</td><td class="right">${fmt(totalCharges)}</td><td class="right">${fmt(totalPayments)}</td><td class="right">${fmt(data.totalBalance)}</td></tr>`
