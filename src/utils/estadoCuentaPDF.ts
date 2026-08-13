@@ -9,6 +9,7 @@ interface InvoiceRow {
   description: string;
   charge: number;
   payment: number;
+  unitPrice?: number;
 }
 
 interface PatientInfo {
@@ -43,6 +44,7 @@ interface StatementData {
   totalBalance: number;
   rows: InvoiceRow[];
   title: string;
+  includeAbonos: boolean;
 }
 
 export function printStatement(data: StatementData) {
@@ -170,41 +172,94 @@ export function downloadStatementPDF(data: StatementData) {
       r.quantity.toString(),
       r.description,
       fmt2(r.charge),
+      r.payment > 0 ? fmt2(r.payment) : "",
       fmt2(running),
     ];
   });
 
-  autoTable(doc, {
-    startY: y,
-    margin: { left: margin, right: margin },
-    tableWidth: contentW,
-    head: [
-      [
-        { content: "Fecha" },
-        { content: "Cant.", styles: { halign: "center" } },
-        { content: "Descripción" },
-        { content: "Precio Unitario", styles: { halign: "right" } },
-        { content: "Total", styles: { halign: "right" } },
+  const totalCharges = data.rows.reduce((s, r) => s + r.charge, 0);
+  const totalPayments = data.rows.reduce((s, r) => s + r.payment, 0);
+
+  if (data.includeAbonos) {
+    autoTable(doc, {
+      startY: y,
+      margin: { left: margin, right: margin },
+      tableWidth: contentW,
+      head: [
+        [
+          { content: "Fecha" },
+          { content: "Cant.", styles: { halign: "center" } },
+          { content: "Descripción" },
+          { content: "Cargo", styles: { halign: "right" } },
+          { content: "Abono", styles: { halign: "right" } },
+          { content: "Saldo", styles: { halign: "right" } },
+        ],
       ],
-    ],
-    body: rowsWithBalance,
-    foot: [
-      [
-        { content: "TOTALES", colSpan: 4, styles: { fontStyle: "bold", fontSize: 8 } },
-        { content: fmt2(data.totalBalance), styles: { fontStyle: "bold", fontSize: 8, halign: "right" } },
+      body: rowsWithBalance,
+      foot: [
+        [
+          { content: "TOTALES", colSpan: 3, styles: { fontStyle: "bold", fontSize: 8 } },
+          { content: fmt2(totalCharges), styles: { fontStyle: "bold", fontSize: 8, halign: "right" } },
+          { content: fmt2(totalPayments), styles: { fontStyle: "bold", fontSize: 8, halign: "right" } },
+          { content: fmt2(data.totalBalance), styles: { fontStyle: "bold", fontSize: 8, halign: "right" } },
+        ],
       ],
-    ],
-    styles: { fontSize: 7, cellPadding: 1.5 },
-    headStyles: { fillColor: [0, 128, 128], fontSize: 7, fontStyle: "bold", textColor: [255, 255, 255] },
-    footStyles: { fillColor: [230, 245, 245], textColor: [0, 100, 100] },
-    columnStyles: {
-      0: { cellWidth: 20 },
-      1: { cellWidth: 12, halign: "center" },
-      2: { cellWidth: contentW - 20 - 12 - 34 - 34 },
-      3: { cellWidth: 34, halign: "right" },
-      4: { cellWidth: 34, halign: "right" },
-    },
-  });
+      styles: { fontSize: 7, cellPadding: 1.5 },
+      headStyles: { fillColor: [0, 128, 128], fontSize: 7, fontStyle: "bold", textColor: [255, 255, 255] },
+      footStyles: { fillColor: [230, 245, 245], textColor: [0, 100, 100] },
+      columnStyles: {
+        0: { cellWidth: 20 },
+        1: { cellWidth: 12, halign: "center" },
+        2: { cellWidth: contentW - 20 - 12 - 30 - 30 - 30 },
+        3: { cellWidth: 30, halign: "right" },
+        4: { cellWidth: 30, halign: "right" },
+        5: { cellWidth: 30, halign: "right" },
+      },
+    });
+  } else {
+    let run2 = 0;
+    const bodyNota = data.rows.map((r) => {
+      run2 += r.charge - r.payment;
+      return [
+        r.date,
+        r.quantity.toString(),
+        r.description,
+        r.unitPrice != null ? fmt2(r.unitPrice) : fmt2(r.charge),
+        fmt2(run2),
+      ];
+    });
+    autoTable(doc, {
+      startY: y,
+      margin: { left: margin, right: margin },
+      tableWidth: contentW,
+      head: [
+        [
+          { content: "Fecha" },
+          { content: "Cant.", styles: { halign: "center" } },
+          { content: "Descripción" },
+          { content: "Precio Unitario", styles: { halign: "right" } },
+          { content: "Total", styles: { halign: "right" } },
+        ],
+      ],
+      body: bodyNota,
+      foot: [
+        [
+          { content: "TOTALES", colSpan: 4, styles: { fontStyle: "bold", fontSize: 8 } },
+          { content: fmt2(totalCharges), styles: { fontStyle: "bold", fontSize: 8, halign: "right" } },
+        ],
+      ],
+      styles: { fontSize: 7, cellPadding: 1.5 },
+      headStyles: { fillColor: [0, 128, 128], fontSize: 7, fontStyle: "bold", textColor: [255, 255, 255] },
+      footStyles: { fillColor: [230, 245, 245], textColor: [0, 100, 100] },
+      columnStyles: {
+        0: { cellWidth: 20 },
+        1: { cellWidth: 12, halign: "center" },
+        2: { cellWidth: contentW - 20 - 12 - 34 - 34 },
+        3: { cellWidth: 34, halign: "right" },
+        4: { cellWidth: 34, halign: "right" },
+      },
+    });
+  }
 
   doc.save(`gastos_${data.patient.name.replace(/\s+/g, "_")}.pdf`);
 }
@@ -212,19 +267,42 @@ export function downloadStatementPDF(data: StatementData) {
 function generateHTML(data: StatementData): string {
   let runningBalance = 0;
   const fmt = (n: number) => `$${n.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+
   const rowHtml = data.rows
     .map((r) => {
       runningBalance += r.charge - r.payment;
+      const paymentCell = data.includeAbonos
+        ? `<td class="right">${r.payment > 0 ? fmt(r.payment) : ""}</td>`
+        : "";
+      const chargeCell = data.includeAbonos
+        ? `<td class="right">${r.charge > 0 ? fmt(r.charge) : ""}</td>`
+        : `<td class="right">${fmt(r.unitPrice != null ? r.unitPrice : r.charge)}</td>`;
       return `
     <tr>
       <td>${r.date}</td>
       <td class="center">${r.quantity}</td>
       <td>${r.description}</td>
-      <td class="right">${fmt(r.charge)}</td>
+      ${chargeCell}
+      ${paymentCell}
       <td class="right">${fmt(runningBalance)}</td>
     </tr>`;
     })
     .join("");
+
+  const totalCharges = data.rows.reduce((s, r) => s + r.charge, 0);
+  const totalPayments = data.rows.reduce((s, r) => s + r.payment, 0);
+
+  const colgroup = data.includeAbonos
+    ? '<colgroup><col class="fecha" style="width:14%"><col class="cant" style="width:6%"><col class="desc" style="width:42%"><col class="cargo" style="width:14%"><col class="abono" style="width:14%"><col class="total" style="width:14%"></colgroup>'
+    : '<colgroup><col class="fecha" style="width:14%"><col class="cant" style="width:7%"><col class="desc" style="width:45%"><col class="precio" style="width:17%"><col class="total" style="width:17%"></colgroup>';
+
+  const headRow = data.includeAbonos
+    ? '<thead><tr><th>Fecha</th><th>Cant.</th><th>Descripción</th><th class="right">Cargo</th><th class="right">Abono</th><th class="right">Saldo</th></tr></thead>'
+    : '<thead><tr><th>Fecha</th><th>Cant.</th><th>Descripción</th><th class="right">Precio Unitario</th><th class="right">Total</th></tr></thead>';
+
+  const footRow = data.includeAbonos
+    ? `<tr class="totals"><td colspan="3">TOTALES</td><td class="right">${fmt(totalCharges)}</td><td class="right">${fmt(totalPayments)}</td><td class="right">${fmt(data.totalBalance)}</td></tr>`
+    : `<tr class="totals"><td colspan="4">TOTALES</td><td class="right">${fmt(data.totalBalance)}</td></tr>`;
 
   const logoSrc = data.unit.logoUrl || "";
 
@@ -244,11 +322,6 @@ function generateHTML(data: StatementData): string {
   .patient-grid strong { display: inline-block; width: 70px; }
   .patient-grid .addr { grid-column: 1 / -1; word-break: break-word; }
   table { width: 100%; border-collapse: collapse; margin-top: 10px; table-layout: fixed; }
-  col.fecha { width: 14%; }
-  col.cant { width: 7%; }
-  col.desc { width: 45%; }
-  col.precio { width: 17%; }
-  col.total { width: 17%; }
   th { background: #008080; color: #fff; font-size: 9px; padding: 4px 6px; text-align: left; }
   th.right, td.right { text-align: right; font-variant-numeric: tabular-nums; }
   td { padding: 3px 6px; border-bottom: 1px solid #ddd; font-size: 9px; }
@@ -285,11 +358,11 @@ function generateHTML(data: StatementData): string {
     <div><strong>País:</strong> ${data.patient.country || "MÉXICO"}</div>
   </div>
   <table>
-    <colgroup><col class="fecha"><col class="cant"><col class="desc"><col class="precio"><col class="total"></colgroup>
-    <thead><tr><th>Fecha</th><th>Cant.</th><th>Descripción</th><th class="right">Precio Unitario</th><th class="right">Total</th></tr></thead>
+    ${colgroup}
+    ${headRow}
     <tbody>${rowHtml}</tbody>
     <tfoot>
-      <tr class="totals"><td colspan="4">TOTALES</td><td class="right">${fmt(data.totalBalance)}</td></tr>
+      ${footRow}
     </tfoot>
   </table>
 </body></html>`;

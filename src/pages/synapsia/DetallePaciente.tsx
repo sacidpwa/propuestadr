@@ -189,9 +189,11 @@ export default function DetallePaciente() {
   }
 
   async function loadPayments() {
-    if (!patient || !patient.full_name) return;
+    if (!patientId || !patient) return;
     const { data: fees } = await (supabase.from as any)("client_fees")
-      .select("id, amount, patient_name").eq("health_unit_id", unitId).ilike("patient_name", `%${patient.full_name}%`);
+      .select("id, amount, patient_name")
+      .eq("health_unit_id", unitId)
+      .or(`patient_id.eq.${patientId},patient_name.ilike.%${patient.full_name}%`);
     if (!fees) return;
     const feeIds = (fees as any[]).map((f: any) => f.id);
     if (feeIds.length === 0) return;
@@ -237,6 +239,7 @@ export default function DetallePaciente() {
   function buildStatementData() {
     if (!patient || !unitId) return null as any;
     const rows: { date: string; rawDate: string; quantity: number; description: string; charge: number; payment: number }[] = [];
+    const isNotaVenta = tab === "nota-venta";
     invoices.forEach(inv => {
       rows.push({
         date: format(parseISO(inv.invoice_date), "dd/MM/yyyy"),
@@ -245,29 +248,32 @@ export default function DetallePaciente() {
         description: inv.concept || "—",
         charge: Number(inv.amount),
         payment: 0,
+        unitPrice: inv.unit_price != null ? Number(inv.unit_price) : undefined,
       });
     });
-    payments.forEach(p => {
-      const d = new Date(p.paid_at);
-      rows.push({
-        date: format(d, "dd/MM/yyyy"),
-        rawDate: format(d, "yyyy-MM-dd"),
-        quantity: 1,
-        description: `PAGO - ${(p.method || "").toUpperCase()}`,
-        charge: 0,
-        payment: Number(p.amount),
+    if (!isNotaVenta) {
+      payments.forEach(p => {
+        const d = new Date(p.paid_at);
+        rows.push({
+          date: format(d, "dd/MM/yyyy"),
+          rawDate: format(d, "yyyy-MM-dd"),
+          quantity: 1,
+          description: `PAGO - ${(p.method || "").toUpperCase()}`,
+          charge: 0,
+          payment: Number(p.amount),
+        });
       });
-    });
-    incomeEntries.forEach(e => {
-      rows.push({
-        date: format(parseISO(e.expense_date), "dd/MM/yyyy"),
-        rawDate: e.expense_date,
-        quantity: 1,
-        description: `INGRESO - ${e.description || e.category || ""}`,
-        charge: 0,
-        payment: Number(e.amount),
+      incomeEntries.forEach(e => {
+        rows.push({
+          date: format(parseISO(e.expense_date), "dd/MM/yyyy"),
+          rawDate: e.expense_date,
+          quantity: 1,
+          description: `INGRESO - ${e.description || e.category || ""}`,
+          charge: 0,
+          payment: Number(e.amount),
+        });
       });
-    });
+    }
     rows.sort((a, b) => a.rawDate.localeCompare(b.rawDate));
     const totalCharges = rows.reduce((s, r) => s + r.charge, 0);
     const totalPayments = rows.reduce((s, r) => s + r.payment, 0);
@@ -296,6 +302,7 @@ export default function DetallePaciente() {
       totalBalance: totalCharges - totalPayments,
       rows,
       title: tab === "nota-venta" ? "Nota de Gastos" : "Estado de Cuenta",
+      includeAbonos: !isNotaVenta,
     };
   }
 
@@ -588,6 +595,41 @@ export default function DetallePaciente() {
                             <td className="px-4 py-2 capitalize">{p.method || "—"}</td>
                             <td className="px-4 py-2 font-mono text-xs">{p.reference || "—"}</td>
                             <td className="px-4 py-2 text-right font-mono font-medium">${Number(p.amount).toLocaleString()}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-sm flex items-center gap-2">
+                  <FileText className="w-4 h-4" /> Gastos registrados
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="p-0">
+                {invoices.length === 0 ? (
+                  <CardContent className="text-center text-muted-foreground py-8">Sin gastos registrados en el período.</CardContent>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr className="border-b text-muted-foreground text-xs">
+                          <th className="text-left px-4 py-2 font-medium">Fecha</th>
+                          <th className="text-left px-4 py-2 font-medium">Concepto</th>
+                          <th className="text-left px-4 py-2 font-medium">Categoría</th>
+                          <th className="text-right px-4 py-2 font-medium">Monto</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {invoices.map(inv => (
+                          <tr key={inv.id} className="border-b last:border-0 hover:bg-muted/50">
+                            <td className="px-4 py-2">{format(parseISO(inv.invoice_date), "PP", { locale: es })}</td>
+                            <td className="px-4 py-2 text-xs">{inv.concept || "—"}</td>
+                            <td className="px-4 py-2 text-xs text-muted-foreground">{inv.category || "—"}</td>
+                            <td className="px-4 py-2 text-right font-mono font-medium">${Number(inv.amount).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
                           </tr>
                         ))}
                       </tbody>
