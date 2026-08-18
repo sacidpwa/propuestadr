@@ -2059,6 +2059,94 @@ export type Database = {
         }
         Relationships: []
       }
+      debts: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          health_unit_id: string
+          id: string
+          name: string
+          notes: string | null
+          original_amount: number
+          paid_amount: number
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          health_unit_id: string
+          id?: string
+          name: string
+          notes?: string | null
+          original_amount: number
+          paid_amount?: number
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          health_unit_id?: string
+          id?: string
+          name?: string
+          notes?: string | null
+          original_amount?: number
+          paid_amount?: number
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "debts_health_unit_id_fkey"
+            columns: ["health_unit_id"]
+            isOneToOne: false
+            referencedRelation: "health_units"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      adeudo_payments: {
+        Row: {
+          amount: number
+          created_at: string
+          debt_id: string
+          expense_entry_id: string | null
+          id: string
+          notes: string | null
+          paid_at: string
+          recorded_by: string | null
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          debt_id: string
+          expense_entry_id?: string | null
+          id?: string
+          notes?: string | null
+          paid_at?: string
+          recorded_by?: string | null
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          debt_id?: string
+          expense_entry_id?: string | null
+          id?: string
+          notes?: string | null
+          paid_at?: string
+          recorded_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "adeudo_payments_debt_id_fkey"
+            columns: ["debt_id"]
+            isOneToOne: false
+            referencedRelation: "debts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never

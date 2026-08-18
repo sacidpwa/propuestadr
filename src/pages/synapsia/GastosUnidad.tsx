@@ -49,7 +49,8 @@ export default function GastosUnidad() {
   const [amountMax, setAmountMax] = useState("");
   const [open, setOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [form, setForm] = useState({ entry_type: "gasto", description: "", amount: 0, category: "", notes: "", operation_date: format(new Date(), "yyyy-MM-dd"), file: undefined as File | undefined, patient_id: "", patient_name: "", es_pago_adeudo: false, monto_adeudado: 0 });
+  const [form, setForm] = useState({ entry_type: "gasto", description: "", amount: 0, category: "", notes: "", operation_date: format(new Date(), "yyyy-MM-dd"), file: undefined as File | undefined, patient_id: "", patient_name: "", es_pago_adeudo: false, monto_adeudado: 0, debt_id: "" });
+  const [debts, setDebts] = useState<{ id: string; name: string; original_amount: number; paid_amount: number; status: string }[]>([]);
   const [patients, setPatients] = useState<{ id: string; full_name: string }[]>([]);
   const [patientSearch, setPatientSearch] = useState("");
   const [paymentType, setPaymentType] = useState("");
@@ -105,6 +106,18 @@ export default function GastosUnidad() {
   }
 
   useEffect(() => { loadCategories(); }, [unitId]);
+
+  async function loadDebts() {
+    if (!unitId) return;
+    const { data } = await (supabase.from as any)("debts")
+      .select("id, name, original_amount, paid_amount, status")
+      .eq("health_unit_id", unitId)
+      .eq("status", "pendiente")
+      .order("name");
+    setDebts((data as any) || []);
+  }
+
+  useEffect(() => { loadDebts(); }, [unitId]);
 
   async function handleAddCategory() {
     if (!newCatName.trim() || !unitId) return;
@@ -187,7 +200,7 @@ export default function GastosUnidad() {
   const currentMonth = new Date().getMonth() + 1;
   const currentYear = new Date().getFullYear();
 
-  const defaultForm = () => ({ entry_type: "gasto", description: "", amount: 0, category: "", notes: "", operation_date: format(new Date(), "yyyy-MM-dd"), file: undefined as File | undefined, patient_id: "", patient_name: "", monto_mensualidad: 0, monto_gastos: 0, mes_pago: currentMonth, anio_pago: currentYear, es_pago_adeudo: false, monto_adeudado: 0 });
+  const defaultForm = () => ({ entry_type: "gasto", description: "", amount: 0, category: "", notes: "", operation_date: format(new Date(), "yyyy-MM-dd"), file: undefined as File | undefined, patient_id: "", patient_name: "", monto_mensualidad: 0, monto_gastos: 0, mes_pago: currentMonth, anio_pago: currentYear, es_pago_adeudo: false, monto_adeudado: 0, debt_id: "" });
 
   function openNew() {
     setEditingId(null);
@@ -340,6 +353,39 @@ export default function GastosUnidad() {
           if (pcError) { toast({ title: "Gasto registrado pero error en caja chica", description: pcError.message, variant: "destructive" }); }
         }
 
+        // Link expense to specific debt if selected
+        if (form.es_pago_adeudo && form.debt_id) {
+          const { data: newEntry } = await (supabase.from as any)("expense_entries")
+            .select("id").eq("description", form.description).eq("health_unit_id", unitId)
+            .order("created_at", { ascending: false }).limit(1).maybeSingle();
+          const entryId = newEntry?.id || null;
+
+          const { error: payError } = await (supabase.from as any)("adeudo_payments").insert({
+            debt_id: form.debt_id,
+            amount: form.monto_adeudado || form.amount,
+            expense_entry_id: entryId,
+            notes: form.notes || null,
+            paid_at: form.operation_date,
+            recorded_by: user.id,
+          });
+          if (payError) { toast({ title: "Gasto registrado pero error al registrar amortización", description: payError.message, variant: "destructive" }); return; }
+
+          // Update debt paid_amount
+          const payAmount = form.monto_adeudado || form.amount;
+          const debt = debts.find(d => d.id === form.debt_id);
+          if (debt) {
+            const newPaid = Number(debt.paid_amount) + payAmount;
+            const newStatus = newPaid >= Number(debt.original_amount) ? "pagado" : "pendiente";
+            const { error: debtError } = await (supabase.from as any)("debts").update({
+              paid_amount: newPaid,
+              status: newStatus,
+              updated_at: new Date().toISOString(),
+            }).eq("id", form.debt_id);
+            if (debtError) { toast({ title: "Error actualizando saldo del adeudo", description: debtError.message, variant: "destructive" }); }
+          }
+          loadDebts();
+        }
+
         toast({ title: asignarCajaChica && montoCajaChica > 0 ? "Gasto registrado y caja chica actualizada" : "Registrado" });
       }
     }
@@ -407,6 +453,37 @@ export default function GastosUnidad() {
           <Card><CardContent className="py-4"><p className="text-xs text-muted-foreground">Órdenes de pago</p><p className="text-xl font-bold text-blue-700">{fmt(totals.o)}</p></CardContent></Card>
           <Card><CardContent className="py-4"><p className="text-xs text-muted-foreground">Balance</p><p className={`text-xl font-bold ${totals.balance >= 0 ? "text-green-700" : "text-red-700"}`}>{fmt(totals.balance)}</p></CardContent></Card>
         </div>
+
+        {debts.length > 0 && (
+          <Card>
+            <CardContent className="py-4">
+              <p className="text-sm font-semibold mb-3">Adeudos por unidad</p>
+              <div className="space-y-2">
+                {debts.map(d => {
+                  const saldo = Number(d.original_amount) - Number(d.paid_amount);
+                  const pct = Math.round((Number(d.paid_amount) / Number(d.original_amount)) * 100);
+                  return (
+                    <div key={d.id} className="flex items-center gap-3">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex justify-between text-xs mb-1">
+                          <span className="truncate font-medium">{d.name}</span>
+                          <span className="whitespace-nowrap ml-2">{fmt(saldo)}</span>
+                        </div>
+                        <div className="w-full bg-muted rounded-full h-1.5">
+                          <div className="bg-primary h-1.5 rounded-full transition-all" style={{ width: `${pct}%` }} />
+                        </div>
+                        <div className="flex justify-between text-[10px] text-muted-foreground mt-0.5">
+                          <span>Pagado: {fmt(Number(d.paid_amount))} ({pct}%)</span>
+                          <span>Original: {fmt(Number(d.original_amount))}</span>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         <div className="flex items-center justify-between gap-3">
           <Tabs value={filter} onValueChange={setFilter}>
@@ -603,6 +680,54 @@ export default function GastosUnidad() {
                           </div>
                         )}
                       </div>
+                      {form.es_pago_adeudo && (
+                        <div className="p-2 border rounded-lg bg-muted/30 space-y-2">
+                          <div>
+                            <Label className="text-sm">Amortizar adeudo de:</Label>
+                            <Select
+                              value={form.debt_id}
+                              onValueChange={v => setForm({ ...form, debt_id: v })}
+                            >
+                              <SelectTrigger className="h-9 mt-1">
+                                <SelectValue placeholder="Seleccionar adeudo..." />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {debts.map(d => {
+                                  const saldo = Number(d.original_amount) - Number(d.paid_amount);
+                                  return (
+                                    <SelectItem key={d.id} value={d.id}>
+                                      {d.name} — Saldo: {fmt(saldo)}
+                                    </SelectItem>
+                                  );
+                                })}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          {form.debt_id && (() => {
+                            const selected = debts.find(d => d.id === form.debt_id);
+                            if (!selected) return null;
+                            const saldo = Number(selected.original_amount) - Number(selected.paid_amount);
+                            const pct = Math.round((Number(selected.paid_amount) / Number(selected.original_amount)) * 100);
+                            return (
+                              <div className="text-xs text-muted-foreground space-y-1">
+                                <div className="flex justify-between">
+                                  <span>Original: {fmt(Number(selected.original_amount))}</span>
+                                  <span>Pagado: {fmt(Number(selected.paid_amount))} ({pct}%)</span>
+                                </div>
+                                <div className="w-full bg-muted rounded-full h-1.5">
+                                  <div className="bg-primary h-1.5 rounded-full transition-all" style={{ width: `${pct}%` }} />
+                                </div>
+                                <div className="flex justify-between font-medium">
+                                  <span>Saldo: {fmt(saldo)}</span>
+                                  {form.monto_adeudado > 0 && (
+                                    <span className="text-green-600">Queda: {fmt(saldo - form.monto_adeudado)}</span>
+                                  )}
+                                </div>
+                              </div>
+                            );
+                          })()}
+                        </div>
+                      )}
                       <div className="flex items-center gap-3 p-2 border rounded-lg bg-muted/30">
                         <input
                           type="checkbox"
