@@ -337,7 +337,7 @@ export default function GastosUnidad() {
         payload.health_unit_id = unitId;
         payload.receipt_url = receipt;
         payload.created_by = user.id;
-        const { error } = await (supabase.from as any)("expense_entries").insert(payload);
+        const { data: insertedEntry, error } = await (supabase.from as any)("expense_entries").insert(payload).select("id").single();
         if (error) { toast({ title: "Error", description: error.message, variant: "destructive" }); return; }
 
         if (asignarCajaChica && montoCajaChica > 0) {
@@ -355,10 +355,7 @@ export default function GastosUnidad() {
 
         // Link expense to specific debt if selected
         if (form.es_pago_adeudo && form.debt_id) {
-          const { data: newEntry } = await (supabase.from as any)("expense_entries")
-            .select("id").eq("description", form.description).eq("health_unit_id", unitId)
-            .order("created_at", { ascending: false }).limit(1).maybeSingle();
-          const entryId = newEntry?.id || null;
+          const entryId = insertedEntry?.id || null;
 
           const { error: payError } = await (supabase.from as any)("adeudo_payments").insert({
             debt_id: form.debt_id,
