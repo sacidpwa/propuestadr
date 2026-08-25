@@ -237,6 +237,7 @@ export default function UnidadDetalle() {
       q((supabase.from as any)("consultation_log").select("*").eq("health_unit_id", id).eq("record_date", todayStr).order("created_at")),
       q((supabase.from as any)("expense_entries").select("description, amount, category, expense_date, period_month, period_year, notes").eq("health_unit_id", id).eq("entry_type", "gasto")),
       q((supabase.from as any)("petty_cash").select("type, amount, category, description, reference_date").eq("health_unit_id", id)),
+      q((supabase.from as any)("adeudo_payments").select("expense_entry_id, amount, debt_id").order("created_at")),
     ]);
 
     const unitEmployeeIds = ((staffUnitsRes.data as any[]) || []).map((u: any) => u.employee_id);
@@ -274,9 +275,12 @@ export default function UnidadDetalle() {
     });
     const pettyCashMonthly = Object.entries(pettyCashMonthlyMap).map(([month, v]) => ({ month, ...v }));
 
+    const adeudoPayments = (adeudoPaymentsRes.data as any[]) || [];
+    const adeudoEntryIds = new Set(adeudoPayments.map((p: any) => p.expense_entry_id).filter(Boolean));
+
     const monthlyMap: Record<string, { ingresos: number; gastos: number; adeudos: number }> = {};
     for (let m = 0; m < 12; m++) monthlyMap[MONTHS[m]] = { ingresos: 0, gastos: 0, adeudos: 0 };
-    const isAdeudo = (e: any) => e.notes && e.notes.startsWith("[ADEUDO:");
+    const isAdeudo = (e: any) => adeudoEntryIds.has(e.id);
     ((monthlyRes.data as any[]) || []).forEach((e: any) => {
       const m = MONTHS[Number(e.period_month) - 1];
       if (monthlyMap[m]) {
@@ -495,7 +499,7 @@ export default function UnidadDetalle() {
     });
 
     // Dividir gastos generales (sin paciente y sin flag de adeudo) entre todos los pacientes activos
-    const generalExpenses = expenseEntries.filter((e: any) => !e.patient_name && !(e.notes && e.notes.startsWith("[ADEUDO:")));
+    const generalExpenses = expenseEntries.filter((e: any) => !e.patient_name && !adeudoEntryIds.has(e.id));
     const totalGeneralExpenses = generalExpenses.reduce((s: number, e: any) => s + Number(e.amount || 0), 0);
     const activePatientCount = patientsList.length;
     if (activePatientCount > 0 && totalGeneralExpenses > 0) {
@@ -552,7 +556,7 @@ export default function UnidadDetalle() {
     filteredConsult.forEach((c: any) => { if (c.patient_name && summaryMap[c.patient_name]) summaryMap[c.patient_name].ingresos += Number(c.amount_collected || 0); });
     filteredExpense.forEach((e: any) => { if (e.patient_name && summaryMap[e.patient_name]) summaryMap[e.patient_name].egresos += Number(e.amount || 0); });
 
-    const generalExpenses = filteredExpense.filter((e: any) => !e.patient_name && !(e.notes && e.notes.startsWith("[ADEUDO:")));
+    const generalExpenses = filteredExpense.filter((e: any) => !e.patient_name && !adeudoEntryIds.has(e.id));
     const totalGeneralExpenses = generalExpenses.reduce((s: number, e: any) => s + Number(e.amount || 0), 0);
     const activePatientCount = patientsList.length;
     if (activePatientCount > 0 && totalGeneralExpenses > 0) {

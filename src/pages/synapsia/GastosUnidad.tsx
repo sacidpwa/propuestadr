@@ -310,16 +310,12 @@ export default function GastosUnidad() {
       toast({ title: isEditing ? "Actualizado" : `${entriesToInsert.length} registro(s) registrado(s)` });
     } else {
       // Original logic for non-patient entries or single amount
-      const notesWithAdeudo = form.es_pago_adeudo
-        ? `[ADEUDO:${form.monto_adeudado}]${form.notes ? " " + form.notes : ""}`
-        : form.notes || null;
-
       const payload: any = {
         entry_type: form.entry_type,
         description: form.description,
         amount: form.amount,
         category: form.entry_type === "ingreso" && patientId && paymentType ? (paymentType === "mensualidad" ? "Mensualidad" : "Nota de venta") : form.category || null,
-        notes: notesWithAdeudo,
+        notes: form.notes || null,
         operation_date: form.operation_date,
         expense_date: form.operation_date,
         period_month: form.mes_pago,
