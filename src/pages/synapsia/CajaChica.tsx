@@ -51,6 +51,10 @@ export default function CajaChica() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState({ type: "entrada", amount: 0, category: "", description: "", date: format(now, "yyyy-MM-dd"), es_pago_adeudo: false, debt_id: "" });
   const [debts, setDebts] = useState<{ id: string; name: string; original_amount: number; paid_amount: number }[]>([]);
+  const [debtsOpen, setDebtsOpen] = useState(true);
+  const [detailDebt, setDetailDebt] = useState<{ id: string; name: string; original_amount: number; paid_amount: number } | null>(null);
+  const [detailPayments, setDetailPayments] = useState<{ amount: number; paid_at: string; notes: string | null; created_at: string }[]>([]);
+  const [detailOpen, setDetailOpen] = useState(false);
 
   useEffect(() => {
     if (!unitId) return;
@@ -200,6 +204,16 @@ export default function CajaChica() {
     setMovements(prev => prev.filter(m => m.id !== id));
   }
 
+  async function openDebtDetail(debt: { id: string; name: string; original_amount: number; paid_amount: number }) {
+    setDetailDebt(debt);
+    const { data } = await (supabase.from as any)("adeudo_payments")
+      .select("amount, paid_at, notes, created_at")
+      .eq("debt_id", debt.id)
+      .order("paid_at", { ascending: false });
+    setDetailPayments((data as any) || []);
+    setDetailOpen(true);
+  }
+
   function openNew() {
     setEditingId(null);
     setForm({ ...defaultForm(), type: movements.length === 0 ? "apertura" : "entrada" });
@@ -255,6 +269,43 @@ export default function CajaChica() {
             </CardContent>
           </Card>
         </div>
+
+        {debts.length > 0 && (
+          <Card>
+            <button onClick={() => setDebtsOpen(!debtsOpen)} className="w-full text-left">
+              <CardContent className="py-3 flex items-center justify-between cursor-pointer hover:bg-muted/30 transition-colors">
+                <p className="text-sm font-semibold">Adeudos por unidad</p>
+                <div className="flex items-center gap-2">
+                  <span className="text-xs text-muted-foreground">{debts.length} adeudos</span>
+                  <ChevronRight className={`w-4 h-4 transition-transform ${debtsOpen ? "rotate-90" : ""}`} />
+                </div>
+              </CardContent>
+            </button>
+            {debtsOpen && (
+              <CardContent className="pt-0 space-y-2">
+                {debts.map(d => {
+                  const saldo = Number(d.original_amount) - Number(d.paid_amount);
+                  const pct = Math.round((Number(d.paid_amount) / Number(d.original_amount)) * 100);
+                  return (
+                    <button key={d.id} onClick={() => openDebtDetail(d)} className="w-full text-left p-2 rounded-lg hover:bg-muted/50 transition-colors border border-transparent hover:border-border">
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="text-xs font-medium truncate pr-2">{d.name}</span>
+                        <span className="text-xs whitespace-nowrap">{fmt(saldo)}</span>
+                      </div>
+                      <div className="w-full bg-muted rounded-full h-1.5">
+                        <div className="bg-primary h-1.5 rounded-full transition-all" style={{ width: `${pct}%` }} />
+                      </div>
+                      <div className="flex justify-between text-[10px] text-muted-foreground mt-0.5">
+                        <span>Pagado: {fmt(Number(d.paid_amount))} ({pct}%)</span>
+                        <span>Original: {fmt(Number(d.original_amount))}</span>
+                      </div>
+                    </button>
+                  );
+                })}
+              </CardContent>
+            )}
+          </Card>
+        )}
 
         <div className="flex items-center justify-between gap-3">
           <Tabs value={tab} onValueChange={setTab}>
@@ -437,6 +488,50 @@ export default function CajaChica() {
             </CardContent>
           </Card>
         )}
+
+        <Dialog open={detailOpen} onOpenChange={setDetailOpen}>
+          <DialogContent className="max-w-md max-h-[80vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle className="text-base">{detailDebt?.name}</DialogTitle>
+            </DialogHeader>
+            {detailDebt && (
+              <div className="space-y-3">
+                <div className="grid grid-cols-3 gap-2 text-center">
+                  <div>
+                    <p className="text-[10px] text-muted-foreground">Original</p>
+                    <p className="text-sm font-bold">{fmt(Number(detailDebt.original_amount))}</p>
+                  </div>
+                  <div>
+                    <p className="text-[10px] text-muted-foreground">Pagado</p>
+                    <p className="text-sm font-bold text-green-700">{fmt(Number(detailDebt.paid_amount))}</p>
+                  </div>
+                  <div>
+                    <p className="text-[10px] text-muted-foreground">Saldo</p>
+                    <p className="text-sm font-bold text-red-700">{fmt(Number(detailDebt.original_amount) - Number(detailDebt.paid_amount))}</p>
+                  </div>
+                </div>
+                <div className="w-full bg-muted rounded-full h-2">
+                  <div className="bg-primary h-2 rounded-full transition-all" style={{ width: `${Math.round((Number(detailDebt.paid_amount) / Number(detailDebt.original_amount)) * 100)}%` }} />
+                </div>
+                <p className="text-xs font-semibold text-muted-foreground">Abonos registrados ({detailPayments.length})</p>
+                {detailPayments.length === 0 ? (
+                  <p className="text-sm text-muted-foreground text-center py-4">Sin abonos registrados</p>
+                ) : (
+                  <div className="space-y-1">
+                    {detailPayments.map((p, i) => (
+                      <div key={i} className="flex items-center justify-between py-2 px-2 rounded hover:bg-muted/50 border-b last:border-0">
+                        <div>
+                          <p className="text-sm font-medium">{fmt(Number(p.amount))}</p>
+                          <p className="text-[10px] text-muted-foreground">{p.paid_at} {p.notes && `· ${p.notes}`}</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+          </DialogContent>
+        </Dialog>
       </main>
     </div>
   );
