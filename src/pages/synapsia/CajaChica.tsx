@@ -49,7 +49,8 @@ export default function CajaChica() {
   const [open, setOpen] = useState(false);
   const [saving, setSaving] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [form, setForm] = useState({ type: "entrada", amount: 0, category: "", description: "", date: format(now, "yyyy-MM-dd") });
+  const [form, setForm] = useState({ type: "entrada", amount: 0, category: "", description: "", date: format(now, "yyyy-MM-dd"), es_pago_adeudo: false, debt_id: "" });
+  const [debts, setDebts] = useState<{ id: string; name: string; original_amount: number; paid_amount: number }[]>([]);
 
   useEffect(() => {
     if (!unitId) return;
@@ -70,6 +71,18 @@ export default function CajaChica() {
         .order("created_at", { ascending: false });
       setMovements((data as any) || []);
       setLoading(false);
+    })();
+  }, [unitId]);
+
+  useEffect(() => {
+    if (!unitId) return;
+    (async () => {
+      const { data } = await (supabase.from as any)("debts")
+        .select("id, name, original_amount, paid_amount")
+        .eq("health_unit_id", unitId)
+        .eq("status", "pendiente")
+        .order("name");
+      setDebts((data as any) || []);
     })();
   }, [unitId]);
 
@@ -113,7 +126,7 @@ export default function CajaChica() {
   }, [filteredByMonth]);
 
   function defaultForm() {
-    return { type: "entrada", amount: 0, category: "", description: "", date: format(new Date(), "yyyy-MM-dd") };
+    return { type: "entrada", amount: 0, category: "", description: "", date: format(new Date(), "yyyy-MM-dd"), es_pago_adeudo: false, debt_id: "" };
   }
 
   async function save() {
@@ -134,7 +147,31 @@ export default function CajaChica() {
     if (editingId) {
       ({ error } = await (supabase.from as any)("petty_cash").update(payload).eq("id", editingId));
     } else {
-      ({ error } = await (supabase.from as any)("petty_cash").insert({ ...payload, health_unit_id: unitId, created_by: user.id }));
+      const { data: inserted, error: insertError } = await (supabase.from as any)("petty_cash").insert({ ...payload, health_unit_id: unitId, created_by: user.id }).select("id").single();
+      error = insertError;
+
+      if (!error && form.es_pago_adeudo && form.debt_id && form.type === "salida") {
+        const { error: payError } = await (supabase.from as any)("adeudo_payments").insert({
+          debt_id: form.debt_id,
+          amount: form.amount,
+          expense_entry_id: null,
+          notes: `Caja chica: ${form.description || form.category}`,
+          paid_at: form.date,
+          recorded_by: user.id,
+        });
+        if (payError) { toast({ title: "Salida registrada pero error al registrar amortización", description: payError.message, variant: "destructive" }); }
+
+        const debt = debts.find(d => d.id === form.debt_id);
+        if (debt) {
+          const newPaid = Number(debt.paid_amount) + form.amount;
+          const newStatus = newPaid >= Number(debt.original_amount) ? "pagado" : "pendiente";
+          await (supabase.from as any)("debts").update({
+            paid_amount: newPaid,
+            status: newStatus,
+            updated_at: new Date().toISOString(),
+          }).eq("id", form.debt_id);
+        }
+      }
     }
 
     setSaving(false);
@@ -257,6 +294,61 @@ export default function CajaChica() {
               <div><Label>Monto</Label><Input type="number" min="0" step="0.01" value={form.amount || ""} onChange={e => setForm({ ...form, amount: parseFloat(e.target.value) || 0 })} /></div>
               {form.type !== "apertura" && <div><Label>Categoría</Label><Input value={form.category} onChange={e => setForm({ ...form, category: e.target.value })} placeholder="Ej: Papelería, Transporte, Café..." /></div>}
               <div><Label>Descripción (opcional)</Label><Textarea rows={2} value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} /></div>
+              {form.type === "salida" && (
+                <div className="space-y-2">
+                  <div className="flex items-center gap-3 p-2 border rounded-lg bg-muted/30">
+                    <input
+                      type="checkbox"
+                      id="pago-adeudo-cc"
+                      checked={form.es_pago_adeudo}
+                      onChange={e => setForm({ ...form, es_pago_adeudo: e.target.checked, debt_id: e.target.checked ? "" : "" })}
+                      className="h-4 w-4"
+                    />
+                    <Label htmlFor="pago-adeudo-cc" className="text-sm cursor-pointer">Es pago de adeudo</Label>
+                  </div>
+                  {form.es_pago_adeudo && debts.length > 0 && (
+                    <div className="p-2 border rounded-lg bg-muted/30 space-y-2">
+                      <div>
+                        <Label className="text-sm">Amortizar adeudo de:</Label>
+                        <Select value={form.debt_id} onValueChange={v => setForm({ ...form, debt_id: v })}>
+                          <SelectTrigger className="h-9 mt-1"><SelectValue placeholder="Seleccionar adeudo..." /></SelectTrigger>
+                          <SelectContent>
+                            {debts.map(d => {
+                              const saldo = Number(d.original_amount) - Number(d.paid_amount);
+                              return (
+                                <SelectItem key={d.id} value={d.id}>
+                                  {d.name} — Saldo: {fmt(saldo)}
+                                </SelectItem>
+                              );
+                            })}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      {form.debt_id && (() => {
+                        const selected = debts.find(d => d.id === form.debt_id);
+                        if (!selected) return null;
+                        const saldo = Number(selected.original_amount) - Number(selected.paid_amount);
+                        const pct = Math.round((Number(selected.paid_amount) / Number(selected.original_amount)) * 100);
+                        return (
+                          <div className="text-xs text-muted-foreground space-y-1">
+                            <div className="flex justify-between">
+                              <span>Original: {fmt(Number(selected.original_amount))}</span>
+                              <span>Pagado: {fmt(Number(selected.paid_amount))} ({pct}%)</span>
+                            </div>
+                            <div className="w-full bg-muted rounded-full h-1.5">
+                              <div className="bg-primary h-1.5 rounded-full transition-all" style={{ width: `${pct}%` }} />
+                            </div>
+                            <div className="flex justify-between font-medium">
+                              <span>Saldo: {fmt(saldo)}</span>
+                              {form.amount > 0 && <span className="text-green-600">Queda: {fmt(saldo - form.amount)}</span>}
+                            </div>
+                          </div>
+                        );
+                      })()}
+                    </div>
+                  )}
+                </div>
+              )}
               <div><Label>Fecha</Label><Input type="date" value={form.date} onChange={e => setForm({ ...form, date: e.target.value })} /></div>
             </div>
             <DialogFooter>
