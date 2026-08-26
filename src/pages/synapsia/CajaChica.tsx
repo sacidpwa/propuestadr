@@ -168,16 +168,23 @@ export default function CajaChica() {
       }
 
       if (!error && currentEsPagoAdeudo && currentDebtId && currentType === "salida") {
-        const payResult = await (supabase.from as any)("adeudo_payments").insert({
+        console.log("[CajaChica] inserting adeudo_payment:", {
           debt_id: currentDebtId,
           amount: currentAmount,
-          expense_entry_id: editingId || null,
+          notes: `Caja chica: ${currentDescription || currentCategory}`,
+          paid_at: currentDate,
+          recorded_by: user.id,
+        });
+        const { data: payData, error: payError } = await (supabase.from as any)("adeudo_payments").insert({
+          debt_id: currentDebtId,
+          amount: Number(currentAmount),
           notes: `Caja chica: ${currentDescription || currentCategory}`,
           paid_at: currentDate,
           recorded_by: user.id,
         }).select("id").single();
-        if (payResult.error) {
-          toast({ title: "Salida registrada pero error al registrar amortización", description: payResult.error.message, variant: "destructive" });
+        console.log("[CajaChica] adeudo_payment result:", { payData, payError });
+        if (payError) {
+          toast({ title: "Salida registrada pero error al registrar amortización", description: payError.message, variant: "destructive" });
         } else {
           toast({ title: "Amortización registrada", description: `Se abonaron $${currentAmount} al adeudo seleccionado.` });
         }
