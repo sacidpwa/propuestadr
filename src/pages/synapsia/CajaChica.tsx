@@ -252,7 +252,7 @@ export default function CajaChica() {
 
   async function reversePayment() {
     if (!reverseTarget || !detailDebt) return;
-    const { paymentId, pettyCashId, amount, debtId } = reverseTarget;
+    const { paymentId, pettyCashId, debtId } = reverseTarget;
 
     const { error } = await (supabase.from as any)("adeudo_payments").delete().eq("id", paymentId);
     if (error) {
@@ -268,7 +268,8 @@ export default function CajaChica() {
       });
     }
 
-    const newPaid = Math.max(0, Number(detailDebt.paid_amount) - amount);
+    const remaining = detailPayments.filter(p => p.id !== paymentId);
+    const newPaid = remaining.reduce((sum, p) => sum + Number(p.amount), 0);
     const newStatus = newPaid >= Number(detailDebt.original_amount) ? "pagado" : "pendiente";
     await (supabase.from as any)("debts").update({
       paid_amount: newPaid,
@@ -276,10 +277,10 @@ export default function CajaChica() {
       updated_at: new Date().toISOString(),
     }).eq("id", debtId);
 
-    setDetailPayments(prev => prev.filter(p => p.id !== paymentId));
+    setDetailPayments(remaining);
     setDetailDebt({ ...detailDebt, paid_amount: newPaid, status: newStatus } as any);
     loadDebts();
-    toast({ title: "Abono reversado", description: `Se eliminó el abono de ${fmt(amount)}.` });
+    toast({ title: "Abono reversado", description: `Se eliminó el abono. Saldo actualizado.` });
     setReversePinOpen(false);
     setReverseTarget(null);
   }
