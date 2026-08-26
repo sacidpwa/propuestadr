@@ -148,8 +148,8 @@ export default function CajaChica() {
     if (savingRef.current) return;
     savingRef.current = true;
     if (!unitId || !user) { savingRef.current = false; return; }
-    if (!form.amount || form.amount <= 0) { toast({ title: "Monto inválido", variant: "destructive" }); return; }
-    if (form.type !== "apertura" && !form.category.trim()) { toast({ title: "Categoría requerida", variant: "destructive" }); return; }
+    if (!form.amount || form.amount <= 0) { savingRef.current = false; toast({ title: "Monto inválido", variant: "destructive" }); return; }
+    if (form.type !== "apertura" && !form.category.trim()) { savingRef.current = false; toast({ title: "Categoría requerida", variant: "destructive" }); return; }
     setSaving(true);
 
     try {
@@ -202,16 +202,21 @@ export default function CajaChica() {
         }
       }
 
-      setSaving(false);
-      savingRef.current = false;
-      if (error) { toast({ title: "Error", description: error.message, variant: "destructive" }); return; }
+      if (error) {
+        toast({ title: "Error", description: error.message, variant: "destructive" });
+        return;
+      }
+
+      const savedEditingId = editingId;
+      const savedForm = { ...form };
+
       toast({ title: editingId ? "Movimiento actualizado" : "Movimiento registrado" });
       setOpen(false);
       setEditingId(null);
       setForm(defaultForm());
 
-      if (editingId) {
-        setMovements(prev => prev.map(m => m.id === editingId ? { ...m, ...payload } as Movement : m));
+      if (savedEditingId) {
+        setMovements(prev => prev.map(m => m.id === savedEditingId ? { ...m, ...payload } as Movement : m));
       } else {
         const { data } = await (supabase.from as any)("petty_cash")
           .select("*")
@@ -223,11 +228,12 @@ export default function CajaChica() {
 
       loadDebts();
 
-      if (form.es_pago_adeudo && form.debt_id && form.type === "salida" && pettyCashId) {
+      if (savedForm.es_pago_adeudo && savedForm.debt_id && savedForm.type === "salida" && pettyCashId) {
         setLinkedMovements(prev => new Set([...prev, pettyCashId]));
       }
     } catch (e) {
       toast({ title: "Error inesperado", description: String(e), variant: "destructive" });
+    } finally {
       setSaving(false);
       savingRef.current = false;
     }
@@ -487,7 +493,7 @@ export default function CajaChica() {
             </div>
             <DialogFooter>
               <Button variant="outline" onClick={() => { setOpen(false); setEditingId(null); setForm(defaultForm()); }}>Cancelar</Button>
-              <Button onClick={save} disabled={saving}>{saving && <Loader2 className="w-4 h-4 mr-1 animate-spin" />}Guardar</Button>
+              <Button type="button" onClick={save} disabled={saving}>{saving && <Loader2 className="w-4 h-4 mr-1 animate-spin" />}Guardar</Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>
