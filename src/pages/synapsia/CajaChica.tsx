@@ -162,6 +162,9 @@ export default function CajaChica() {
       const { data: inserted, error: insertError } = await (supabase.from as any)("petty_cash").insert({ ...payload, health_unit_id: unitId, created_by: user.id }).select("id").single();
       error = insertError;
 
+      console.log("[CajaChica] save state:", { currentEsPagoAdeudo, currentDebtId, currentType, currentAmount });
+      toast({ title: "DEBUG", description: `adeudo=${currentEsPagoAdeudo}, debt_id=${currentDebtId ? currentDebtId.slice(0,8) : "EMPTY"}, type=${currentType}, amount=${currentAmount}` });
+
       if (!error && currentEsPagoAdeudo && currentDebtId && currentType === "salida") {
         console.log("[CajaChica] Creating adeudo_payment:", { debt_id: currentDebtId, amount: currentAmount });
         const { data: payData, error: payError } = await (supabase.from as any)("adeudo_payments").insert({
@@ -177,6 +180,7 @@ export default function CajaChica() {
           toast({ title: "Salida registrada pero error al registrar amortización", description: payError.message, variant: "destructive" });
         } else {
           console.log("[CajaChica] adeudo_payment created:", payData);
+          toast({ title: "Amortización registrada", description: `Se abonaron $${currentAmount} al adeudo seleccionado.` });
         }
 
         const debt = debts.find(d => d.id === currentDebtId);
@@ -355,7 +359,7 @@ export default function CajaChica() {
             <div className="space-y-3">
               <div>
                 <Label>Tipo</Label>
-                <Select value={form.type} onValueChange={v => setForm({ ...form, type: v })}>
+                <Select value={form.type} onValueChange={v => setForm(prev => ({ ...prev, type: v }))}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
                     {movements.length === 0 && <SelectItem value="apertura">Apertura (saldo inicial)</SelectItem>}
@@ -374,7 +378,11 @@ export default function CajaChica() {
                       type="checkbox"
                       id="pago-adeudo-cc"
                       checked={form.es_pago_adeudo}
-                      onChange={e => setForm({ ...form, es_pago_adeudo: e.target.checked, debt_id: e.target.checked ? "" : "" })}
+                      onChange={e => {
+                        const checked = e.target.checked;
+                        console.log("[CajaChica] Checkbox changed:", checked);
+                        setForm(prev => ({ ...prev, es_pago_adeudo: checked, debt_id: checked ? prev.debt_id : "" }));
+                      }}
                       className="h-4 w-4"
                     />
                     <Label htmlFor="pago-adeudo-cc" className="text-sm cursor-pointer">Es pago de adeudo</Label>
@@ -383,7 +391,10 @@ export default function CajaChica() {
                     <div className="p-2 border rounded-lg bg-muted/30 space-y-2">
                       <div>
                         <Label className="text-sm">Amortizar adeudo de:</Label>
-                        <Select value={form.debt_id} onValueChange={v => setForm({ ...form, debt_id: v })}>
+                        <Select value={form.debt_id} onValueChange={v => {
+                          console.log("[CajaChica] Debt selected:", v);
+                          setForm(prev => ({ ...prev, debt_id: v }));
+                        }}>
                           <SelectTrigger className="h-9 mt-1"><SelectValue placeholder="Seleccionar adeudo..." /></SelectTrigger>
                           <SelectContent>
                             {debts.map(d => {
