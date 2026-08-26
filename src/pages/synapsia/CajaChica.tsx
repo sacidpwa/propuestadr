@@ -140,88 +140,94 @@ export default function CajaChica() {
     if (form.type !== "apertura" && !form.category.trim()) { toast({ title: "Categoría requerida", variant: "destructive" }); return; }
     setSaving(true);
 
-    const payload = {
-      type: form.type,
-      amount: form.amount,
-      category: form.category.trim() || null,
-      description: form.description.trim() || null,
-      reference_date: form.date,
-    };
+    try {
+      const payload = {
+        type: form.type,
+        amount: form.amount,
+        category: form.category.trim() || null,
+        description: form.description.trim() || null,
+        reference_date: form.date,
+      };
 
-    const currentEsPagoAdeudo = form.es_pago_adeudo;
-    const currentDebtId = form.debt_id;
-    const currentType = form.type;
-    const currentAmount = form.amount;
-    const currentDescription = form.description;
-    const currentCategory = form.category;
-    const currentDate = form.date;
+      const currentEsPagoAdeudo = form.es_pago_adeudo;
+      const currentDebtId = form.debt_id;
+      const currentType = form.type;
+      const currentAmount = form.amount;
+      const currentDescription = form.description;
+      const currentCategory = form.category;
+      const currentDate = form.date;
 
-    let error;
-    if (editingId) {
-      ({ error } = await (supabase.from as any)("petty_cash").update(payload).eq("id", editingId));
-    } else {
-      const { data: inserted, error: insertError } = await (supabase.from as any)("petty_cash").insert({ ...payload, health_unit_id: unitId, created_by: user.id }).select("id").single();
-      error = insertError;
+      console.log("[CajaChica] inserting petty_cash...", { health_unit_id: unitId, created_by: user.id, payload });
 
-      console.log("[CajaChica] save state:", { currentEsPagoAdeudo, currentDebtId, currentType, currentAmount });
-      toast({ title: "DEBUG", description: `adeudo=${currentEsPagoAdeudo}, debt_id=${currentDebtId ? currentDebtId.slice(0,8) : "EMPTY"}, type=${currentType}, amount=${currentAmount}` });
+      let error;
+      if (editingId) {
+        ({ error } = await (supabase.from as any)("petty_cash").update(payload).eq("id", editingId));
+        console.log("[CajaChica] petty_cash updated, error:", error);
+      } else {
+        const result = await (supabase.from as any)("petty_cash").insert({ ...payload, health_unit_id: unitId, created_by: user.id }).select("id").single();
+        console.log("[CajaChica] petty_cash insert result:", JSON.stringify(result));
+        error = result.error;
 
-      if (!error && currentEsPagoAdeudo && currentDebtId && currentType === "salida") {
-        console.log("[CajaChica] Creating adeudo_payment:", { debt_id: currentDebtId, amount: currentAmount });
-        const { data: payData, error: payError } = await (supabase.from as any)("adeudo_payments").insert({
-          debt_id: currentDebtId,
-          amount: currentAmount,
-          expense_entry_id: null,
-          notes: `Caja chica: ${currentDescription || currentCategory}`,
-          paid_at: currentDate,
-          recorded_by: user.id,
-        }).select("id").single();
-        if (payError) {
-          console.error("[CajaChica] adeudo_payments insert error:", payError);
-          toast({ title: "Salida registrada pero error al registrar amortización", description: payError.message, variant: "destructive" });
-        } else {
-          console.log("[CajaChica] adeudo_payment created:", payData);
-          toast({ title: "Amortización registrada", description: `Se abonaron $${currentAmount} al adeudo seleccionado.` });
-        }
-
-        const debt = debts.find(d => d.id === currentDebtId);
-        if (debt) {
-          const newPaid = Number(debt.paid_amount) + currentAmount;
-          const newStatus = newPaid >= Number(debt.original_amount) ? "pagado" : "pendiente";
-          const { error: debtError } = await (supabase.from as any)("debts").update({
-            paid_amount: newPaid,
-            status: newStatus,
-            updated_at: new Date().toISOString(),
-          }).eq("id", currentDebtId);
-          if (debtError) {
-            console.error("[CajaChica] debts update error:", debtError);
-            toast({ title: "Error actualizando saldo del adeudo", description: debtError.message, variant: "destructive" });
+        if (!error && currentEsPagoAdeudo && currentDebtId && currentType === "salida") {
+          console.log("[CajaChica] Creating adeudo_payment:", { debt_id: currentDebtId, amount: currentAmount });
+          const payResult = await (supabase.from as any)("adeudo_payments").insert({
+            debt_id: currentDebtId,
+            amount: currentAmount,
+            expense_entry_id: null,
+            notes: `Caja chica: ${currentDescription || currentCategory}`,
+            paid_at: currentDate,
+            recorded_by: user.id,
+          }).select("id").single();
+          console.log("[CajaChica] adeudo_payment result:", JSON.stringify(payResult));
+          if (payResult.error) {
+            toast({ title: "Salida registrada pero error al registrar amortización", description: payResult.error.message, variant: "destructive" });
+          } else {
+            toast({ title: "Amortización registrada", description: `Se abonaron $${currentAmount} al adeudo seleccionado.` });
           }
+
+          const debt = debts.find(d => d.id === currentDebtId);
+          if (debt) {
+            const newPaid = Number(debt.paid_amount) + currentAmount;
+            const newStatus = newPaid >= Number(debt.original_amount) ? "pagado" : "pendiente";
+            const debtResult = await (supabase.from as any)("debts").update({
+              paid_amount: newPaid,
+              status: newStatus,
+              updated_at: new Date().toISOString(),
+            }).eq("id", currentDebtId);
+            console.log("[CajaChica] debts update result:", JSON.stringify(debtResult));
+            if (debtResult.error) {
+              toast({ title: "Error actualizando saldo del adeudo", description: debtResult.error.message, variant: "destructive" });
+            }
+          }
+        } else if (!error && currentEsPagoAdeudo) {
+          console.warn("[CajaChica] Adeudo conditions not met:", { currentDebtId, currentType, currentEsPagoAdeudo });
         }
-      } else if (!error && currentEsPagoAdeudo) {
-        console.warn("[CajaChica] Adeudo conditions not met:", { currentDebtId, currentType, currentEsPagoAdeudo });
       }
+
+      setSaving(false);
+      if (error) { toast({ title: "Error", description: error.message, variant: "destructive" }); return; }
+      toast({ title: editingId ? "Movimiento actualizado" : "Movimiento registrado" });
+      setOpen(false);
+      setEditingId(null);
+      setForm(defaultForm());
+
+      if (editingId) {
+        setMovements(prev => prev.map(m => m.id === editingId ? { ...m, ...payload } as Movement : m));
+      } else {
+        const { data } = await (supabase.from as any)("petty_cash")
+          .select("*")
+          .eq("health_unit_id", unitId)
+          .order("reference_date", { ascending: false })
+          .order("created_at", { ascending: false });
+        setMovements((data as any) || []);
+      }
+
+      loadDebts();
+    } catch (e) {
+      console.error("[CajaChica] save() CAUGHT ERROR:", e);
+      toast({ title: "Error inesperado", description: String(e), variant: "destructive" });
+      setSaving(false);
     }
-
-    setSaving(false);
-    if (error) { toast({ title: "Error", description: error.message, variant: "destructive" }); return; }
-    toast({ title: editingId ? "Movimiento actualizado" : "Movimiento registrado" });
-    setOpen(false);
-    setEditingId(null);
-    setForm(defaultForm());
-
-    if (editingId) {
-      setMovements(prev => prev.map(m => m.id === editingId ? { ...m, ...payload } as Movement : m));
-    } else {
-      const { data } = await (supabase.from as any)("petty_cash")
-        .select("*")
-        .eq("health_unit_id", unitId)
-        .order("reference_date", { ascending: false })
-        .order("created_at", { ascending: false });
-      setMovements((data as any) || []);
-    }
-
-    loadDebts();
   }
 
   async function remove(id: string) {
