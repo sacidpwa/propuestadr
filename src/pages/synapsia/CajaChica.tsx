@@ -159,48 +159,41 @@ export default function CajaChica() {
 
       console.log("[CajaChica] inserting petty_cash...", { health_unit_id: unitId, created_by: user.id, payload });
 
-      let error;
+      let error: any;
       if (editingId) {
         ({ error } = await (supabase.from as any)("petty_cash").update(payload).eq("id", editingId));
-        console.log("[CajaChica] petty_cash updated, error:", error);
       } else {
-        const result = await (supabase.from as any)("petty_cash").insert({ ...payload, health_unit_id: unitId, created_by: user.id }).select("id").single();
-        console.log("[CajaChica] petty_cash insert result:", JSON.stringify(result));
-        error = result.error;
+        const { data: inserted, error: insertError } = await (supabase.from as any)("petty_cash").insert({ ...payload, health_unit_id: unitId, created_by: user.id }).select("id").single();
+        error = insertError;
+      }
 
-        if (!error && currentEsPagoAdeudo && currentDebtId && currentType === "salida") {
-          console.log("[CajaChica] Creating adeudo_payment:", { debt_id: currentDebtId, amount: currentAmount });
-          const payResult = await (supabase.from as any)("adeudo_payments").insert({
-            debt_id: currentDebtId,
-            amount: currentAmount,
-            expense_entry_id: null,
-            notes: `Caja chica: ${currentDescription || currentCategory}`,
-            paid_at: currentDate,
-            recorded_by: user.id,
-          }).select("id").single();
-          console.log("[CajaChica] adeudo_payment result:", JSON.stringify(payResult));
-          if (payResult.error) {
-            toast({ title: "Salida registrada pero error al registrar amortización", description: payResult.error.message, variant: "destructive" });
-          } else {
-            toast({ title: "Amortización registrada", description: `Se abonaron $${currentAmount} al adeudo seleccionado.` });
-          }
+      if (!error && currentEsPagoAdeudo && currentDebtId && currentType === "salida") {
+        const payResult = await (supabase.from as any)("adeudo_payments").insert({
+          debt_id: currentDebtId,
+          amount: currentAmount,
+          expense_entry_id: editingId || null,
+          notes: `Caja chica: ${currentDescription || currentCategory}`,
+          paid_at: currentDate,
+          recorded_by: user.id,
+        }).select("id").single();
+        if (payResult.error) {
+          toast({ title: "Salida registrada pero error al registrar amortización", description: payResult.error.message, variant: "destructive" });
+        } else {
+          toast({ title: "Amortización registrada", description: `Se abonaron $${currentAmount} al adeudo seleccionado.` });
+        }
 
-          const debt = debts.find(d => d.id === currentDebtId);
-          if (debt) {
-            const newPaid = Number(debt.paid_amount) + currentAmount;
-            const newStatus = newPaid >= Number(debt.original_amount) ? "pagado" : "pendiente";
-            const debtResult = await (supabase.from as any)("debts").update({
-              paid_amount: newPaid,
-              status: newStatus,
-              updated_at: new Date().toISOString(),
-            }).eq("id", currentDebtId);
-            console.log("[CajaChica] debts update result:", JSON.stringify(debtResult));
-            if (debtResult.error) {
-              toast({ title: "Error actualizando saldo del adeudo", description: debtResult.error.message, variant: "destructive" });
-            }
+        const debt = debts.find(d => d.id === currentDebtId);
+        if (debt) {
+          const newPaid = Number(debt.paid_amount) + currentAmount;
+          const newStatus = newPaid >= Number(debt.original_amount) ? "pagado" : "pendiente";
+          const { error: debtError } = await (supabase.from as any)("debts").update({
+            paid_amount: newPaid,
+            status: newStatus,
+            updated_at: new Date().toISOString(),
+          }).eq("id", currentDebtId);
+          if (debtError) {
+            toast({ title: "Error actualizando saldo del adeudo", description: debtError.message, variant: "destructive" });
           }
-        } else if (!error && currentEsPagoAdeudo) {
-          console.warn("[CajaChica] Adeudo conditions not met:", { currentDebtId, currentType, currentEsPagoAdeudo });
         }
       }
 
