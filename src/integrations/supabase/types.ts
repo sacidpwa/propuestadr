@@ -2115,6 +2115,7 @@ export type Database = {
           id: string
           notes: string | null
           paid_at: string
+          petty_cash_entry_id: string | null
           recorded_by: string | null
         }
         Insert: {
@@ -2125,6 +2126,7 @@ export type Database = {
           id?: string
           notes?: string | null
           paid_at?: string
+          petty_cash_entry_id?: string | null
           recorded_by?: string | null
         }
         Update: {
@@ -2135,6 +2137,7 @@ export type Database = {
           id?: string
           notes?: string | null
           paid_at?: string
+          petty_cash_entry_id?: string | null
           recorded_by?: string | null
         }
         Relationships: [

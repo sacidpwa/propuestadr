@@ -55,6 +55,7 @@ export default function CajaChica() {
   const [detailDebt, setDetailDebt] = useState<{ id: string; name: string; original_amount: number; paid_amount: number } | null>(null);
   const [detailPayments, setDetailPayments] = useState<{ amount: number; paid_at: string; notes: string | null; created_at: string }[]>([]);
   const [detailOpen, setDetailOpen] = useState(false);
+  const [linkedMovements, setLinkedMovements] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     if (!unitId) return;
@@ -74,6 +75,12 @@ export default function CajaChica() {
         .order("reference_date", { ascending: false })
         .order("created_at", { ascending: false });
       setMovements((data as any) || []);
+
+      const { data: linked } = await (supabase.from as any)("adeudo_payments")
+        .select("petty_cash_entry_id")
+        .not("petty_cash_entry_id", "is", null);
+      setLinkedMovements(new Set((linked || []).map((r: any) => r.petty_cash_entry_id).filter(Boolean)));
+
       setLoading(false);
     })();
   }, [unitId]);
@@ -149,11 +156,14 @@ export default function CajaChica() {
       };
 
       let error: any;
+      let pettyCashId: string | null = null;
       if (editingId) {
         ({ error } = await (supabase.from as any)("petty_cash").update(payload).eq("id", editingId));
+        pettyCashId = editingId;
       } else {
-        const { error: insertError } = await (supabase.from as any)("petty_cash").insert({ ...payload, health_unit_id: unitId, created_by: user.id }).select("id").single();
+        const { data: inserted, error: insertError } = await (supabase.from as any)("petty_cash").insert({ ...payload, health_unit_id: unitId, created_by: user.id }).select("id").single();
         error = insertError;
+        pettyCashId = inserted?.id || null;
       }
 
       if (!error && form.es_pago_adeudo && form.debt_id && form.type === "salida") {
@@ -163,6 +173,7 @@ export default function CajaChica() {
           notes: `Caja chica: ${form.description || form.category}`,
           paid_at: form.date,
           recorded_by: user.id,
+          petty_cash_entry_id: pettyCashId,
         }).select("id").single();
         if (payError) {
           toast({ title: "Salida registrada pero error al registrar amortización", description: payError.message, variant: "destructive" });
@@ -204,6 +215,10 @@ export default function CajaChica() {
       }
 
       loadDebts();
+
+      if (form.es_pago_adeudo && form.debt_id && form.type === "salida" && pettyCashId) {
+        setLinkedMovements(prev => new Set([...prev, pettyCashId]));
+      }
     } catch (e) {
       console.error("[CajaChica] save() CAUGHT ERROR:", e);
       toast({ title: "Error inesperado", description: String(e), variant: "destructive" });
@@ -212,6 +227,10 @@ export default function CajaChica() {
   }
 
   async function remove(id: string) {
+    if (linkedMovements.has(id)) {
+      toast({ title: "No se puede eliminar", description: "Este movimiento está vinculado a un pago de adeudo. Edítalo o elíminalo desde la gestión de adeudos.", variant: "destructive" });
+      return;
+    }
     if (!confirm("¿Eliminar este movimiento?")) return;
     const { error } = await (supabase.from as any)("petty_cash").delete().eq("id", id);
     if (error) { toast({ title: "Error", description: error.message, variant: "destructive" }); return; }
@@ -235,6 +254,10 @@ export default function CajaChica() {
   }
 
   function openEdit(m: Movement) {
+    if (linkedMovements.has(m.id)) {
+      toast({ title: "Movimiento vinculado a adeudo", description: "No se puede editar un movimiento que tiene pagos de adeudo asociados.", variant: "destructive" });
+      return;
+    }
     setEditingId(m.id);
     setForm({ type: m.type, amount: Number(m.amount), category: m.category || "", description: m.description || "", date: m.reference_date });
     setOpen(true);
@@ -437,6 +460,11 @@ export default function CajaChica() {
                   <div className="flex-1">
                     <div className="flex items-center gap-2 flex-wrap">
                       <Badge variant="outline" className={`capitalize ${TYPE_STYLE[m.type]}`}>{TYPE_LABEL[m.type]}</Badge>
+                      {linkedMovements.has(m.id) && (
+                        <Badge variant="outline" className="bg-amber-500/10 text-amber-700 border-amber-500/30 text-xs">
+                          <PiggyBank className="w-3 h-3 mr-1" /> Adeudo
+                        </Badge>
+                      )}
                       <span className="text-xs text-muted-foreground">{format(parseISO(m.reference_date), "PP", { locale: es })}</span>
                       {m.category && <span className="text-xs text-muted-foreground">· {m.category}</span>}
                     </div>
@@ -447,12 +475,26 @@ export default function CajaChica() {
                       {m.type === "salida" ? "-" : "+"}{fmt(Number(m.amount))}
                     </p>
                     {canEdit && (
-                      <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => openEdit(m)}>
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        className="h-7 w-7"
+                        disabled={linkedMovements.has(m.id)}
+                        title={linkedMovements.has(m.id) ? "Movimiento vinculado a adeudo — no se puede editar" : "Editar"}
+                        onClick={() => openEdit(m)}
+                      >
                         <Pencil className="w-3.5 h-3.5" />
                       </Button>
                     )}
                     {canDelete && (
-                      <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => remove(m.id)}>
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        className="h-7 w-7"
+                        disabled={linkedMovements.has(m.id)}
+                        title={linkedMovements.has(m.id) ? "Movimiento vinculado a adeudo — no se puede eliminar" : "Eliminar"}
+                        onClick={() => remove(m.id)}
+                      >
                         <Trash2 className="w-3.5 h-3.5" />
                       </Button>
                     )}
