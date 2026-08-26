@@ -11,8 +11,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ArrowLeft, LogOut, Plus, Trash2, Loader2, PiggyBank, ChevronLeft, ChevronRight, Pencil } from "lucide-react";
+import { ArrowLeft, LogOut, Plus, Trash2, Loader2, PiggyBank, ChevronLeft, ChevronRight, Pencil, Undo2 } from "lucide-react";
 import NavigationDropdown from "@/components/synapsia/NavigationDropdown";
+import PinPrompt from "@/components/synapsia/PinPrompt";
 import { toast } from "@/hooks/use-toast";
 import { format, parseISO } from "date-fns";
 import { es } from "date-fns/locale";
@@ -53,9 +54,11 @@ export default function CajaChica() {
   const [debts, setDebts] = useState<{ id: string; name: string; original_amount: number; paid_amount: number }[]>([]);
   const [debtsOpen, setDebtsOpen] = useState(true);
   const [detailDebt, setDetailDebt] = useState<{ id: string; name: string; original_amount: number; paid_amount: number } | null>(null);
-  const [detailPayments, setDetailPayments] = useState<{ amount: number; paid_at: string; notes: string | null; created_at: string }[]>([]);
+  const [detailPayments, setDetailPayments] = useState<{ id: string; amount: number; paid_at: string; notes: string | null; created_at: string; petty_cash_entry_id: string | null }[]>([]);
   const [detailOpen, setDetailOpen] = useState(false);
   const [linkedMovements, setLinkedMovements] = useState<Set<string>>(new Set());
+  const [reversePinOpen, setReversePinOpen] = useState(false);
+  const [reverseTarget, setReverseTarget] = useState<{ paymentId: string; pettyCashId: string | null; amount: number; debtId: string } | null>(null);
 
   useEffect(() => {
     if (!unitId) return;
@@ -240,11 +243,45 @@ export default function CajaChica() {
   async function openDebtDetail(debt: { id: string; name: string; original_amount: number; paid_amount: number }) {
     setDetailDebt(debt);
     const { data } = await (supabase.from as any)("adeudo_payments")
-      .select("amount, paid_at, notes, created_at")
+      .select("id, amount, paid_at, notes, created_at, petty_cash_entry_id")
       .eq("debt_id", debt.id)
       .order("paid_at", { ascending: false });
     setDetailPayments((data as any) || []);
     setDetailOpen(true);
+  }
+
+  async function reversePayment() {
+    if (!reverseTarget || !detailDebt) return;
+    const { paymentId, pettyCashId, amount, debtId } = reverseTarget;
+
+    const { error } = await (supabase.from as any)("adeudo_payments").delete().eq("id", paymentId);
+    if (error) {
+      toast({ title: "Error", description: error.message, variant: "destructive" });
+      return;
+    }
+
+    if (pettyCashId) {
+      setLinkedMovements(prev => {
+        const next = new Set(prev);
+        next.delete(pettyCashId);
+        return next;
+      });
+    }
+
+    const newPaid = Math.max(0, Number(detailDebt.paid_amount) - amount);
+    const newStatus = newPaid >= Number(detailDebt.original_amount) ? "pagado" : "pendiente";
+    await (supabase.from as any)("debts").update({
+      paid_amount: newPaid,
+      status: newStatus,
+      updated_at: new Date().toISOString(),
+    }).eq("id", debtId);
+
+    setDetailPayments(prev => prev.filter(p => p.id !== paymentId));
+    setDetailDebt({ ...detailDebt, paid_amount: newPaid, status: newStatus } as any);
+    loadDebts();
+    toast({ title: "Abono reversado", description: `Se eliminó el abono de ${fmt(amount)}.` });
+    setReversePinOpen(false);
+    setReverseTarget(null);
   }
 
   function openNew() {
@@ -578,12 +615,26 @@ export default function CajaChica() {
                   <p className="text-sm text-muted-foreground text-center py-4">Sin abonos registrados</p>
                 ) : (
                   <div className="space-y-1">
-                    {detailPayments.map((p, i) => (
-                      <div key={i} className="flex items-center justify-between py-2 px-2 rounded hover:bg-muted/50 border-b last:border-0">
+                    {detailPayments.map((p) => (
+                      <div key={p.id} className="flex items-center justify-between py-2 px-2 rounded hover:bg-muted/50 border-b last:border-0">
                         <div>
                           <p className="text-sm font-medium">{fmt(Number(p.amount))}</p>
                           <p className="text-[10px] text-muted-foreground">{p.paid_at} {p.notes && `· ${p.notes}`}</p>
                         </div>
+                        {canEdit && (
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            className="h-7 w-7 text-destructive hover:text-destructive"
+                            title="Revertir abono (requiere PIN)"
+                            onClick={() => {
+                              setReverseTarget({ paymentId: p.id, pettyCashId: p.petty_cash_entry_id, amount: Number(p.amount), debtId: detailDebt!.id });
+                              setReversePinOpen(true);
+                            }}
+                          >
+                            <Undo2 className="w-3.5 h-3.5" />
+                          </Button>
+                        )}
                       </div>
                     ))}
                   </div>
@@ -592,6 +643,14 @@ export default function CajaChica() {
             )}
           </DialogContent>
         </Dialog>
+
+        <PinPrompt
+          open={reversePinOpen}
+          onOpenChange={(v) => { if (!v) { setReversePinOpen(false); setReverseTarget(null); } }}
+          title="Revertir abono de adeudo"
+          description="Ingresa tu PIN para autorizar la reversión de este abono. El movimiento quedará como gasto normal."
+          onConfirm={reversePayment}
+        />
       </main>
     </div>
   );
