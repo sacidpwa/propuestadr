@@ -134,7 +134,8 @@ export default function CajaChica() {
   }
 
   async function save() {
-    if (!unitId || !user) return;
+    console.log("[CajaChica] save() CALLED", { unitId, userId: user?.id, form: JSON.parse(JSON.stringify(form)) });
+    if (!unitId || !user) { console.warn("[CajaChica] save() ABORT: no unitId or user"); return; }
     if (!form.amount || form.amount <= 0) { toast({ title: "Monto inválido", variant: "destructive" }); return; }
     if (form.type !== "apertura" && !form.category.trim()) { toast({ title: "Categoría requerida", variant: "destructive" }); return; }
     setSaving(true);
