@@ -152,50 +152,53 @@ export default function CajaChica() {
     if (form.type !== "apertura" && !form.category.trim()) { savingRef.current = false; toast({ title: "Categoría requerida", variant: "destructive" }); return; }
     setSaving(true);
 
-    try {
-      const payload = {
-        type: form.type,
-        amount: form.amount,
-        category: form.category.trim() || null,
-        description: form.description.trim() || null,
-        reference_date: form.date,
-      };
+    const payload = {
+      type: form.type,
+      amount: form.amount,
+      category: form.category.trim() || null,
+      description: form.description.trim() || null,
+      reference_date: form.date,
+    };
+    const savedForm = { ...form };
+    const savedEditingId = editingId;
 
-      let error: any;
-      let pettyCashId: string | null = null;
-      if (editingId) {
-        ({ error } = await (supabase.from as any)("petty_cash").update(payload).eq("id", editingId));
-        pettyCashId = editingId;
+    let error: any;
+    let pettyCashId: string | null = null;
+
+    try {
+      if (savedEditingId) {
+        ({ error } = await (supabase.from as any)("petty_cash").update(payload).eq("id", savedEditingId));
+        pettyCashId = savedEditingId;
       } else {
         const { data: inserted, error: insertError } = await (supabase.from as any)("petty_cash").insert({ ...payload, health_unit_id: unitId, created_by: user.id }).select("id").single();
         error = insertError;
         pettyCashId = inserted?.id || null;
       }
 
-      if (!error && form.es_pago_adeudo && form.debt_id && form.type === "salida") {
+      if (!error && savedForm.es_pago_adeudo && savedForm.debt_id && savedForm.type === "salida") {
         const { error: payError } = await (supabase.from as any)("adeudo_payments").insert({
-          debt_id: form.debt_id,
-          amount: Number(form.amount),
-          notes: `Caja chica: ${form.description || form.category}`,
-          paid_at: form.date,
+          debt_id: savedForm.debt_id,
+          amount: Number(savedForm.amount),
+          notes: `Caja chica: ${savedForm.description || savedForm.category}`,
+          paid_at: savedForm.date,
           recorded_by: user.id,
           petty_cash_entry_id: pettyCashId,
         }).select("id").single();
         if (payError) {
           toast({ title: "Salida registrada pero error al registrar amortización", description: payError.message, variant: "destructive" });
         } else {
-          toast({ title: "Amortización registrada", description: `Se abonaron $${form.amount} al adeudo seleccionado.` });
+          toast({ title: "Amortización registrada", description: `Se abonaron $${savedForm.amount} al adeudo seleccionado.` });
         }
 
-        const debt = debts.find(d => d.id === form.debt_id);
+        const debt = debts.find(d => d.id === savedForm.debt_id);
         if (debt) {
-          const newPaid = Number(debt.paid_amount) + Number(form.amount);
+          const newPaid = Number(debt.paid_amount) + Number(savedForm.amount);
           const newStatus = newPaid >= Number(debt.original_amount) ? "pagado" : "pendiente";
           const { error: debtError } = await (supabase.from as any)("debts").update({
             paid_amount: newPaid,
             status: newStatus,
             updated_at: new Date().toISOString(),
-          }).eq("id", form.debt_id);
+          }).eq("id", savedForm.debt_id);
           if (debtError) {
             toast({ title: "Error actualizando saldo del adeudo", description: debtError.message, variant: "destructive" });
           }
@@ -204,13 +207,12 @@ export default function CajaChica() {
 
       if (error) {
         toast({ title: "Error", description: error.message, variant: "destructive" });
+        setSaving(false);
+        savingRef.current = false;
         return;
       }
 
-      const savedEditingId = editingId;
-      const savedForm = { ...form };
-
-      toast({ title: editingId ? "Movimiento actualizado" : "Movimiento registrado" });
+      toast({ title: savedEditingId ? "Movimiento actualizado" : "Movimiento registrado" });
       setOpen(false);
       setEditingId(null);
       setForm(defaultForm());
@@ -228,12 +230,11 @@ export default function CajaChica() {
 
       loadDebts();
 
-      if (savedForm.es_pago_adeudo && savedForm.debt_id && savedForm.type === "salida" && pettyCashId) {
-        setLinkedMovements(prev => new Set([...prev, pettyCashId]));
+      if (savedForm.es_pago_adeudo && savedForm.debt_id && savedForm.type === "salida" && pettyCashId!) {
+        setLinkedMovements(prev => new Set([...prev, pettyCashId!]));
       }
     } catch (e) {
       toast({ title: "Error inesperado", description: String(e), variant: "destructive" });
-    } finally {
       setSaving(false);
       savingRef.current = false;
     }
@@ -298,6 +299,8 @@ export default function CajaChica() {
   function openNew() {
     setEditingId(null);
     setForm({ ...defaultForm(), type: movements.length === 0 ? "apertura" : "entrada" });
+    savingRef.current = false;
+    setSaving(false);
     setOpen(true);
   }
 
@@ -306,6 +309,8 @@ export default function CajaChica() {
       toast({ title: "Movimiento vinculado a adeudo", description: "No se puede editar un movimiento que tiene pagos de adeudo asociados.", variant: "destructive" });
       return;
     }
+    savingRef.current = false;
+    setSaving(false);
     setEditingId(m.id);
     setForm({ type: m.type, amount: Number(m.amount), category: m.category || "", description: m.description || "", date: m.reference_date });
     setOpen(true);
