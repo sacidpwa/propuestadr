@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -49,6 +49,7 @@ export default function CajaChica() {
 
   const [open, setOpen] = useState(false);
   const [saving, setSaving] = useState(false);
+  const savingRef = useRef(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState({ type: "entrada", amount: 0, category: "", description: "", date: format(now, "yyyy-MM-dd"), es_pago_adeudo: false, debt_id: "" });
   const [debts, setDebts] = useState<{ id: string; name: string; original_amount: number; paid_amount: number }[]>([]);
@@ -144,7 +145,9 @@ export default function CajaChica() {
   }
 
   async function save() {
-    if (!unitId || !user) return;
+    if (savingRef.current) return;
+    savingRef.current = true;
+    if (!unitId || !user) { savingRef.current = false; return; }
     if (!form.amount || form.amount <= 0) { toast({ title: "Monto inválido", variant: "destructive" }); return; }
     if (form.type !== "apertura" && !form.category.trim()) { toast({ title: "Categoría requerida", variant: "destructive" }); return; }
     setSaving(true);
@@ -200,6 +203,7 @@ export default function CajaChica() {
       }
 
       setSaving(false);
+      savingRef.current = false;
       if (error) { toast({ title: "Error", description: error.message, variant: "destructive" }); return; }
       toast({ title: editingId ? "Movimiento actualizado" : "Movimiento registrado" });
       setOpen(false);
@@ -223,9 +227,9 @@ export default function CajaChica() {
         setLinkedMovements(prev => new Set([...prev, pettyCashId]));
       }
     } catch (e) {
-      console.error("[CajaChica] save() CAUGHT ERROR:", e);
       toast({ title: "Error inesperado", description: String(e), variant: "destructive" });
       setSaving(false);
+      savingRef.current = false;
     }
   }
 
