@@ -146,9 +146,8 @@ export default function CajaChica() {
 
   async function save(e?: React.MouseEvent) {
     if (e?.currentTarget) (e.currentTarget as HTMLButtonElement).disabled = true;
-    if (savingRef.current) { console.warn("[CAJA] save BLOCKED by ref"); return; }
+    if (savingRef.current) return;
     savingRef.current = true;
-    console.log("[CAJA] save CALLED", new Date().toISOString());
     if (!unitId || !user) { savingRef.current = false; return; }
     if (!form.amount || form.amount <= 0) { savingRef.current = false; toast({ title: "Monto inválido", variant: "destructive" }); return; }
     if (form.type !== "apertura" && !form.category.trim()) { savingRef.current = false; toast({ title: "Categoría requerida", variant: "destructive" }); return; }
@@ -187,28 +186,35 @@ export default function CajaChica() {
           petty_cash_entry_id: pettyCashId,
         }).select("id").single();
         if (payError) {
-          toast({ title: "Salida registrada pero error al registrar amortización", description: payError.message, variant: "destructive" });
+          if (payError.code === "23505") {
+            toast({ title: "Pago ya registrado", description: "Este pago de adeudo ya fue registrado anteriormente.", variant: "destructive" });
+          } else {
+            toast({ title: "Salida registrada pero error al registrar amortización", description: payError.message, variant: "destructive" });
+          }
         } else {
           toast({ title: "Amortización registrada", description: `Se abonaron $${savedForm.amount} al adeudo seleccionado.` });
-        }
-
-        const debt = debts.find(d => d.id === savedForm.debt_id);
-        if (debt) {
-          const newPaid = Number(debt.paid_amount) + Number(savedForm.amount);
-          const newStatus = newPaid >= Number(debt.original_amount) ? "pagado" : "pendiente";
-          const { error: debtError } = await (supabase.from as any)("debts").update({
-            paid_amount: newPaid,
-            status: newStatus,
-            updated_at: new Date().toISOString(),
-          }).eq("id", savedForm.debt_id);
-          if (debtError) {
-            toast({ title: "Error actualizando saldo del adeudo", description: debtError.message, variant: "destructive" });
+          const debt = debts.find(d => d.id === savedForm.debt_id);
+          if (debt) {
+            const newPaid = Number(debt.paid_amount) + Number(savedForm.amount);
+            const newStatus = newPaid >= Number(debt.original_amount) ? "pagado" : "pendiente";
+            const { error: debtError } = await (supabase.from as any)("debts").update({
+              paid_amount: newPaid,
+              status: newStatus,
+              updated_at: new Date().toISOString(),
+            }).eq("id", savedForm.debt_id);
+            if (debtError) {
+              toast({ title: "Error actualizando saldo del adeudo", description: debtError.message, variant: "destructive" });
+            }
           }
         }
       }
 
       if (error) {
-        toast({ title: "Error", description: error.message, variant: "destructive" });
+        if (error.message?.includes("Duplicate") || error.message?.includes("duplicate")) {
+          toast({ title: "Movimiento duplicado", description: "Este movimiento ya fue registrado recientemente.", variant: "destructive" });
+        } else {
+          toast({ title: "Error", description: error.message, variant: "destructive" });
+        }
         setSaving(false);
         savingRef.current = false;
         return;

@@ -12,7 +12,7 @@ import PinPrompt from "@/components/synapsia/PinPrompt";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
-import { ArrowLeft, LogOut, Plus, Paperclip, Trash2, ArrowRight, Pencil, CreditCard, Loader2, Wallet } from "lucide-react";
+import { ArrowLeft, LogOut, Plus, Paperclip, Trash2, ArrowRight, Pencil, CreditCard, Loader2, Wallet, PiggyBank, Undo2 } from "lucide-react";
 import synapsiaIcon from "@/assets/synapsia-icon.svg";
 import NavigationDropdown from "@/components/synapsia/NavigationDropdown";
 import { toast } from "@/hooks/use-toast";
@@ -70,6 +70,11 @@ export default function GastosUnidad() {
   const [catDialogOpen, setCatDialogOpen] = useState(false);
   const [newCatName, setNewCatName] = useState("");
   const [editingCat, setEditingCat] = useState<{ id: string; name: string } | null>(null);
+  const [detailDebt, setDetailDebt] = useState<{ id: string; name: string; original_amount: number; paid_amount: number } | null>(null);
+  const [detailPayments, setDetailPayments] = useState<{ id: string; amount: number; paid_at: string; notes: string | null; created_at: string; petty_cash_entry_id: string | null }[]>([]);
+  const [detailOpen, setDetailOpen] = useState(false);
+  const [reversePinOpen, setReversePinOpen] = useState(false);
+  const [reverseTarget, setReverseTarget] = useState<{ paymentId: string; pettyCashId: string | null; amount: number; debtId: string } | null>(null);
 
   function waitForFile(): Promise<File | null> {
     return new Promise((resolve) => {
@@ -238,15 +243,16 @@ export default function GastosUnidad() {
       toast({ title: "Faltan datos", variant: "destructive" });
       return;
     }
-    const opDate = parseISO(form.operation_date);
+    const savedForm = { ...form };
+    const opDate = parseISO(savedForm.operation_date);
     let receipt: string | null = null;
-    if (form.file) receipt = await uploadReceipt(form.file);
+    if (savedForm.file) receipt = await uploadReceipt(savedForm.file);
 
-    let patientId = form.patient_id || null;
-    let patientName = form.patient_name || null;
+    let patientId = savedForm.patient_id || null;
+    let patientName = savedForm.patient_name || null;
 
     // Auto-match patient by name if not selected from datalist but name was typed
-    if (form.entry_type === "ingreso" && !patientId && patientSearch.trim()) {
+    if (savedForm.entry_type === "ingreso" && !patientId && patientSearch.trim()) {
       const match = patients.find(p => p.full_name.toLowerCase() === patientSearch.trim().toLowerCase());
       if (match) {
         patientId = match.id;
@@ -255,21 +261,21 @@ export default function GastosUnidad() {
     }
 
     // For income with patient: split into mensualidad and gastos entries
-    if (form.entry_type === "ingreso" && patientId && (form.monto_mensualidad > 0 || form.monto_gastos > 0)) {
+    if (savedForm.entry_type === "ingreso" && patientId && (savedForm.monto_mensualidad > 0 || savedForm.monto_gastos > 0)) {
       const entriesToInsert: any[] = [];
-      const mesLabel = `${MONTHS_ES[form.mes_pago - 1]} ${form.anio_pago}`;
+      const mesLabel = `${MONTHS_ES[savedForm.mes_pago - 1]} ${savedForm.anio_pago}`;
 
-      if (form.monto_mensualidad > 0) {
+      if (savedForm.monto_mensualidad > 0) {
         entriesToInsert.push({
           entry_type: "ingreso",
           description: `Mensualidad — ${mesLabel}`,
-          amount: form.monto_mensualidad,
+          amount: savedForm.monto_mensualidad,
           category: "Mensualidad",
-          notes: form.notes || null,
-          operation_date: form.operation_date,
-          expense_date: form.operation_date,
-          period_month: form.mes_pago,
-          period_year: form.anio_pago,
+          notes: savedForm.notes || null,
+          operation_date: savedForm.operation_date,
+          expense_date: savedForm.operation_date,
+          period_month: savedForm.mes_pago,
+          period_year: savedForm.anio_pago,
           patient_id: patientId,
           patient_name: patientName,
           health_unit_id: unitId,
@@ -278,17 +284,17 @@ export default function GastosUnidad() {
         });
       }
 
-      if (form.monto_gastos > 0) {
+      if (savedForm.monto_gastos > 0) {
         entriesToInsert.push({
           entry_type: "ingreso",
           description: `Gastos adicionales — ${mesLabel}`,
-          amount: form.monto_gastos,
+          amount: savedForm.monto_gastos,
           category: "Gastos adicionales",
-          notes: form.notes || null,
-          operation_date: form.operation_date,
-          expense_date: form.operation_date,
-          period_month: form.mes_pago,
-          period_year: form.anio_pago,
+          notes: savedForm.notes || null,
+          operation_date: savedForm.operation_date,
+          expense_date: savedForm.operation_date,
+          period_month: savedForm.mes_pago,
+          period_year: savedForm.anio_pago,
           patient_id: patientId,
           patient_name: patientName,
           health_unit_id: unitId,
@@ -311,30 +317,33 @@ export default function GastosUnidad() {
     } else {
       // Original logic for non-patient entries or single amount
       const payload: any = {
-        entry_type: form.entry_type,
-        description: form.description,
-        amount: form.amount,
-        category: form.entry_type === "ingreso" && patientId && paymentType ? (paymentType === "mensualidad" ? "Mensualidad" : "Nota de venta") : form.category || null,
-        notes: form.notes || null,
-        operation_date: form.operation_date,
-        expense_date: form.operation_date,
-        period_month: form.mes_pago,
-        period_year: form.anio_pago,
+        entry_type: savedForm.entry_type,
+        description: savedForm.description,
+        amount: savedForm.amount,
+        category: savedForm.entry_type === "ingreso" && patientId && paymentType ? (paymentType === "mensualidad" ? "Mensualidad" : "Nota de venta") : savedForm.category || null,
+        notes: savedForm.notes || null,
+        operation_date: savedForm.operation_date,
+        expense_date: savedForm.operation_date,
+        period_month: savedForm.mes_pago,
+        period_year: savedForm.anio_pago,
         patient_id: patientId,
         patient_name: patientName,
       };
+
+      let entryId: string | null = null;
 
       if (isEditing) {
         if (receipt) payload.receipt_url = receipt;
         const { error } = await (supabase.from as any)("expense_entries").update(payload).eq("id", editingId);
         if (error) { toast({ title: "Error", description: error.message, variant: "destructive" }); return; }
-        toast({ title: "Actualizado" });
+        entryId = editingId;
       } else {
         payload.health_unit_id = unitId;
         payload.receipt_url = receipt;
         payload.created_by = user.id;
         const { data: insertedEntry, error } = await (supabase.from as any)("expense_entries").insert(payload).select("id").single();
         if (error) { toast({ title: "Error", description: error.message, variant: "destructive" }); return; }
+        entryId = insertedEntry?.id || null;
 
         if (asignarCajaChica && montoCajaChica > 0) {
           const { error: pcError } = await (supabase.from as any)("petty_cash").insert({
@@ -342,44 +351,54 @@ export default function GastosUnidad() {
             type: "entrada",
             amount: montoCajaChica,
             category: "Asignación desde gasto",
-            description: `Asignación por: ${form.description}`,
-            reference_date: form.operation_date,
+            description: `Asignación por: ${savedForm.description}`,
+            reference_date: savedForm.operation_date,
             created_by: user.id,
           });
           if (pcError) { toast({ title: "Gasto registrado pero error en caja chica", description: pcError.message, variant: "destructive" }); }
         }
+      }
 
-        // Link expense to specific debt if selected
-        if (form.es_pago_adeudo && form.debt_id) {
-          const entryId = insertedEntry?.id || null;
+      if (savedForm.es_pago_adeudo && savedForm.debt_id && entryId) {
+        const { data: existing } = await (supabase.from as any)("adeudo_payments")
+          .select("id").eq("expense_entry_id", entryId).maybeSingle();
 
+        if (!existing) {
+          const payAmount = savedForm.monto_adeudado || savedForm.amount;
           const { error: payError } = await (supabase.from as any)("adeudo_payments").insert({
-            debt_id: form.debt_id,
-            amount: form.monto_adeudado || form.amount,
+            debt_id: savedForm.debt_id,
+            amount: payAmount,
             expense_entry_id: entryId,
-            notes: form.notes || null,
-            paid_at: form.operation_date,
+            notes: savedForm.notes || null,
+            paid_at: savedForm.operation_date,
             recorded_by: user.id,
           });
-          if (payError) { toast({ title: "Gasto registrado pero error al registrar amortización", description: payError.message, variant: "destructive" }); return; }
-
-          // Update debt paid_amount
-          const payAmount = form.monto_adeudado || form.amount;
-          const debt = debts.find(d => d.id === form.debt_id);
-          if (debt) {
-            const newPaid = Number(debt.paid_amount) + payAmount;
-            const newStatus = newPaid >= Number(debt.original_amount) ? "pagado" : "pendiente";
-            const { error: debtError } = await (supabase.from as any)("debts").update({
-              paid_amount: newPaid,
-              status: newStatus,
-              updated_at: new Date().toISOString(),
-            }).eq("id", form.debt_id);
-            if (debtError) { toast({ title: "Error actualizando saldo del adeudo", description: debtError.message, variant: "destructive" }); }
+          if (payError) {
+            if (payError.code === "23505") {
+              toast({ title: "Pago ya registrado", description: "Este pago de adeudo ya fue registrado anteriormente.", variant: "destructive" });
+            } else {
+              toast({ title: isEditing ? "Actualizado" : "Registrado" + " pero error al registrar amortización", description: payError.message, variant: "destructive" });
+            }
+          } else {
+            const debt = debts.find(d => d.id === savedForm.debt_id);
+            if (debt) {
+              const newPaid = Number(debt.paid_amount) + payAmount;
+              const newStatus = newPaid >= Number(debt.original_amount) ? "pagado" : "pendiente";
+              const { error: debtError } = await (supabase.from as any)("debts").update({
+                paid_amount: newPaid,
+                status: newStatus,
+                updated_at: new Date().toISOString(),
+              }).eq("id", savedForm.debt_id);
+              if (debtError) { toast({ title: "Error actualizando saldo del adeudo", description: debtError.message, variant: "destructive" }); }
+            }
+            toast({ title: isEditing ? "Actualizado" : "Registrado", description: `Amortización de ${fmt(payAmount)} registrada al adeudo.` });
           }
           loadDebts();
+        } else {
+          if (!isEditing) toast({ title: "Registrado" });
         }
-
-        toast({ title: asignarCajaChica && montoCajaChica > 0 ? "Gasto registrado y caja chica actualizada" : "Registrado" });
+      } else {
+        toast({ title: isEditing ? "Actualizado" : (asignarCajaChica && montoCajaChica > 0 ? "Gasto registrado y caja chica actualizada" : "Registrado") });
       }
     }
 
@@ -402,6 +421,43 @@ export default function GastosUnidad() {
     const { error } = await (supabase.from as any)("expense_entries").delete().eq("id", id);
     if (error) { toast({ title: "Error", description: error.message, variant: "destructive" }); return; }
     setEntries(prev => prev.filter(e => e.id !== id));
+  }
+
+  async function openDebtDetail(debt: { id: string; name: string; original_amount: number; paid_amount: number }) {
+    setDetailDebt(debt);
+    const { data } = await (supabase.from as any)("adeudo_payments")
+      .select("id, amount, paid_at, notes, created_at, petty_cash_entry_id")
+      .eq("debt_id", debt.id)
+      .order("paid_at", { ascending: false });
+    setDetailPayments((data as any) || []);
+    setDetailOpen(true);
+  }
+
+  async function reversePayment() {
+    if (!reverseTarget || !detailDebt) return;
+    const { paymentId, pettyCashId, debtId } = reverseTarget;
+
+    const { error } = await (supabase.from as any)("adeudo_payments").delete().eq("id", paymentId);
+    if (error) {
+      toast({ title: "Error", description: error.message, variant: "destructive" });
+      return;
+    }
+
+    const remaining = detailPayments.filter(p => p.id !== paymentId);
+    const newPaid = remaining.reduce((sum, p) => sum + Number(p.amount), 0);
+    const newStatus = newPaid >= Number(detailDebt.original_amount) ? "pagado" : "pendiente";
+    await (supabase.from as any)("debts").update({
+      paid_amount: newPaid,
+      status: newStatus,
+      updated_at: new Date().toISOString(),
+    }).eq("id", debtId);
+
+    setDetailPayments(remaining);
+    setDetailDebt({ ...detailDebt, paid_amount: newPaid, status: newStatus } as any);
+    loadDebts();
+    toast({ title: "Abono reversado", description: "Se eliminó el abono. Saldo actualizado." });
+    setReversePinOpen(false);
+    setReverseTarget(null);
   }
 
   function askPin(title: string, action: () => Promise<void>) {
@@ -456,21 +512,19 @@ export default function GastosUnidad() {
                   const saldo = Number(d.original_amount) - Number(d.paid_amount);
                   const pct = Math.round((Number(d.paid_amount) / Number(d.original_amount)) * 100);
                   return (
-                    <div key={d.id} className="flex items-center gap-3">
-                      <div className="flex-1 min-w-0">
-                        <div className="flex justify-between text-xs mb-1">
-                          <span className="truncate font-medium">{d.name}</span>
-                          <span className="whitespace-nowrap ml-2">{fmt(saldo)}</span>
-                        </div>
-                        <div className="w-full bg-muted rounded-full h-1.5">
-                          <div className="bg-primary h-1.5 rounded-full transition-all" style={{ width: `${pct}%` }} />
-                        </div>
-                        <div className="flex justify-between text-[10px] text-muted-foreground mt-0.5">
-                          <span>Pagado: {fmt(Number(d.paid_amount))} ({pct}%)</span>
-                          <span>Original: {fmt(Number(d.original_amount))}</span>
-                        </div>
+                    <button key={d.id} onClick={() => openDebtDetail(d)} className="w-full text-left p-2 rounded-lg hover:bg-muted/50 transition-colors border border-transparent hover:border-border">
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="text-xs font-medium truncate pr-2">{d.name}</span>
+                        <span className="text-xs whitespace-nowrap">{fmt(saldo)}</span>
                       </div>
-                    </div>
+                      <div className="w-full bg-muted rounded-full h-1.5">
+                        <div className="bg-primary h-1.5 rounded-full transition-all" style={{ width: `${pct}%` }} />
+                      </div>
+                      <div className="flex justify-between text-[10px] text-muted-foreground mt-0.5">
+                        <span>Pagado: {fmt(Number(d.paid_amount))} ({pct}%)</span>
+                        <span>Original: {fmt(Number(d.original_amount))}</span>
+                      </div>
+                    </button>
                   );
                 })}
               </div>
@@ -655,7 +709,11 @@ export default function GastosUnidad() {
                           type="checkbox"
                           id="pago-adeudo"
                           checked={form.es_pago_adeudo}
-                          onChange={e => setForm({ ...form, es_pago_adeudo: e.target.checked, monto_adeudado: e.target.checked ? form.amount : 0 })}
+                          onChange={e => {
+                            const checked = e.target.checked;
+                            setForm({ ...form, es_pago_adeudo: checked, monto_adeudado: checked ? form.amount : 0, debt_id: checked ? form.debt_id : "" });
+                            if (checked) setAsignarCajaChica(false);
+                          }}
                           className="h-4 w-4"
                         />
                         <Label htmlFor="pago-adeudo" className="text-sm cursor-pointer">Es pago de adeudo</Label>
@@ -726,7 +784,12 @@ export default function GastosUnidad() {
                           type="checkbox"
                           id="asignar-caja-chica"
                           checked={asignarCajaChica}
-                          onChange={e => { setAsignarCajaChica(e.target.checked); if (e.target.checked) setMontoCajaChica(form.amount); }}
+                          onChange={e => {
+                            const checked = e.target.checked;
+                            setAsignarCajaChica(checked);
+                            if (checked) setMontoCajaChica(form.amount);
+                            if (checked) setForm({ ...form, es_pago_adeudo: false, debt_id: "" });
+                          }}
                           className="h-4 w-4"
                         />
                         <Label htmlFor="asignar-caja-chica" className="text-sm cursor-pointer flex items-center gap-1"><Wallet className="w-3.5 h-3.5" /> Asignar a caja chica</Label>
@@ -877,6 +940,70 @@ export default function GastosUnidad() {
             </div>
           </DialogContent>
         </Dialog>
+
+        <Dialog open={detailOpen} onOpenChange={setDetailOpen}>
+          <DialogContent className="max-w-md max-h-[80vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle className="text-base">{detailDebt?.name}</DialogTitle>
+            </DialogHeader>
+            {detailDebt && (
+              <div className="space-y-3">
+                <div className="grid grid-cols-3 gap-2 text-center">
+                  <div>
+                    <p className="text-[10px] text-muted-foreground">Original</p>
+                    <p className="text-sm font-bold">{fmt(Number(detailDebt.original_amount))}</p>
+                  </div>
+                  <div>
+                    <p className="text-[10px] text-muted-foreground">Pagado</p>
+                    <p className="text-sm font-bold text-green-700">{fmt(Number(detailDebt.paid_amount))}</p>
+                  </div>
+                  <div>
+                    <p className="text-[10px] text-muted-foreground">Saldo</p>
+                    <p className="text-sm font-bold text-red-700">{fmt(Number(detailDebt.original_amount) - Number(detailDebt.paid_amount))}</p>
+                  </div>
+                </div>
+                <div className="w-full bg-muted rounded-full h-2">
+                  <div className="bg-primary h-2 rounded-full transition-all" style={{ width: `${Math.round((Number(detailDebt.paid_amount) / Number(detailDebt.original_amount)) * 100)}%` }} />
+                </div>
+                <p className="text-xs font-semibold text-muted-foreground">Abonos registrados ({detailPayments.length})</p>
+                {detailPayments.length === 0 ? (
+                  <p className="text-sm text-muted-foreground text-center py-4">Sin abonos registrados</p>
+                ) : (
+                  <div className="space-y-1">
+                    {detailPayments.map((p) => (
+                      <div key={p.id} className="flex items-center justify-between py-2 px-2 rounded hover:bg-muted/50 border-b last:border-0">
+                        <div>
+                          <p className="text-sm font-medium">{fmt(Number(p.amount))}</p>
+                          <p className="text-[10px] text-muted-foreground">{p.paid_at} {p.notes && `· ${p.notes}`}</p>
+                        </div>
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          className="h-7 w-7 text-destructive hover:text-destructive"
+                          title="Revertir abono (requiere PIN)"
+                          onClick={() => {
+                            setReverseTarget({ paymentId: p.id, pettyCashId: p.petty_cash_entry_id, amount: Number(p.amount), debtId: detailDebt!.id });
+                            setReversePinOpen(true);
+                          }}
+                        >
+                          <Undo2 className="w-3.5 h-3.5" />
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+          </DialogContent>
+        </Dialog>
+
+        <PinPrompt
+          open={reversePinOpen}
+          onOpenChange={(v) => { if (!v) { setReversePinOpen(false); setReverseTarget(null); } }}
+          title="Revertir abono de adeudo"
+          description="Ingresa tu PIN para autorizar la reversión de este abono."
+          onConfirm={reversePayment}
+        />
 
         <PinPrompt open={pinOpen} onOpenChange={setPinOpen} title={pinTitle} onConfirm={pinAction} />
       </main>
