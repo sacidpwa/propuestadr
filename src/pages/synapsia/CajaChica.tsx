@@ -144,9 +144,11 @@ export default function CajaChica() {
     return { type: "entrada", amount: 0, category: "", description: "", date: format(new Date(), "yyyy-MM-dd"), es_pago_adeudo: false, debt_id: "" };
   }
 
-  async function save() {
-    if (savingRef.current) return;
+  async function save(e?: React.MouseEvent) {
+    if (e?.currentTarget) (e.currentTarget as HTMLButtonElement).disabled = true;
+    if (savingRef.current) { console.warn("[CAJA] save BLOCKED by ref"); return; }
     savingRef.current = true;
+    console.log("[CAJA] save CALLED", new Date().toISOString());
     if (!unitId || !user) { savingRef.current = false; return; }
     if (!form.amount || form.amount <= 0) { savingRef.current = false; toast({ title: "Monto inválido", variant: "destructive" }); return; }
     if (form.type !== "apertura" && !form.category.trim()) { savingRef.current = false; toast({ title: "Categoría requerida", variant: "destructive" }); return; }
@@ -498,7 +500,7 @@ export default function CajaChica() {
             </div>
             <DialogFooter>
               <Button variant="outline" onClick={() => { setOpen(false); setEditingId(null); setForm(defaultForm()); }}>Cancelar</Button>
-              <Button type="button" onClick={save} disabled={saving}>{saving && <Loader2 className="w-4 h-4 mr-1 animate-spin" />}Guardar</Button>
+              <Button type="button" onClick={(e) => save(e)} disabled={saving}>{saving && <Loader2 className="w-4 h-4 mr-1 animate-spin" />}Guardar</Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>
