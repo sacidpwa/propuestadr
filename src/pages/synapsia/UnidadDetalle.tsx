@@ -217,7 +217,7 @@ export default function UnidadDetalle() {
       builder.then((res: any) => resolve(res)).catch(() => resolve({ data: [], count: null }));
     });
 
-    const [patientRes, staffUnitsRes, staffAllRes, invRes, reqRes, poRes, feeRes, expenseAllEntriesRes, incomeAllEntriesRes, incomeDetailRes, monthlyRes, consultDailyRes, consultTodayRes, consultMonthRes, abonosRes, recentRes, todayDetailRes, expenseCategoryRes, pettyCashRes] = await Promise.all([
+    const [patientRes, staffUnitsRes, staffAllRes, invRes, reqRes, poRes, feeRes, expenseAllEntriesRes, incomeAllEntriesRes, incomeDetailRes, monthlyRes, consultDailyRes, consultTodayRes, consultMonthRes, abonosRes, recentRes, todayDetailRes, expenseCategoryRes, pettyCashRes, adeudoPaymentsRes] = await Promise.all([
       q((supabase.from as any)("patients").select("id").eq("health_unit_id", id)),
       q((supabase.from as any)("payroll_employee_units").select("employee_id").eq("health_unit_id", id)),
       q((supabase.from as any)("payroll_employees").select("*").eq("is_active", true)),
