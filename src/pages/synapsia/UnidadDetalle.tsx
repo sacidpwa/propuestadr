@@ -185,6 +185,7 @@ export default function UnidadDetalle() {
   const [patientSummaryCategory, setPatientSummaryCategory] = useState<string>("all");
   const [patientSummaryCategories, setPatientSummaryCategories] = useState<string[]>([]);
   const [patientSummaryRaw, setPatientSummaryRaw] = useState<{ incomeEntries: any[]; expenseEntries: any[]; consultEntries: any[]; abonosEntries: any[]; feeMap: Record<string, string>; patientsList: any[] } | null>(null);
+  const [adeudoEntryIds, setAdeudoEntryIds] = useState<Set<string>>(new Set());
   const [categoryDetailOpen, setCategoryDetailOpen] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<{ name: string; value: number; entries: any[] } | null>(null);
   const [categorySort, setCategorySort] = useState<"date_desc" | "date_asc" | "amount_desc" | "amount_asc">("date_desc");
@@ -276,11 +277,12 @@ export default function UnidadDetalle() {
     const pettyCashMonthly = Object.entries(pettyCashMonthlyMap).map(([month, v]) => ({ month, ...v }));
 
     const adeudoPayments = (adeudoPaymentsRes.data as any[]) || [];
-    const adeudoEntryIds = new Set(adeudoPayments.map((p: any) => p.expense_entry_id).filter(Boolean));
+    const adeudoIds = new Set(adeudoPayments.map((p: any) => p.expense_entry_id).filter(Boolean));
+    setAdeudoEntryIds(adeudoIds);
 
     const monthlyMap: Record<string, { ingresos: number; gastos: number; adeudos: number }> = {};
     for (let m = 0; m < 12; m++) monthlyMap[MONTHS[m]] = { ingresos: 0, gastos: 0, adeudos: 0 };
-    const isAdeudo = (e: any) => adeudoEntryIds.has(e.id);
+    const isAdeudo = (e: any) => adeudoIds.has(e.id);
     ((monthlyRes.data as any[]) || []).forEach((e: any) => {
       const m = MONTHS[Number(e.period_month) - 1];
       if (monthlyMap[m]) {
@@ -448,14 +450,17 @@ export default function UnidadDetalle() {
       builder.then((res: any) => resolve(res)).catch(() => resolve({ data: [], error: null }));
     });
 
-    const [patientsRes, incomeRes, expenseRes, abonosRes, consultRes, feesRes] = await Promise.all([
+    const [patientsRes, incomeRes, expenseRes, abonosRes, consultRes, feesRes, adeudoRes] = await Promise.all([
       qp((supabase.from as any)("patients").select("id, full_name").eq("health_unit_id", id)),
       qp((supabase.from as any)("expense_entries").select("patient_id, patient_name, amount").eq("health_unit_id", id).eq("entry_type", "ingreso").gte("expense_date", pr.from).lte("expense_date", pr.to)),
       qp((supabase.from as any)("expense_entries").select("patient_id, patient_name, amount, category, notes").eq("health_unit_id", id).eq("entry_type", "gasto").gte("expense_date", pr.from).lte("expense_date", pr.to)),
       qp((supabase.from as any)("client_fee_payments").select("amount, fee_id").gte("paid_at", pr.from)),
       qp((supabase.from as any)("consultation_log").select("patient_name, amount_collected").eq("health_unit_id", id).gte("record_date", pr.from).lte("record_date", pr.to)),
       qp((supabase.from as any)("client_fees").select("id, patient_name").eq("health_unit_id", id)),
+      qp((supabase.from as any)("adeudo_payments").select("expense_entry_id").order("created_at")),
     ]);
+
+    const adeudoEntryIds = new Set(((adeudoRes.data as any[]) || []).map((p: any) => p.expense_entry_id).filter(Boolean));
 
     const patientsList = (patientsRes.data as any[]) || [];
     const incomeEntries = (incomeRes.data as any[]) || [];
@@ -571,7 +576,7 @@ export default function UnidadDetalle() {
 
     const summary = Object.values(summaryMap).map(s => ({ ...s, saldo: s.ingresos - s.egresos })).sort((a, b) => b.ingresos - a.ingresos);
     setData(prev => ({ ...prev, patientSummary: summary }));
-  }, [patientSummaryRaw, patientSummaryCategory]);
+  }, [patientSummaryRaw, patientSummaryCategory, adeudoEntryIds]);
 
   useEffect(() => {
     if (!id) return;
